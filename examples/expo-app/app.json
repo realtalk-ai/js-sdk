@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Real Talk Example",
+    "slug": "realtalk-example",
+    "version": "1.0.0",
+    "scheme": "realtalk-example",
+    "icon": "./assets/icon.png",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "ios": {
+      "bundleIdentifier": "ml.realtalk.example",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app needs microphone access for voice conversations."
+      }
+    },
+    "android": {
+      "package": "ml.realtalk.example",
+      "permissions": [
+        "RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "@realtalk-ai/react-native/app.plugin.cjs",
+      "expo-router"
+    ]
+  }
+}

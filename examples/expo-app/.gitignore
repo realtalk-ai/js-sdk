@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+ios/Pods/
+ios/build/
+ios/Podfile.lock
+android/
+*.jsbundle
+.env
+.env.*
+!.env.example
