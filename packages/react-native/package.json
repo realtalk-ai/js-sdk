@@ -1,0 +1,51 @@
+{
+  "name": "@realtalk-ai/react-native",
+  "version": "0.1.0",
+  "description": "React Native hooks for Real Talk voice and text conversations",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./app.plugin.cjs": "./app.plugin.cjs"
+  },
+  "files": [
+    "dist",
+    "ios",
+    "android",
+    "react-native.config.js",
+    "realtalk-react-native.podspec",
+    "app.plugin.cjs"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist .turbo",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "@realtalk-ai/core": "^0.1.0",
+    "react": ">=18.0.0",
+    "react-native": ">=0.72.0"
+  },
+  "devDependencies": {
+    "@realtalk-ai/core": "^0.1.0",
+    "@testing-library/react": "^16.0.0",
+    "@types/react": "^18.0.0",
+    "jsdom": "^28.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-native": ">=0.72.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,35 @@
+{
+  "name": "realtalk-expo-example",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "prebuild": "expo prebuild",
+    "sync-sdk": "node sync-sdk.js",
+    "dev:build": "pnpm --filter @realtalk-ai/core --filter @realtalk-ai/react-native build && node sync-sdk.js",
+    "dev:ios": "npm run dev:build && expo prebuild --clean && expo run:ios",
+    "dev:android": "npm run dev:build && expo prebuild --clean && expo run:android --device"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~5.0.0",
+    "@realtalk-ai/core": "^0.0.3",
+    "@realtalk-ai/react-native": "^0.0.4",
+    "expo": "~53.0.0",
+    "expo-constants": "~17.1.8",
+    "expo-linking": "~7.1.7",
+    "expo-router": "~5.1.11",
+    "expo-splash-screen": "~0.30.10",
+    "expo-status-bar": "~2.2.0",
+    "react": "19.0.0",
+    "react-native": "~0.79.6",
+    "react-native-safe-area-context": "~5.4.0",
+    "react-native-screens": "~4.11.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.14",
+    "typescript": "^5.8.3"
+  }
+}
