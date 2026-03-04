@@ -149,6 +149,34 @@ describe("AudioPlayer", () => {
     expect(mockCtx.gainNode.gain.value).toBe(1);
   });
 
+  it("clear() preserves gain value when recreating GainNode", async () => {
+    const gainNodes: Array<{
+      gain: { value: number };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+    mockCtx.ctx.createGain = vi.fn(() => {
+      const node = {
+        gain: { value: 1 },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      };
+      gainNodes.push(node);
+      return node;
+    });
+
+    const player = new AudioPlayer();
+    await player.play(new Int16Array(1600), "trace-1");
+
+    player.setVolume(0);
+    expect(gainNodes[0].gain.value).toBe(0);
+
+    player.clear();
+
+    expect(gainNodes.length).toBe(2);
+    expect(gainNodes[1].gain.value).toBe(0);
+  });
+
   it("resumes suspended AudioContext", async () => {
     mockCtx.ctx.state = "suspended";
     const player = new AudioPlayer();
