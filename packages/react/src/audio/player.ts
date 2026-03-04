@@ -58,8 +58,10 @@ export class AudioPlayer {
     }
 
     if (this.audioContext && this.gainNode) {
+      const currentVolume = this.gainNode.gain.value;
       this.gainNode.disconnect();
       this.gainNode = this.audioContext.createGain();
+      this.gainNode.gain.value = currentVolume;
       this.gainNode.connect(this.audioContext.destination);
     }
   }
