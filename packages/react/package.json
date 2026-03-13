@@ -23,11 +23,11 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@realtalk-ai/core": "^0.1.0",
+    "@realtalk-ai/core": "workspace:^",
     "react": ">=18.0.0"
   },
   "devDependencies": {
-    "@realtalk-ai/core": "^0.1.0",
+    "@realtalk-ai/core": "workspace:^",
     "@testing-library/react": "^16.0.0",
     "@types/react": "^18.0.0",
     "jsdom": "^28.0.0",

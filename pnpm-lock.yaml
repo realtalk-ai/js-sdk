@@ -30,7 +30,7 @@ importers:
   packages/react:
     devDependencies:
       '@realtalk-ai/core':
-        specifier: ^0.1.0
+        specifier: workspace:^
         version: link:../core
       '@testing-library/react':
         specifier: ^16.0.0
@@ -57,7 +57,7 @@ importers:
   packages/react-native:
     devDependencies:
       '@realtalk-ai/core':
-        specifier: ^0.1.0
+        specifier: workspace:^
         version: link:../core
       '@testing-library/react':
         specifier: ^16.0.0
