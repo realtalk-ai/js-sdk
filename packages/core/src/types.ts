@@ -42,11 +42,23 @@ export interface ToolResult {
   content: string;
 }
 
+export type SubTaskStatus = "pending" | "completed";
+
+export interface SubTask {
+  id: string;
+  name: string;
+  type: string;
+  context: Record<string, unknown>;
+  status: SubTaskStatus;
+}
+
 export interface UserMessageLatencies {
   transcriptionMs?: number;
 }
 
 export interface AssistantMessageLatencies {
+  feedbackLatencyMs?: number;
+  answerLatencyMs?: number;
   firstSentenceLlmMs?: number;
   firstSentenceTtsMs?: number;
   userSilenceToSpeechMs?: number;
@@ -60,6 +72,7 @@ export interface MessageMetadata {
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
   latencies?: UserMessageLatencies | AssistantMessageLatencies;
+  subTasks?: SubTask[];
 }
 
 export interface Message {
@@ -94,6 +107,13 @@ export interface BackendMessage {
       content: string;
     }>;
     latencies?: Record<string, number>;
+    sub_tasks?: Array<{
+      id: string;
+      name: string;
+      type: string;
+      context: Record<string, unknown>;
+      status: SubTaskStatus;
+    }>;
   };
   has_been_answered?: boolean;
   should_be_answered?: boolean;

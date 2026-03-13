@@ -3,6 +3,7 @@ import type {
   ClientEvent,
   Message,
   MessageMetadata,
+  SubTask,
   ToolCall,
   ToolResult,
   ConversationEvent,
@@ -93,6 +94,8 @@ function normalizeLatencies(
     return { transcriptionMs: raw.transcription_ms };
   }
   return {
+    feedbackLatencyMs: raw.feedback_latency_ms,
+    answerLatencyMs: raw.answer_latency_ms,
     firstSentenceLlmMs: raw.first_sentence_llm_ms,
     firstSentenceTtsMs: raw.first_sentence_tts_ms,
     userSilenceToSpeechMs: raw.user_silence_to_speech_ms,
@@ -124,6 +127,15 @@ function normalizeMetadata(
       })
     ),
     latencies: raw.latencies ? normalizeLatencies(raw.latencies) : undefined,
+    subTasks: raw.sub_tasks?.map(
+      (sq): SubTask => ({
+        id: sq.id,
+        name: sq.name,
+        type: sq.type,
+        context: sq.context,
+        status: sq.status,
+      })
+    ),
   };
 }
 

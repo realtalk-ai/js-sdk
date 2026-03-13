@@ -8,6 +8,8 @@ export type {
   UserMessageLatencies,
   AssistantMessageLatencies,
   MessageMetadata,
+  SubTask,
+  SubTaskStatus,
   Message,
   SessionToken,
   TokenResponse,
