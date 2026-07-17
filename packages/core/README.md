@@ -38,7 +38,7 @@ transport.onStatusChange((connectionStatus) => {
 await transport.connect({
   url: "wss://api.realtalk.ml/api/v1/ws/conversations/audio/a1b2c3d4-e5f6-7890-abcd-ef1234567890/",
   token: "",
-  sdkInfo: { name: "my-app", version: "1.0.0", context: "web" },
+  sdkInfo: { name: "my-app", version: "1.0.0", context: "web_chat" },
 });
 
 transport.sendEvent({

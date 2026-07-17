@@ -4,7 +4,7 @@ import type {
   ConversationEvent,
 } from "./types.js";
 
-export type SdkContext = "web_chat" | "mobile_app";
+export type SdkContext = "web_chat" | "embed_widget" | "mobile_app";
 
 export interface SdkInfo {
   name: string;
