@@ -1,0 +1,40 @@
+{
+  "name": "@realtalk-ai/embed",
+  "version": "0.1.0",
+  "description": "Embeddable <realtalk-embed> web component for Real Talk agents",
+  "type": "module",
+  "sideEffects": true,
+  "main": "./dist/embed.es.js",
+  "unpkg": "./dist/embed.js",
+  "jsdelivr": "./dist/embed.js",
+  "exports": {
+    ".": "./dist/embed.es.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "clean": "rm -rf dist .turbo",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@realtalk-ai/core": "workspace:^",
+    "@realtalk-ai/react": "workspace:^",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "jsdom": "^28.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}
