@@ -389,4 +389,121 @@ describe("useConversation", () => {
       value: 42,
     });
   });
+
+  it("startMuted applies volume 0 to a new conversation's player", async () => {
+    const { result } = renderHook(() => useConversation({ startMuted: true }), {
+      wrapper,
+    });
+
+    expect(result.current.isAudioMuted).toBe(true);
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    expect(mockPlayer.setVolume).toHaveBeenCalledWith(0);
+  });
+
+  it("enableMic starts a recorder and disableMic stops it", async () => {
+    const { result } = renderHook(() => useConversation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+        mode: "text",
+      });
+    });
+
+    expect(result.current.isMicEnabled).toBe(false);
+
+    await act(async () => {
+      await result.current.enableMic();
+    });
+
+    expect(result.current.isMicEnabled).toBe(true);
+    expect(mockRecorder.start).toHaveBeenCalledTimes(1);
+
+    act(() => result.current.disableMic());
+
+    expect(result.current.isMicEnabled).toBe(false);
+    expect(mockRecorder.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("enableMic failure resets state and rethrows", async () => {
+    mockRecorder.start.mockRejectedValueOnce(new Error("denied"));
+    const { result } = renderHook(() => useConversation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+        mode: "text",
+      });
+    });
+
+    await expect(result.current.enableMic()).rejects.toThrow("denied");
+    expect(result.current.isMicEnabled).toBe(false);
+
+    await act(async () => {
+      await result.current.enableMic();
+    });
+    expect(result.current.isMicEnabled).toBe(true);
+  });
+
+  it("voice mode enables the mic and endConversation releases it", async () => {
+    const { result } = renderHook(() => useConversation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+        mode: "voice",
+      });
+    });
+
+    expect(result.current.isMicEnabled).toBe(true);
+
+    await act(async () => {
+      await result.current.endConversation();
+    });
+
+    expect(result.current.isMicEnabled).toBe(false);
+  });
+
+  it("clearMessages empties the messages array", async () => {
+    const { result } = renderHook(() => useConversation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    act(() =>
+      onEventCb({
+        type: "message_created",
+        data: {
+          id: "msg-1",
+          role: "agent",
+          text: "Hello!",
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+      })
+    );
+
+    expect(result.current.messages).toHaveLength(1);
+
+    act(() => result.current.clearMessages());
+
+    expect(result.current.messages).toHaveLength(0);
+  });
 });
