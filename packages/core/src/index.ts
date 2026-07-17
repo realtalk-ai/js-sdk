@@ -23,6 +23,8 @@ export type {
 
 export { EventType } from "./types.js";
 
+export type { SdkContext } from "./transport.js";
+
 export {
   WebSocketTransport,
   RECONNECTABLE_CLOSE_CODES,

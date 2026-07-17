@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { WebSocketTransport } from "../src/websocket-transport.js";
 import { ConnectionError, ConnectionErrorReason } from "../src/errors.js";
 import { DefaultReconnectPolicy } from "../src/reconnect.js";
-import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../src/version.js";
+import { SDK_NAME, SDK_VERSION } from "../src/version.js";
 
 const coreSdkInfo = {
   name: SDK_NAME,
   version: SDK_VERSION,
-  context: SDK_CONTEXT,
+  context: "web_chat" as const,
 };
 
 // --- Mock WebSocket ---
@@ -190,7 +190,7 @@ describe("WebSocketTransport", () => {
       mockWs.simulateOpen();
       await p;
 
-      expect(mockWs.url).toContain("&context=core");
+      expect(mockWs.url).toContain("&context=web_chat");
       expect(mockWs.url).toContain("&sdk_name=core");
       expect(mockWs.url).toContain(`&sdk_version=${SDK_VERSION}`);
     });
