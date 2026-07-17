@@ -42,6 +42,10 @@ export const RECONNECTABLE_CLOSE_CODES = new Set([
   4001, // Invalid session token (reconnect with refreshed token)
 ]);
 
+export const PAUSED_CLOSE_CODES = new Set([
+  4005, // Idle conversation paused by the server
+]);
+
 export class WebSocketTransport implements AudioTransport {
   private ws: WebSocket | null = null;
   private emitter = new EventEmitter<ConversationEventMap>();

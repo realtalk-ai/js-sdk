@@ -28,6 +28,7 @@ export type { SdkContext } from "./transport.js";
 export {
   WebSocketTransport,
   RECONNECTABLE_CLOSE_CODES,
+  PAUSED_CLOSE_CODES,
 } from "./websocket-transport.js";
 
 export { normalizeMessage, sortChronological } from "./events.js";

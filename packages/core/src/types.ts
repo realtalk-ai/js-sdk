@@ -4,7 +4,11 @@ export type ConnectionStatus =
   | "connected"
   | "reconnecting";
 
-export type ConversationStatus = "not_started" | "active" | "finished";
+export type ConversationStatus =
+  | "not_started"
+  | "active"
+  | "paused"
+  | "finished";
 
 export type ConversationMode = "voice" | "text";
 
