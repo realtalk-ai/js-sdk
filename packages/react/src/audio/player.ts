@@ -22,6 +22,7 @@ export class AudioPlayer {
   private callbacks: AudioPlayerCallbacks;
   private bufferedSamples = 0;
   private scheduledEndTime = 0;
+  private volume = 1;
 
   constructor(callbacks: AudioPlayerCallbacks = {}) {
     this.callbacks = callbacks;
@@ -31,6 +32,7 @@ export class AudioPlayer {
     if (!this.audioContext) {
       this.audioContext = new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
       this.gainNode = this.audioContext.createGain();
+      this.gainNode.gain.value = this.volume;
       this.gainNode.connect(this.audioContext.destination);
     }
 
@@ -58,10 +60,9 @@ export class AudioPlayer {
     }
 
     if (this.audioContext && this.gainNode) {
-      const currentVolume = this.gainNode.gain.value;
       this.gainNode.disconnect();
       this.gainNode = this.audioContext.createGain();
-      this.gainNode.gain.value = currentVolume;
+      this.gainNode.gain.value = this.volume;
       this.gainNode.connect(this.audioContext.destination);
     }
   }
@@ -77,8 +78,12 @@ export class AudioPlayer {
   }
 
   setVolume(volume: number): void {
+    this.volume = Math.max(0, Math.min(1, volume));
     if (this.gainNode) {
-      this.gainNode.gain.value = Math.max(0, Math.min(1, volume));
+      this.gainNode.gain.value = this.volume;
+    }
+    if (this.volume > 0 && this.audioContext?.state === "suspended") {
+      void this.audioContext.resume().catch(() => {});
     }
   }
 

@@ -6,11 +6,12 @@ import type { AudioRecorder } from "../src/audio/recorder.js";
 
 function setup(
   player: AudioPlayer | null = null,
-  recorder: AudioRecorder | null = null
+  recorder: AudioRecorder | null = null,
+  startMuted?: boolean
 ) {
   const playerRef = { current: player };
   const recorderRef = { current: recorder };
-  return renderHook(() => useAudioControls(playerRef, recorderRef));
+  return renderHook(() => useAudioControls(playerRef, recorderRef, startMuted));
 }
 
 describe("useAudioControls", () => {
@@ -126,5 +127,38 @@ describe("useAudioControls", () => {
     act(() => result.current.toggleAudio());
 
     expect(result.current.volume).toBe(0.7);
+  });
+
+  it("startMuted begins with volume 0 and isAudioMuted=true", () => {
+    const { result } = setup(null, null, true);
+
+    expect(result.current.isAudioMuted).toBe(true);
+    expect(result.current.volume).toBe(0);
+  });
+
+  it("toggleAudio unmutes to full volume when started muted", () => {
+    const player = { setVolume: vi.fn() } as unknown as AudioPlayer;
+    const { result } = setup(player, null, true);
+
+    act(() => result.current.toggleAudio());
+
+    expect(result.current.isAudioMuted).toBe(false);
+    expect(result.current.volume).toBe(1);
+    expect(player.setVolume).toHaveBeenCalledWith(1);
+  });
+
+  it("setVolume(0) then toggleAudio restores the previous non-zero volume", () => {
+    const player = { setVolume: vi.fn() } as unknown as AudioPlayer;
+    const { result } = setup(player);
+
+    act(() => result.current.setVolume(0.4));
+    act(() => result.current.setVolume(0));
+
+    expect(result.current.isAudioMuted).toBe(true);
+
+    act(() => result.current.toggleAudio());
+
+    expect(result.current.volume).toBe(0.4);
+    expect(result.current.isAudioMuted).toBe(false);
   });
 });

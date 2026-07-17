@@ -14,18 +14,18 @@ export interface UseAudioControlsReturn {
 
 export function useAudioControls(
   playerRef: MutableRefObject<AudioPlayer | null>,
-  recorderRef: MutableRefObject<AudioRecorder | null>
+  recorderRef: MutableRefObject<AudioRecorder | null>,
+  startMuted = false
 ): UseAudioControlsReturn {
   const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [volume, setVolumeState] = useState(1);
+  const [volume, setVolumeState] = useState(startMuted ? 0 : 1);
   const previousVolumeRef = useRef(1);
+  const isAudioMuted = volume === 0;
 
   const setVolume = useCallback(
     (v: number) => {
       const clamped = Math.max(0, Math.min(1, v));
       setVolumeState(clamped);
-      setIsAudioMuted(clamped === 0);
       if (clamped > 0) {
         previousVolumeRef.current = clamped;
       }
@@ -47,24 +47,12 @@ export function useAudioControls(
   }, [recorderRef]);
 
   const toggleAudio = useCallback(() => {
-    setIsAudioMuted((prev) => {
-      if (prev) {
-        const restored = previousVolumeRef.current || 1;
-        setVolumeState(restored);
-        if (playerRef.current) {
-          playerRef.current.setVolume(restored);
-        }
-        return false;
-      } else {
-        previousVolumeRef.current = volume || 1;
-        setVolumeState(0);
-        if (playerRef.current) {
-          playerRef.current.setVolume(0);
-        }
-        return true;
-      }
-    });
-  }, [playerRef, volume]);
+    if (isAudioMuted) {
+      setVolume(previousVolumeRef.current || 1);
+    } else {
+      setVolume(0);
+    }
+  }, [isAudioMuted, setVolume]);
 
   return {
     isMicMuted,

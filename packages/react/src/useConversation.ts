@@ -32,6 +32,7 @@ export interface UseConversationOptions {
   onStatusChange?: (status: ConversationStatus) => void;
   onConnectionStatusChange?: (status: ConnectionStatus) => void;
   onEvent?: (event: ConversationEvent) => void;
+  startMuted?: boolean;
 }
 
 export interface UseConversationReturn {
@@ -43,6 +44,7 @@ export interface UseConversationReturn {
   agentState: AgentState;
   userState: UserState;
   isMicMuted: boolean;
+  isMicEnabled: boolean;
   isAudioMuted: boolean;
   volume: number;
   startConversation: (
@@ -52,9 +54,12 @@ export interface UseConversationReturn {
   sendMessage: (text: string) => void;
   sendDTMF: (digit: DTMFDigit) => void;
   sendEvent: (payload: ClientEvent) => void;
+  clearMessages: () => void;
   toggleMic: () => void;
   toggleAudio: () => void;
   setVolume: (volume: number) => void;
+  enableMic: (deviceId?: string) => Promise<void>;
+  disableMic: () => void;
 }
 
 export function useConversation(
@@ -68,6 +73,7 @@ export function useConversation(
   const playerRef = useRef<AudioPlayer | null>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
   const [agentIsSpeaking, setAgentIsSpeaking] = useState(false);
+  const [isMicEnabled, setIsMicEnabled] = useState(false);
   const sendEventRef = useRef<(payload: ClientEvent) => void>(() => {});
 
   const handleAudio = useCallback((pcm: Int16Array, traceId: string) => {
@@ -83,6 +89,7 @@ export function useConversation(
       recorderRef.current.stop();
       recorderRef.current = null;
     }
+    setIsMicEnabled(false);
     if (playerRef.current) {
       playerRef.current.stop();
       playerRef.current = null;
@@ -122,6 +129,46 @@ export function useConversation(
 
   sendEventRef.current = sendEvent;
 
+  const {
+    isMicMuted,
+    isAudioMuted,
+    volume,
+    toggleMic,
+    toggleAudio,
+    setVolume,
+  } = useAudioControls(playerRef, recorderRef, options.startMuted);
+
+  const enableMic = useCallback(
+    async (deviceId?: string): Promise<void> => {
+      if (recorderRef.current) return;
+      const recorder = new AudioRecorder();
+      recorderRef.current = recorder;
+      try {
+        await recorder.start(
+          (pcm) => sendAudio(pcm),
+          deviceId ? { deviceId } : undefined
+        );
+      } catch (error) {
+        recorderRef.current = null;
+        throw error;
+      }
+      setIsMicEnabled(true);
+    },
+    [sendAudio]
+  );
+
+  const disableMic = useCallback(() => {
+    if (recorderRef.current) {
+      recorderRef.current.stop();
+      recorderRef.current = null;
+    }
+    setIsMicEnabled(false);
+  }, []);
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+  }, [setMessages]);
+
   const startConversation = useCallback(
     async (sessionOptions: UseConversationSessionOptions): Promise<string> => {
       const player = new AudioPlayer({
@@ -142,32 +189,18 @@ export function useConversation(
       });
       playerRef.current = player;
 
+      player.setVolume(volume);
+
       const id = await connectionStart(sessionOptions);
 
       if (sessionOptions.mode === "voice") {
-        const recorder = new AudioRecorder();
-        recorderRef.current = recorder;
-        await recorder.start(
-          (pcm) => sendAudio(pcm),
-          sessionOptions.audioDeviceId
-            ? { deviceId: sessionOptions.audioDeviceId }
-            : undefined
-        );
+        await enableMic(sessionOptions.audioDeviceId);
       }
 
       return id;
     },
-    [connectionStart, sendAudio]
+    [connectionStart, enableMic, volume]
   );
-
-  const {
-    isMicMuted,
-    isAudioMuted,
-    volume,
-    toggleMic,
-    toggleAudio,
-    setVolume,
-  } = useAudioControls(playerRef, recorderRef);
 
   const agentState: AgentState = agentIsSpeaking
     ? "speaking"
@@ -184,6 +217,7 @@ export function useConversation(
     agentState,
     userState,
     isMicMuted,
+    isMicEnabled,
     isAudioMuted,
     volume,
     startConversation,
@@ -191,8 +225,11 @@ export function useConversation(
     sendMessage,
     sendDTMF,
     sendEvent,
+    clearMessages,
     toggleMic,
     toggleAudio,
     setVolume,
+    enableMic,
+    disableMic,
   };
 }
