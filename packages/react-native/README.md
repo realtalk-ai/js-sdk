@@ -130,7 +130,7 @@ The main hook — combines connection, messages, and audio controls.
 | Field              | Type                        | Description                                                             |
 | ------------------ | --------------------------- | ----------------------------------------------------------------------- |
 | `connectionStatus` | `ConnectionStatus`          | `"disconnected"` \| `"connecting"` \| `"connected"` \| `"reconnecting"` |
-| `status`           | `ConversationStatus`        | `"not_started"` \| `"active"` \| `"finished"`                           |
+| `status`           | `ConversationStatus`        | `"not_started"` \| `"active"` \| `"paused"` \| `"finished"`             |
 | `conversationId`   | `string \| null`            | Current conversation ID                                                 |
 | `messages`         | `Message[]`                 | Conversation messages                                                   |
 | `error`            | `ConversationError \| null` | Current errors                                                          |

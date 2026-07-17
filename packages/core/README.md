@@ -114,6 +114,8 @@ Events received from the server during a conversation:
 | `close`                 | `EventType.Close`                | `{ code: number; reason: string }` | WebSocket connection closed            |
 | `error`                 | `EventType.Error`                | `{ message?: string }`             | A protocol or backend error occurred   |
 
+Two exported sets classify `close` codes: `RECONNECTABLE_CLOSE_CODES` (transient failures worth retrying with a fresh token) and `PAUSED_CLOSE_CODES` (the server paused an idle conversation, which can be resumed with the same conversation id, so don't auto-reconnect and don't treat it as an error). Codes in neither set are fatal.
+
 ### Client events (`sendEvent`)
 
 Events you can send to the server:
@@ -141,6 +143,8 @@ You can also send arbitrary custom events — any object with a `type` string fi
 | `ValidationError`             | Invalid arguments or missing configuration                                     |
 | `setLogLevel`                 | Control debug log output                                                       |
 | `DEFAULT_WS_URL`              | Default WebSocket endpoint URL                                                 |
+| `RECONNECTABLE_CLOSE_CODES`   | Close codes that warrant an automatic reconnect                                |
+| `PAUSED_CLOSE_CODES`          | Close codes meaning the server paused an idle, resumable conversation          |
 
 ## Types
 

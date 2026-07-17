@@ -8,9 +8,11 @@
     "lint": "turbo lint",
     "clean": "turbo clean",
     "typecheck": "turbo typecheck",
+    "embed-demo": "turbo build --filter @realtalk-ai/embed && http-server . -a 127.0.0.1 -p 4173 -c-1",
     "format": "prettier --write ."
   },
   "devDependencies": {
+    "http-server": "^14.1.1",
     "prettier": "^3.8.1",
     "turbo": "^2.8.0",
     "typescript": "^5.9.3"
