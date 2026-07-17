@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { TokenResponse } from "@realtalk-ai/core";
+import type { SdkContext, TokenResponse } from "@realtalk-ai/core";
 import { DEFAULT_WS_URL, ValidationError } from "@realtalk-ai/core";
 
 export type { TokenResponse };
@@ -8,6 +8,8 @@ export interface RealTalkConfig {
   baseUrl: string;
   tokenUrl: string | null;
   getToken: (() => Promise<TokenResponse>) | null;
+  /** @internal */
+  context?: SdkContext;
 }
 
 const RealTalkContext = createContext<RealTalkConfig | null>(null);
@@ -16,6 +18,8 @@ export interface RealTalkProviderProps {
   baseUrl?: string;
   tokenUrl?: string;
   getToken?: () => Promise<TokenResponse>;
+  /** @internal Overrides the context reported in sdkInfo. */
+  context?: SdkContext;
   children: ReactNode;
 }
 
@@ -23,6 +27,7 @@ export function RealTalkProvider({
   baseUrl = DEFAULT_WS_URL,
   tokenUrl,
   getToken,
+  context,
   children,
 }: RealTalkProviderProps): JSX.Element {
   const value = useMemo(
@@ -30,8 +35,9 @@ export function RealTalkProvider({
       baseUrl,
       tokenUrl: tokenUrl ?? null,
       getToken: getToken ?? null,
+      context,
     }),
-    [baseUrl, tokenUrl, getToken]
+    [baseUrl, tokenUrl, getToken, context]
   );
 
   return (

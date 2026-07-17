@@ -7,6 +7,7 @@ import type {
   ConversationError,
   DTMFDigit,
   Message,
+  SdkContext,
   SessionToken,
   ConversationEvent,
 } from "@realtalk-ai/core";
@@ -48,6 +49,7 @@ export function useConnection(opts: {
   baseUrl: string;
   tokenUrl: string | null;
   getToken: (() => Promise<TokenResponse>) | null;
+  context?: SdkContext;
   optionsRef: MutableRefObject<UseConversationOptions>;
   onEvent: (event: ConversationEvent) => void;
   setMessages: Dispatch<SetStateAction<Message[]>>;
@@ -59,6 +61,7 @@ export function useConnection(opts: {
     baseUrl,
     tokenUrl,
     getToken,
+    context,
     optionsRef,
     onEvent,
     setMessages,
@@ -237,7 +240,7 @@ export function useConnection(opts: {
         sdkInfo: {
           name: SDK_NAME,
           version: SDK_VERSION,
-          context: SDK_CONTEXT,
+          context: context ?? SDK_CONTEXT,
         },
       });
 
@@ -247,7 +250,7 @@ export function useConnection(opts: {
 
       transport.sendEvent({ type: "start", agent_id: agentId });
     },
-    [baseUrl, updateConnectionStatus, handleConversationEvent, onAudio]
+    [baseUrl, context, updateConnectionStatus, handleConversationEvent, onAudio]
   );
 
   const refreshToken = useCallback(async () => {

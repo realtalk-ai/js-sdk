@@ -428,6 +428,47 @@ describe("useConnection", () => {
     );
   });
 
+  it("startConversation reports the default web_chat context in sdkInfo", async () => {
+    const opts = defaultOpts();
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    expect(mockTransport.connect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sdkInfo: expect.objectContaining({
+          name: "react",
+          context: "web_chat",
+        }),
+      })
+    );
+  });
+
+  it("startConversation uses the configured context override in sdkInfo", async () => {
+    const opts = { ...defaultOpts(), context: "embed_widget" as const };
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    expect(mockTransport.connect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sdkInfo: expect.objectContaining({
+          context: "embed_widget",
+        }),
+      })
+    );
+  });
+
   it("startConversation calls onConnectionStatusChange", async () => {
     const opts = defaultOpts();
     const onConnectionStatusChange = vi.fn();
