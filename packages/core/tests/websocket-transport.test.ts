@@ -551,6 +551,24 @@ describe("WebSocketTransport", () => {
 
       expect(transport.status).toBe("disconnected");
     });
+
+    it("does not reconnect on paused close (4005)", async () => {
+      const transport = new WebSocketTransport({
+        reconnectPolicy: new DefaultReconnectPolicy([100]),
+      });
+
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "",
+        sdkInfo: coreSdkInfo,
+      });
+      mockWs.simulateOpen();
+      await p;
+
+      mockWs.simulateClose(4005);
+
+      expect(transport.status).toBe("disconnected");
+    });
   });
 
   describe("removeAllListeners", () => {
