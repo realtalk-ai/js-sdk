@@ -731,4 +731,77 @@ describe("useConnection", () => {
 
     vi.useRealTimers();
   });
+
+  it("paused close code 4005 sets status to paused, keeps the conversation id, and does not reconnect", async () => {
+    vi.useFakeTimers();
+
+    const opts = defaultOpts();
+    const onError = vi.fn();
+    const onStatusChange = vi.fn();
+    opts.optionsRef.current = { onError, onStatusChange };
+    opts.getToken = vi.fn().mockResolvedValue({
+      token: "token",
+      conversationId: "conv-1",
+    });
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({ agentId: "agent-1" });
+    });
+
+    expect(opts.getToken).toHaveBeenCalledTimes(1);
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    act(() => {
+      onEventCb({ type: "close", code: 4005, reason: "Idle timeout" });
+    });
+
+    expect(result.current.connectionStatus).toBe("disconnected");
+    expect(result.current.status).toBe("paused");
+    expect(result.current.conversationId).toBe("conv-1");
+    expect(result.current.error).toBeNull();
+    expect(onError).not.toHaveBeenCalled();
+    expect(onStatusChange).toHaveBeenLastCalledWith("paused");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60000);
+    });
+    expect(opts.getToken).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+  });
+
+  it("startConversation resumes a paused conversation", async () => {
+    const opts = defaultOpts();
+    opts.getToken = vi.fn().mockResolvedValue({
+      token: "token",
+      conversationId: "conv-1",
+    });
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({ agentId: "agent-1" });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    act(() => {
+      onEventCb({ type: "close", code: 4005, reason: "Idle timeout" });
+    });
+    expect(result.current.status).toBe("paused");
+
+    await act(async () => {
+      await result.current.startConversation({ agentId: "agent-1" });
+    });
+
+    expect(result.current.status).toBe("active");
+    expect(result.current.conversationId).toBe("conv-1");
+    expect(opts.getToken).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(WebSocketTransport).mock.results).toHaveLength(2);
+  });
 });
