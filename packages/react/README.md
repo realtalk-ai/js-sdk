@@ -104,7 +104,7 @@ const conversation = useConversation(options);
 | Field              | Type                        | Description                                                             |
 | ------------------ | --------------------------- | ----------------------------------------------------------------------- |
 | `connectionStatus` | `ConnectionStatus`          | `"disconnected"` \| `"connecting"` \| `"connected"` \| `"reconnecting"` |
-| `status`           | `ConversationStatus`        | `"not_started"` \| `"active"` \| `"finished"`                           |
+| `status`           | `ConversationStatus`        | `"not_started"` \| `"active"` \| `"paused"` \| `"finished"`             |
 | `conversationId`   | `string \| null`            | Current conversation ID                                                 |
 | `messages`         | `Message[]`                 | Conversation messages                                                   |
 | `error`            | `ConversationError \| null` | Current error                                                           |
@@ -112,6 +112,7 @@ const conversation = useConversation(options);
 | `userState`        | `UserState`                 | `"idle"` \| `"speaking"`                                                |
 | `volume`           | `number`                    | Audio playback volume (0–1)                                             |
 | `isMicMuted`       | `boolean`                   | Microphone mute state                                                   |
+| `isMicEnabled`     | `boolean`                   | Whether a microphone is currently attached                              |
 | `isAudioMuted`     | `boolean`                   | Audio output mute state                                                 |
 
 ### Methods
@@ -126,6 +127,9 @@ const conversation = useConversation(options);
 | `toggleMic()`                | Toggle microphone mute                  |
 | `toggleAudio()`              | Toggle audio output mute                |
 | `setVolume(volume)`          | Set playback volume                     |
+| `enableMic(deviceId?)`       | Ask for mic permission and start streaming, so a text conversation can turn into a voice one |
+| `disableMic()`               | Stop streaming and release the microphone |
+| `clearMessages()`            | Clear the local message array           |
 
 ### Session options
 
@@ -137,7 +141,11 @@ startConversation({
 });
 ```
 
-### Callbacks
+### Paused conversations
+
+The server may pause an idle conversation by closing the connection; `status` then becomes `"paused"` while `conversationId` is kept. This is not an error and the SDK does not auto-reconnect. Call `startConversation` again (with a token for the same conversation id) to resume, and the server replays the conversation's messages on connect.
+
+### Options and callbacks
 
 ```ts
 useConversation({
@@ -146,8 +154,11 @@ useConversation({
   onStatusChange: (status) => {},
   onConnectionStatusChange: (connectionStatus) => {},
   onEvent: (event) => {},
+  startMuted: false,
 });
 ```
+
+With `startMuted: true`, playback starts at volume 0 but still runs silently in real time so the conversation keeps its natural pacing; unmuting with `toggleAudio` or `setVolume` makes the rest of the current reply audible.
 
 The `onEvent` callback receives server events like `message_created`, `message_updated`, `vad`, and others. Use `sendEvent` to send custom events to the server. See the [core package events reference](../core/README.md#events) for the full list of event types and their payloads.
 

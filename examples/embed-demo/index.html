@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Real Talk embed demo</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%92%AC</text></svg>"
+    />
+    <style>
+      body {
+        margin: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #1f2937;
+      }
+      main {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 64px 24px;
+        line-height: 1.6;
+      }
+      h1 {
+        font-size: 32px;
+        margin: 0 0 12px;
+      }
+      p {
+        color: #4b5563;
+      }
+      code {
+        background: #f3f4f6;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Real Talk embed demo</h1>
+      <p>
+        This page stands in for your website. The chat bubble in the corner is
+        the <code>&lt;realtalk-embed&gt;</code> widget, added with the two-line
+        snippet at the bottom of this page's HTML. No other setup on the site.
+      </p>
+      <p>
+        Replace <code>YOUR_AGENT_ID</code> in the snippet with the id of an
+        agent that has embedding enabled to try it out.
+      </p>
+    </main>
+
+    <!-- The Real Talk embed snippet. This demo loads the locally built
+         bundle. On a real site you'd load it from the CDN instead:
+         https://unpkg.com/@realtalk-ai/embed -->
+    <realtalk-embed agent-id="YOUR_AGENT_ID"></realtalk-embed>
+    <script src="/packages/embed/dist/embed.js" async></script>
+  </body>
+</html>

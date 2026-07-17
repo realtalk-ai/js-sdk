@@ -17,7 +17,11 @@ React hooks for web apps. Provides `useConversation` for managing voice and text
 
 ### [`@realtalk-ai/react-native`](./packages/react-native)
 
-React Native hooks for iOS and Android apps. Same `useConversation` API as the React SDK, and it implements hardware-level echo cancellation and noise suppression on both platforms. Includes an Expo config plugin for zero-config setup.
+React Native hooks for iOS and Android apps. Same `useConversation` API as the React SDK (`enableMic`, `disableMic`, and `startMuted` are React-only for now), and it implements hardware-level echo cancellation and noise suppression on both platforms. Includes an Expo config plugin for zero-config setup.
+
+### [`@realtalk-ai/embed`](./packages/embed)
+
+Embeddable `<realtalk-embed>` web component. Adds your agent to any website as a floating chat widget, with text and voice, from a two-line HTML snippet. The script is a single self-contained file and no backend integration is needed on your site.
 
 ### [`@realtalk-ai/core`](./packages/core)
 
@@ -85,6 +89,10 @@ A simple React Native app built with Expo, showing how to use `@realtalk-ai/reac
 ### [Token server](./examples/server)
 
 A minimal FastAPI server that creates short-lived session tokens for use in frontend application. Use this as a starting point for your own token endpoint.
+
+### [Embed demo](./examples/embed-demo)
+
+A minimal page showing the copy-paste `@realtalk-ai/embed` snippet on a stand-in website. Run it with `pnpm embed-demo`.
 
 ## Development
 
