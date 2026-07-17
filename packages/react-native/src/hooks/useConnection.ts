@@ -14,6 +14,7 @@ import {
   EventType,
   WebSocketTransport,
   RECONNECTABLE_CLOSE_CODES,
+  PAUSED_CLOSE_CODES,
   ConnectionError,
   ApiError,
   ProtocolError,
@@ -151,7 +152,15 @@ export function useConnection(opts: {
         }
         case EventType.Close: {
           if (!intentionalDisconnectRef.current && sessionOptionsRef.current) {
-            if (RECONNECTABLE_CLOSE_CODES.has(event.code)) {
+            if (PAUSED_CLOSE_CODES.has(event.code)) {
+              const pausedId = conversationIdRef.current;
+              cleanup();
+              updateConversationStatus("paused");
+              updateConnectionStatus("disconnected");
+              if (pausedId) {
+                setConversationIdBoth(pausedId);
+              }
+            } else if (RECONNECTABLE_CLOSE_CODES.has(event.code)) {
               updateConnectionStatus("reconnecting");
               scheduleReconnect();
             } else {
@@ -348,7 +357,7 @@ export function useConnection(opts: {
     async (sessionOptions: UseConversationSessionOptions): Promise<string> => {
       setError(null);
 
-      if (status !== "not_started" && status !== "finished") {
+      if (status === "active") {
         throw new ValidationError("Conversation already active");
       }
 
