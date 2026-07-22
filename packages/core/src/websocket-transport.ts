@@ -77,7 +77,7 @@ export class WebSocketTransport implements AudioTransport {
     if (this._status === "connected" || this._status === "connecting") {
       throw new ConnectionError(
         ConnectionErrorReason.WebSocketFailed,
-        "Already connected or connecting"
+        "Already connected or connecting",
       );
     }
 
@@ -145,7 +145,7 @@ export class WebSocketTransport implements AudioTransport {
       JSON.stringify({
         type: "media",
         media: { payload: pcmToBase64(pcmData) },
-      })
+      }),
     );
   }
 
@@ -156,8 +156,8 @@ export class WebSocketTransport implements AudioTransport {
           "type" in payload
             ? payload.type
             : "event" in payload
-            ? payload.event
-            : "unknown",
+              ? payload.event
+              : "unknown",
         status: this._status,
       });
       return;
@@ -197,8 +197,8 @@ export class WebSocketTransport implements AudioTransport {
         reject(
           new ConnectionError(
             ConnectionErrorReason.Timeout,
-            `Connection timed out after ${this.connectionTimeout}ms`
-          )
+            `Connection timed out after ${this.connectionTimeout}ms`,
+          ),
         );
       }, this.connectionTimeout);
 
@@ -208,8 +208,8 @@ export class WebSocketTransport implements AudioTransport {
           reject(
             new ConnectionError(
               ConnectionErrorReason.WebSocketFailed,
-              "Connection aborted"
-            )
+              "Connection aborted",
+            ),
           );
           return;
         }
@@ -223,11 +223,11 @@ export class WebSocketTransport implements AudioTransport {
             reject(
               new ConnectionError(
                 ConnectionErrorReason.WebSocketFailed,
-                "Connection aborted"
-              )
+                "Connection aborted",
+              ),
             );
           },
-          { once: true }
+          { once: true },
         );
       }
 

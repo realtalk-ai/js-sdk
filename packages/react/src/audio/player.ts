@@ -109,7 +109,7 @@ export class AudioPlayer {
     const audioBuffer = this.audioContext.createBuffer(
       1,
       floatData.length,
-      TARGET_SAMPLE_RATE
+      TARGET_SAMPLE_RATE,
     );
     audioBuffer.getChannelData(0).set(floatData);
 
@@ -119,7 +119,7 @@ export class AudioPlayer {
 
     const startTime = Math.max(
       this.audioContext.currentTime,
-      this.scheduledEndTime
+      this.scheduledEndTime,
     );
     source.start(startTime);
 

@@ -21,7 +21,7 @@ export function useMessages(callbacksRef: {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userState, setUserState] = useState<UserState>("idle");
   const [thinkingMessageId, setThinkingMessageId] = useState<string | null>(
-    null
+    null,
   );
 
   const handleMessageEvent = useCallback(
@@ -63,7 +63,7 @@ export function useMessages(callbacksRef: {
         }
       }
     },
-    [callbacksRef]
+    [callbacksRef],
   );
 
   return {

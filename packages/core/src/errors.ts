@@ -11,7 +11,7 @@ export const ConnectionErrorReason = {
 } as const;
 
 export type ConnectionErrorReasonValue =
-  typeof ConnectionErrorReason[keyof typeof ConnectionErrorReason];
+  (typeof ConnectionErrorReason)[keyof typeof ConnectionErrorReason];
 
 export class ConnectionError extends RealtalkError {
   readonly reason: ConnectionErrorReasonValue;

@@ -31,7 +31,7 @@ function createMockAudioContext() {
           sampleRate,
           numberOfChannels: 1,
         };
-      }
+      },
     ),
     createBufferSource: vi.fn(() => {
       const node = { ...sourceNode, onended: null as (() => void) | null };
@@ -52,7 +52,7 @@ describe("AudioPlayer", () => {
     mockCtx = createMockAudioContext();
     vi.stubGlobal(
       "AudioContext",
-      vi.fn(() => mockCtx.ctx)
+      vi.fn(() => mockCtx.ctx),
     );
   });
 

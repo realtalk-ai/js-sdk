@@ -6,7 +6,7 @@ import type { AudioRecorder } from "../src/audio/recorder.js";
 
 function setup(
   player: AudioPlayer | null = null,
-  recorder: AudioRecorder | null = null
+  recorder: AudioRecorder | null = null,
 ) {
   const playerRef = { current: player };
   const recorderRef = { current: recorder };

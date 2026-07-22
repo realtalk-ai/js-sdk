@@ -20,13 +20,13 @@ interface OnceCallback extends EventCallback {
 }
 
 export class EventEmitter<
-  T extends Record<string, unknown[]> = Record<string, unknown[]>
+  T extends Record<string, unknown[]> = Record<string, unknown[]>,
 > {
   private listeners: Map<string, Set<EventCallback>> = new Map();
 
   on<K extends keyof T & string>(
     event: K,
-    callback: (...args: T[K]) => void
+    callback: (...args: T[K]) => void,
   ): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
@@ -36,7 +36,7 @@ export class EventEmitter<
 
   once<K extends keyof T & string>(
     event: K,
-    callback: (...args: T[K]) => void
+    callback: (...args: T[K]) => void,
   ): void {
     const wrapped: OnceCallback = (...args: unknown[]) => {
       this.listeners.get(event)?.delete(wrapped);
@@ -51,7 +51,7 @@ export class EventEmitter<
 
   off<K extends keyof T & string>(
     event: K,
-    callback: (...args: T[K]) => void
+    callback: (...args: T[K]) => void,
   ): void {
     const listeners = this.listeners.get(event);
     if (!listeners) return;
@@ -88,7 +88,7 @@ export class EventEmitter<
 // --- Message normalization ---
 
 function normalizeLatencies(
-  raw: Record<string, number>
+  raw: Record<string, number>,
 ): UserMessageLatencies | AssistantMessageLatencies {
   if ("transcription_ms" in raw) {
     return { transcriptionMs: raw.transcription_ms };
@@ -103,7 +103,7 @@ function normalizeLatencies(
 }
 
 function normalizeMetadata(
-  raw: BackendMessage["metadata"]
+  raw: BackendMessage["metadata"],
 ): MessageMetadata | undefined {
   if (!raw) return undefined;
   return {
@@ -115,7 +115,7 @@ function normalizeMetadata(
       (tc): ToolCall => ({
         id: tc.id,
         function: tc.function,
-      })
+      }),
     ),
     toolResults: raw.tool_results?.map(
       (tr): ToolResult => ({
@@ -124,7 +124,7 @@ function normalizeMetadata(
         role: tr.role,
         name: tr.name,
         content: tr.content,
-      })
+      }),
     ),
     latencies: raw.latencies ? normalizeLatencies(raw.latencies) : undefined,
     subTasks: raw.sub_tasks?.map(
@@ -134,7 +134,7 @@ function normalizeMetadata(
         type: sq.type,
         context: sq.context,
         status: sq.status,
-      })
+      }),
     ),
   };
 }
@@ -151,7 +151,7 @@ export const normalizeMessage = (raw: BackendMessage): Message => ({
 
 export const sortChronological = (msgs: Message[]): Message[] =>
   [...msgs].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
 
 // --- Event conversion ---
@@ -161,7 +161,7 @@ const CLIENT_TO_WIRE_TYPES: Record<string, string> = {
 };
 
 export function convertEventForTransport(
-  event: ClientEvent
+  event: ClientEvent,
 ): Record<string, unknown> {
   if ("type" in event && CLIENT_TO_WIRE_TYPES[event.type]) {
     return { ...event, type: CLIENT_TO_WIRE_TYPES[event.type] };
@@ -170,14 +170,14 @@ export function convertEventForTransport(
 }
 
 export function convertEventForSDK(
-  raw: Record<string, unknown>
+  raw: Record<string, unknown>,
 ): ConversationEvent {
   switch (raw.type) {
     case "existing_messages":
       return {
         type: "existing_messages",
         data: sortChronological(
-          (raw.data as BackendMessage[]).map(normalizeMessage)
+          (raw.data as BackendMessage[]).map(normalizeMessage),
         ),
       };
     case "message_created":

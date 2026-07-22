@@ -16,7 +16,7 @@ const RealTalkAudio = NativeModules.RealTalkAudio as RealTalkAudioModule;
 
 if (!RealTalkAudio) {
   throw new ValidationError(
-    "RealTalkAudio native module not found. Make sure you've rebuilt the native project."
+    "RealTalkAudio native module not found. Make sure you've rebuilt the native project.",
   );
 }
 
@@ -60,14 +60,14 @@ interface MicrophoneDataEvent {
 }
 
 export function onMicrophoneData(
-  callback: (pcm: Int16Array) => void
+  callback: (pcm: Int16Array) => void,
 ): () => void {
   const subscription = emitter.addListener(
     "onMicrophoneData",
     (event: MicrophoneDataEvent) => {
       const pcm = base64ToPcm(event.data);
       callback(pcm);
-    }
+    },
   );
   return () => subscription.remove();
 }

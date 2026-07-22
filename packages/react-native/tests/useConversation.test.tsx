@@ -226,7 +226,7 @@ describe("useConversation", () => {
           text: "",
           createdAt: "2024-01-01T00:00:00Z",
         },
-      })
+      }),
     );
 
     expect(result.current.agentState).toBe("thinking");
@@ -240,7 +240,7 @@ describe("useConversation", () => {
           text: "Done thinking",
           createdAt: "2024-01-01T00:00:00Z",
         },
-      })
+      }),
     );
 
     expect(result.current.agentState).toBe("idle");
@@ -269,7 +269,7 @@ describe("useConversation", () => {
           text: "Hello!",
           createdAt: "2024-01-01T00:00:00Z",
         },
-      })
+      }),
     );
 
     expect(result.current.messages).toHaveLength(1);
@@ -324,7 +324,7 @@ describe("useConversation", () => {
           text: "Hi",
           createdAt: "2024-01-01T00:00:00Z",
         },
-      })
+      }),
     );
     expect(onMessage).toHaveBeenCalled();
   });

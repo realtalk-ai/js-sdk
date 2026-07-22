@@ -52,14 +52,21 @@ function PulsingIndicator({
           easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     pulse.start();
     return () => pulse.stop();
   }, [ringScale, ringOpacity]);
 
   return (
-    <View style={{ width: size * 3, height: size * 3, alignItems: "center", justifyContent: "center" }}>
+    <View
+      style={{
+        width: size * 3,
+        height: size * 3,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
       <Animated.View
         style={{
           position: "absolute",
@@ -176,8 +183,7 @@ export default function ConversationScreen() {
   });
 
   const isConnected = connectionStatus === "connected";
-  const isDisconnected =
-    status === "not_started" || status === "finished";
+  const isDisconnected = status === "not_started" || status === "finished";
 
   const handleStart = async () => {
     try {
@@ -203,7 +209,12 @@ export default function ConversationScreen() {
           isAgent ? styles.agentBubble : styles.userBubble,
         ]}
       >
-        <Text style={[styles.messageRole, isAgent ? styles.agentRole : styles.userRole]}>
+        <Text
+          style={[
+            styles.messageRole,
+            isAgent ? styles.agentRole : styles.userRole,
+          ]}
+        >
           {isAgent ? "Agent" : "You"}
         </Text>
         <Text style={styles.messageText}>{item.text || "..."}</Text>
@@ -230,18 +241,34 @@ export default function ConversationScreen() {
             />
             <View style={styles.modeToggle}>
               <TouchableOpacity
-                style={[styles.modeButton, mode === "voice" && styles.modeButtonActive]}
+                style={[
+                  styles.modeButton,
+                  mode === "voice" && styles.modeButtonActive,
+                ]}
                 onPress={() => setMode("voice")}
               >
-                <Text style={[styles.modeButtonText, mode === "voice" && styles.modeButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.modeButtonText,
+                    mode === "voice" && styles.modeButtonTextActive,
+                  ]}
+                >
                   Voice
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modeButton, mode === "text" && styles.modeButtonActive]}
+                style={[
+                  styles.modeButton,
+                  mode === "text" && styles.modeButtonActive,
+                ]}
                 onPress={() => setMode("text")}
               >
-                <Text style={[styles.modeButtonText, mode === "text" && styles.modeButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.modeButtonText,
+                    mode === "text" && styles.modeButtonTextActive,
+                  ]}
+                >
                   Text
                 </Text>
               </TouchableOpacity>
@@ -282,7 +309,12 @@ export default function ConversationScreen() {
             }
           />
 
-          <View style={[styles.controls, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View
+            style={[
+              styles.controls,
+              { paddingBottom: Math.max(insets.bottom, 16) },
+            ]}
+          >
             {isConnected && mode === "text" && (
               <View style={styles.inputRow}>
                 <TextInput
@@ -294,7 +326,10 @@ export default function ConversationScreen() {
                   onSubmitEditing={handleSend}
                   returnKeyType="send"
                 />
-                <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+                <TouchableOpacity
+                  style={styles.sendButton}
+                  onPress={handleSend}
+                >
                   <Text style={styles.sendButtonText}>Send</Text>
                 </TouchableOpacity>
               </View>
@@ -303,24 +338,43 @@ export default function ConversationScreen() {
             {isConnected && mode === "voice" && (
               <View style={styles.actionRow}>
                 <TouchableOpacity
-                  style={[styles.muteButton, isMicMuted && styles.muteButtonActive]}
+                  style={[
+                    styles.muteButton,
+                    isMicMuted && styles.muteButtonActive,
+                  ]}
                   onPress={toggleMic}
                 >
-                  <Text style={[styles.muteButtonText, isMicMuted && styles.muteButtonTextActive]}>
+                  <Text
+                    style={[
+                      styles.muteButtonText,
+                      isMicMuted && styles.muteButtonTextActive,
+                    ]}
+                  >
                     {isMicMuted ? "Unmute Mic" : "Mute Mic"}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.muteButton, isAudioMuted && styles.muteButtonActive]}
+                  style={[
+                    styles.muteButton,
+                    isAudioMuted && styles.muteButtonActive,
+                  ]}
                   onPress={toggleAudio}
                 >
-                  <Text style={[styles.muteButtonText, isAudioMuted && styles.muteButtonTextActive]}>
+                  <Text
+                    style={[
+                      styles.muteButtonText,
+                      isAudioMuted && styles.muteButtonTextActive,
+                    ]}
+                  >
                     {isAudioMuted ? "Unmute Agent" : "Mute Agent"}
                   </Text>
                 </TouchableOpacity>
               </View>
             )}
-            <TouchableOpacity style={styles.endButton} onPress={endConversation}>
+            <TouchableOpacity
+              style={styles.endButton}
+              onPress={endConversation}
+            >
               <Text style={styles.endButtonText}>Disconnect</Text>
             </TouchableOpacity>
           </View>

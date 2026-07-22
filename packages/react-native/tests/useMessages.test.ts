@@ -76,14 +76,14 @@ describe("useMessages", () => {
       result.current.handleMessageEvent({
         type: "message_created",
         data: makeMessage({ id: "msg-1", text: "Hello" }),
-      })
+      }),
     );
 
     act(() =>
       result.current.handleMessageEvent({
         type: "message_updated",
         data: makeMessage({ id: "msg-1", text: "Hello world" }),
-      })
+      }),
     );
 
     expect(result.current.messages).toHaveLength(1);
@@ -101,7 +101,7 @@ describe("useMessages", () => {
           role: "agent",
           text: "",
         }),
-      })
+      }),
     );
 
     expect(result.current.thinkingMessageId).toBe("msg-think");
@@ -119,7 +119,7 @@ describe("useMessages", () => {
           role: "agent",
           text: "",
         }),
-      })
+      }),
     );
 
     expect(result.current.thinkingMessageId).toBe("msg-think");
@@ -132,7 +132,7 @@ describe("useMessages", () => {
           role: "agent",
           text: "Thought complete",
         }),
-      })
+      }),
     );
 
     expect(result.current.thinkingMessageId).toBeNull();
@@ -147,7 +147,7 @@ describe("useMessages", () => {
       result.current.handleMessageEvent({
         type: "vad",
         data: { state: "speech" },
-      })
+      }),
     );
 
     expect(result.current.userState).toBe("speaking");
@@ -160,14 +160,14 @@ describe("useMessages", () => {
       result.current.handleMessageEvent({
         type: "vad",
         data: { state: "speech" },
-      })
+      }),
     );
 
     act(() =>
       result.current.handleMessageEvent({
         type: "vad",
         data: { state: "silence" },
-      })
+      }),
     );
 
     expect(result.current.userState).toBe("idle");

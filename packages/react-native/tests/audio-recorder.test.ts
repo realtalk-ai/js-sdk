@@ -50,7 +50,7 @@ describe("AudioRecorder", () => {
       (cb: (pcm: Int16Array) => void) => {
         micCallback = cb;
         return unsubscribe;
-      }
+      },
     );
   });
 
@@ -61,19 +61,19 @@ describe("AudioRecorder", () => {
     await recorder.start(onData);
 
     expect(PermissionsAndroid.request).toHaveBeenCalledWith(
-      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
     );
   });
 
   it("throws when Android permission is denied", async () => {
     vi.mocked(PermissionsAndroid.request).mockResolvedValueOnce(
-      "denied" as any
+      "denied" as any,
     );
 
     const recorder = new AudioRecorder();
 
     await expect(recorder.start(vi.fn())).rejects.toThrow(
-      "Microphone permission not granted"
+      "Microphone permission not granted",
     );
   });
 

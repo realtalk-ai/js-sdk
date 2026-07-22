@@ -59,12 +59,12 @@ describe("AudioRecorder", () => {
 
     vi.stubGlobal(
       "AudioContext",
-      vi.fn(() => mockAudio.ctx)
+      vi.fn(() => mockAudio.ctx),
     );
 
     vi.stubGlobal(
       "AudioWorkletNode",
-      vi.fn(() => mockAudio.workletNode)
+      vi.fn(() => mockAudio.workletNode),
     );
 
     vi.stubGlobal("URL", {
@@ -130,11 +130,11 @@ describe("AudioRecorder", () => {
     });
     vi.stubGlobal(
       "AudioContext",
-      vi.fn(() => mockAudio.ctx)
+      vi.fn(() => mockAudio.ctx),
     );
     vi.stubGlobal(
       "AudioWorkletNode",
-      vi.fn(() => mockAudio.workletNode)
+      vi.fn(() => mockAudio.workletNode),
     );
 
     const onAudioData = vi.fn();
@@ -256,7 +256,7 @@ describe("AudioRecorder", () => {
         mockStream.getTracks()[0] as unknown as {
           stop: ReturnType<typeof vi.fn>;
         }
-      ).stop
+      ).stop,
     ).toHaveBeenCalled();
     expect(mockAudio.ctx.close).toHaveBeenCalled();
   });

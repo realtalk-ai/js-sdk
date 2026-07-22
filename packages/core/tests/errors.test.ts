@@ -42,7 +42,7 @@ describe("ConnectionError", () => {
   it("uses custom message when provided", () => {
     const err = new ConnectionError(
       ConnectionErrorReason.Timeout,
-      "Timed out after 5s"
+      "Timed out after 5s",
     );
     expect(err.message).toBe("Timed out after 5s");
   });

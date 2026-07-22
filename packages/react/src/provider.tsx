@@ -37,7 +37,7 @@ export function RealTalkProvider({
       getToken: getToken ?? null,
       context,
     }),
-    [baseUrl, tokenUrl, getToken, context]
+    [baseUrl, tokenUrl, getToken, context],
   );
 
   return (
@@ -51,7 +51,7 @@ export function useRealTalkConfig(): RealTalkConfig {
   const config = useContext(RealTalkContext);
   if (!config) {
     throw new ValidationError(
-      "useConversation must be used within RealTalkProvider"
+      "useConversation must be used within RealTalkProvider",
     );
   }
   return config;

@@ -89,7 +89,7 @@ export class AudioPlayer {
     this.safetyTimer = setTimeout(() => {
       if (this.isPlaying) {
         console.warn(
-          "[RealTalk AudioPlayer] Safety timeout: forcing playback end"
+          "[RealTalk AudioPlayer] Safety timeout: forcing playback end",
         );
         AudioEngine.stopPlayback();
         this.playbackEndTime = 0;

@@ -35,7 +35,7 @@ export interface UseConnectionReturn {
   conversationId: string | null;
   error: ConversationError | null;
   startConversation: (
-    options: UseConversationSessionOptions
+    options: UseConversationSessionOptions,
   ) => Promise<string>;
   endConversation: () => Promise<void>;
   sendMessage: (text: string) => void;
@@ -79,7 +79,7 @@ export function useConnection(opts: {
   const sessionTokenRef = useRef<string | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
   const intentionalDisconnectRef = useRef(false);
 
@@ -93,7 +93,7 @@ export function useConnection(opts: {
       setConnectionStatus(newStatus);
       optionsRef.current.onConnectionStatusChange?.(newStatus);
     },
-    [optionsRef]
+    [optionsRef],
   );
 
   const updateConversationStatus = useCallback(
@@ -101,7 +101,7 @@ export function useConnection(opts: {
       setStatus(newStatus);
       optionsRef.current.onStatusChange?.(newStatus);
     },
-    [optionsRef]
+    [optionsRef],
   );
 
   const cleanup = useCallback(() => {
@@ -167,7 +167,7 @@ export function useConnection(opts: {
               const conversationError: ConversationError = {
                 error: new ConnectionError(
                   "websocket_failed",
-                  `Connection closed with code ${event.code}`
+                  `Connection closed with code ${event.code}`,
                 ),
                 fatal: true,
                 timestamp: Date.now(),
@@ -202,7 +202,7 @@ export function useConnection(opts: {
       onEvent,
       onClear,
       optionsRef,
-    ]
+    ],
   );
 
   const connect = useCallback(
@@ -214,7 +214,7 @@ export function useConnection(opts: {
       const id = conversationIdRef.current;
       if (!id) {
         throw new ValidationError(
-          "No conversation ID available for connection"
+          "No conversation ID available for connection",
         );
       }
 
@@ -247,7 +247,7 @@ export function useConnection(opts: {
 
       transport.sendEvent({ type: "start", agent_id: agentId });
     },
-    [baseUrl, updateConnectionStatus, handleConversationEvent, onAudio]
+    [baseUrl, updateConnectionStatus, handleConversationEvent, onAudio],
   );
 
   const refreshToken = useCallback(async () => {
@@ -263,7 +263,7 @@ export function useConnection(opts: {
       if (!response.ok) {
         throw new ApiError(
           response.status,
-          `Failed to refresh session token: ${response.status}`
+          `Failed to refresh session token: ${response.status}`,
         );
       }
       const data = (await response.json()) as SessionToken;
@@ -280,7 +280,7 @@ export function useConnection(opts: {
       const conversationError: ConversationError = {
         error: new ConnectionError(
           "websocket_failed",
-          "All reconnection attempts exhausted"
+          "All reconnection attempts exhausted",
         ),
         fatal: true,
         timestamp: Date.now(),
@@ -319,7 +319,7 @@ export function useConnection(opts: {
 
   const resolveToken = useCallback(
     async (
-      sessionOptions: UseConversationSessionOptions
+      sessionOptions: UseConversationSessionOptions,
     ): Promise<string | undefined> => {
       let tokenConversationId: string | undefined;
 
@@ -338,7 +338,7 @@ export function useConnection(opts: {
         if (!response.ok) {
           throw new ApiError(
             response.status,
-            `Failed to fetch session token: ${response.status}`
+            `Failed to fetch session token: ${response.status}`,
           );
         }
         const data = (await response.json()) as SessionToken;
@@ -350,7 +350,7 @@ export function useConnection(opts: {
 
       return tokenConversationId;
     },
-    [getToken, tokenUrl]
+    [getToken, tokenUrl],
   );
 
   const startConversation = useCallback(
@@ -379,7 +379,7 @@ export function useConnection(opts: {
 
       if (!id) {
         throw new ValidationError(
-          "No conversation ID available. Provide conversationId via startConversation options or use a token endpoint that returns conversation_id."
+          "No conversation ID available. Provide conversationId via startConversation options or use a token endpoint that returns conversation_id.",
         );
       }
 
@@ -406,7 +406,7 @@ export function useConnection(opts: {
       setConversationIdBoth,
       optionsRef,
       setMessages,
-    ]
+    ],
   );
 
   const endConversation = useCallback(async () => {

@@ -16,7 +16,7 @@ export class AudioRecorder {
 
     if (Platform.OS === "android") {
       const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
       );
       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
         throw new ValidationError("Microphone permission not granted");

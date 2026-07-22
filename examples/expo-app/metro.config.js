@@ -6,7 +6,7 @@ const config = getDefaultConfig(__dirname);
 
 const localSdkPath = path.resolve(__dirname, "../..");
 const useLocalSdk = fs.existsSync(
-  path.join(localSdkPath, "packages/react-native/src")
+  path.join(localSdkPath, "packages/react-native/src"),
 );
 
 if (useLocalSdk) {
@@ -14,7 +14,7 @@ if (useLocalSdk) {
     "@realtalk-ai/core": path.resolve(localSdkPath, "packages/core"),
     "@realtalk-ai/react-native": path.resolve(
       localSdkPath,
-      "packages/react-native"
+      "packages/react-native",
     ),
   };
 

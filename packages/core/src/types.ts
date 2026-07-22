@@ -155,7 +155,7 @@ export const EventType = {
   Error: "error",
 } as const;
 
-export type EventTypeValue = typeof EventType[keyof typeof EventType];
+export type EventTypeValue = (typeof EventType)[keyof typeof EventType];
 
 export type ClientEvent =
   | { type: "message"; data: string }

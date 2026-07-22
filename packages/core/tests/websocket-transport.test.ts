@@ -141,7 +141,7 @@ describe("WebSocketTransport", () => {
         await p;
       } catch (err) {
         expect((err as ConnectionError).reason).toBe(
-          ConnectionErrorReason.Timeout
+          ConnectionErrorReason.Timeout,
         );
       }
     });
@@ -162,7 +162,7 @@ describe("WebSocketTransport", () => {
           url: "wss://other.com",
           token: "",
           sdkInfo: coreSdkInfo,
-        })
+        }),
       ).rejects.toThrow("Already connected or connecting");
     });
 
@@ -206,7 +206,7 @@ describe("WebSocketTransport", () => {
           token: "",
           sdkInfo: coreSdkInfo,
           signal: controller.signal,
-        })
+        }),
       ).rejects.toThrow(ConnectionError);
     });
   });
@@ -301,7 +301,7 @@ describe("WebSocketTransport", () => {
           type: "media",
           media: { payload: btoa("test") },
           trace_id: "tr-1",
-        })
+        }),
       );
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -348,7 +348,7 @@ describe("WebSocketTransport", () => {
             text: "Hello",
             timestamp: "2025-01-01T00:00:00Z",
           },
-        })
+        }),
       );
 
       expect(handler).toHaveBeenCalledTimes(1);

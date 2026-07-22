@@ -48,7 +48,7 @@ export interface UseConversationReturn {
   isAudioMuted: boolean;
   volume: number;
   startConversation: (
-    options: UseConversationSessionOptions
+    options: UseConversationSessionOptions,
   ) => Promise<string>;
   endConversation: () => Promise<void>;
   sendMessage: (text: string) => void;
@@ -63,7 +63,7 @@ export interface UseConversationReturn {
 }
 
 export function useConversation(
-  options: UseConversationOptions = {}
+  options: UseConversationOptions = {},
 ): UseConversationReturn {
   const { baseUrl, tokenUrl, getToken, context } = useRealTalkConfig();
 
@@ -147,7 +147,7 @@ export function useConversation(
       try {
         await recorder.start(
           (pcm) => sendAudio(pcm),
-          deviceId ? { deviceId } : undefined
+          deviceId ? { deviceId } : undefined,
         );
       } catch (error) {
         recorderRef.current = null;
@@ -155,7 +155,7 @@ export function useConversation(
       }
       setIsMicEnabled(true);
     },
-    [sendAudio]
+    [sendAudio],
   );
 
   const disableMic = useCallback(() => {
@@ -200,14 +200,14 @@ export function useConversation(
 
       return id;
     },
-    [connectionStart, enableMic, volume]
+    [connectionStart, enableMic, volume],
   );
 
   const agentState: AgentState = agentIsSpeaking
     ? "speaking"
     : thinkingMessageId !== null && status !== "finished"
-    ? "thinking"
-    : "idle";
+      ? "thinking"
+      : "idle";
 
   return {
     connectionStatus,

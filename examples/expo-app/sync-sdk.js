@@ -8,7 +8,15 @@ const packages = {
   "@realtalk-ai/react-native": "packages/react-native",
 };
 
-const filesToSync = ["dist", "ios", "android", "package.json", "react-native.config.js", "realtalk-react-native.podspec", "app.plugin.cjs"];
+const filesToSync = [
+  "dist",
+  "ios",
+  "android",
+  "package.json",
+  "react-native.config.js",
+  "realtalk-react-native.podspec",
+  "app.plugin.cjs",
+];
 
 for (const [pkg, pkgDir] of Object.entries(packages)) {
   const src = path.join(sdkRoot, pkgDir);

@@ -117,19 +117,19 @@ const conversation = useConversation(options);
 
 ### Methods
 
-| Method                       | Description                             |
-| ---------------------------- | --------------------------------------- |
-| `startConversation(options)` | Start a conversation session            |
-| `endConversation()`          | Send hangup and end the current session |
-| `sendMessage(text)`          | Send a text message                     |
-| `sendDTMF(digit)`            | Send a DTMF tone                        |
-| `sendEvent(payload)`         | Send a custom event                     |
-| `toggleMic()`                | Toggle microphone mute                  |
-| `toggleAudio()`              | Toggle audio output mute                |
-| `setVolume(volume)`          | Set playback volume                     |
+| Method                       | Description                                                                                  |
+| ---------------------------- | -------------------------------------------------------------------------------------------- |
+| `startConversation(options)` | Start a conversation session                                                                 |
+| `endConversation()`          | Send hangup and end the current session                                                      |
+| `sendMessage(text)`          | Send a text message                                                                          |
+| `sendDTMF(digit)`            | Send a DTMF tone                                                                             |
+| `sendEvent(payload)`         | Send a custom event                                                                          |
+| `toggleMic()`                | Toggle microphone mute                                                                       |
+| `toggleAudio()`              | Toggle audio output mute                                                                     |
+| `setVolume(volume)`          | Set playback volume                                                                          |
 | `enableMic(deviceId?)`       | Ask for mic permission and start streaming, so a text conversation can turn into a voice one |
-| `disableMic()`               | Stop streaming and release the microphone |
-| `clearMessages()`            | Clear the local message array           |
+| `disableMic()`               | Stop streaming and release the microphone                                                    |
+| `clearMessages()`            | Clear the local message array                                                                |
 
 ### Session options
 

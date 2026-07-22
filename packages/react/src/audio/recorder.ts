@@ -53,7 +53,7 @@ export class AudioRecorder {
 
   async start(
     onAudioData: (pcm: Int16Array) => void,
-    options?: { deviceId?: string }
+    options?: { deviceId?: string },
   ): Promise<void> {
     this.onAudioData = onAudioData;
 
@@ -84,7 +84,7 @@ export class AudioRecorder {
 
     this.workletNode = new AudioWorkletNode(
       this.audioContext,
-      "audio-capture-processor"
+      "audio-capture-processor",
     );
 
     const resampleRatio = nativeSampleRate / TARGET_SAMPLE_RATE;

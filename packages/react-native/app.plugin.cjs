@@ -22,7 +22,7 @@ function withRealTalkAudio(config) {
     if (!source.includes("realtalk-react-native")) {
       config.modResults.contents = source.replace(
         /dependencies\s*\{/,
-        `dependencies {\n    implementation project(':realtalk-react-native')`
+        `dependencies {\n    implementation project(':realtalk-react-native')`,
       );
     }
     return config;
@@ -34,11 +34,11 @@ function withRealTalkAudio(config) {
       config.modResults.contents = source
         .replace(
           "import com.facebook.react.ReactPackage",
-          "import com.facebook.react.ReactPackage\nimport ml.realtalk.audio.RealTalkAudioPackage"
+          "import com.facebook.react.ReactPackage\nimport ml.realtalk.audio.RealTalkAudioPackage",
         )
         .replace(
           "// packages.add(MyReactNativePackage())",
-          "// packages.add(MyReactNativePackage())\n            packages.add(RealTalkAudioPackage())"
+          "// packages.add(MyReactNativePackage())\n            packages.add(RealTalkAudioPackage())",
         );
     }
     return config;
@@ -51,5 +51,5 @@ const pkg = require("./package.json");
 module.exports = createRunOncePlugin(
   withRealTalkAudio,
   "realtalk-react-native",
-  pkg.version
+  pkg.version,
 );

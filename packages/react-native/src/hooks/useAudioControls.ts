@@ -14,7 +14,7 @@ export interface UseAudioControlsReturn {
 
 export function useAudioControls(
   playerRef: MutableRefObject<AudioPlayer | null>,
-  recorderRef: MutableRefObject<AudioRecorder | null>
+  recorderRef: MutableRefObject<AudioRecorder | null>,
 ): UseAudioControlsReturn {
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
@@ -33,7 +33,7 @@ export function useAudioControls(
         playerRef.current.setVolume(clamped);
       }
     },
-    [playerRef]
+    [playerRef],
   );
 
   const toggleMic = useCallback(() => {

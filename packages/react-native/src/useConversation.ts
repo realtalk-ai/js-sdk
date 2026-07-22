@@ -47,7 +47,7 @@ export interface UseConversationReturn {
   isAudioMuted: boolean;
   volume: number;
   startConversation: (
-    options: UseConversationSessionOptions
+    options: UseConversationSessionOptions,
   ) => Promise<string>;
   endConversation: () => Promise<void>;
   sendMessage: (text: string) => void;
@@ -59,7 +59,7 @@ export interface UseConversationReturn {
 }
 
 export function useConversation(
-  options: UseConversationOptions = {}
+  options: UseConversationOptions = {},
 ): UseConversationReturn {
   const { baseUrl, tokenUrl, getToken } = useRealTalkConfig();
 
@@ -159,7 +159,7 @@ export function useConversation(
 
       return id;
     },
-    [connectionStart, sendAudio]
+    [connectionStart, sendAudio],
   );
 
   const {
@@ -174,8 +174,8 @@ export function useConversation(
   const agentState: AgentState = agentIsSpeaking
     ? "speaking"
     : thinkingMessageId !== null && status !== "finished"
-    ? "thinking"
-    : "idle";
+      ? "thinking"
+      : "idle";
 
   return {
     connectionStatus,

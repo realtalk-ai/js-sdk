@@ -5,10 +5,7 @@
     "version": "1.0.0",
     "scheme": "realtalk-example",
     "icon": "./assets/icon.png",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "ios": {
       "bundleIdentifier": "ml.realtalk.example",
       "infoPlist": {
@@ -17,13 +14,8 @@
     },
     "android": {
       "package": "ml.realtalk.example",
-      "permissions": [
-        "RECORD_AUDIO"
-      ]
+      "permissions": ["RECORD_AUDIO"]
     },
-    "plugins": [
-      "@realtalk-ai/react-native/app.plugin.cjs",
-      "expo-router"
-    ]
+    "plugins": ["@realtalk-ai/react-native/app.plugin.cjs", "expo-router"]
   }
 }

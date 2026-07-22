@@ -160,7 +160,7 @@ describe("useConnection", () => {
             token: "url-token",
             conversation_id: "url-conv-1",
           }),
-      })
+      }),
     );
 
     const opts = defaultOpts();
@@ -187,7 +187,7 @@ describe("useConnection", () => {
     await expect(
       act(async () => {
         await result.current.startConversation({ agentId: "agent-1" });
-      })
+      }),
     ).rejects.toThrow("No conversation ID available");
   });
 
@@ -245,7 +245,7 @@ describe("useConnection", () => {
           agentId: "agent-1",
           conversationId: "conv-1",
         });
-      })
+      }),
     ).rejects.toThrow("Conversation already active");
   });
 
@@ -265,7 +265,7 @@ describe("useConnection", () => {
     });
 
     const transport = vi.mocked(
-      (await import("@realtalk-ai/core")).WebSocketTransport
+      (await import("@realtalk-ai/core")).WebSocketTransport,
     ).mock.results[0].value;
     expect(transport.sendEvent).toHaveBeenCalledWith({
       type: "end_conversation",
@@ -297,7 +297,7 @@ describe("useConnection", () => {
     act(() => result.current.sendMessage("hello"));
 
     const transport = vi.mocked(
-      (await import("@realtalk-ai/core")).WebSocketTransport
+      (await import("@realtalk-ai/core")).WebSocketTransport,
     ).mock.results[0].value;
     expect(transport.sendEvent).toHaveBeenCalledWith({
       type: "message",
@@ -319,7 +319,7 @@ describe("useConnection", () => {
     act(() => result.current.sendDTMF("5"));
 
     const transport = vi.mocked(
-      (await import("@realtalk-ai/core")).WebSocketTransport
+      (await import("@realtalk-ai/core")).WebSocketTransport,
     ).mock.results[0].value;
     expect(transport.sendEvent).toHaveBeenCalledWith({
       event: "dtmf",
@@ -341,7 +341,7 @@ describe("useConnection", () => {
     act(() => result.current.sendEvent({ type: "custom", foo: "bar" }));
 
     const transport = vi.mocked(
-      (await import("@realtalk-ai/core")).WebSocketTransport
+      (await import("@realtalk-ai/core")).WebSocketTransport,
     ).mock.results[0].value;
     expect(transport.sendEvent).toHaveBeenCalledWith({
       type: "custom",
@@ -484,7 +484,7 @@ describe("useConnection", () => {
     });
 
     expect(mockTransport.connect).toHaveBeenCalledWith(
-      expect.objectContaining({ token: "my-token" })
+      expect.objectContaining({ token: "my-token" }),
     );
   });
 
@@ -573,7 +573,7 @@ describe("useConnection", () => {
           agentId: "agent-1",
           conversationId: "conv-1",
         });
-      })
+      }),
     ).rejects.toThrow("WS failed");
 
     expect(result.current.connectionStatus).toBe("disconnected");
@@ -598,7 +598,7 @@ describe("useConnection", () => {
 
     expect(opts.getToken).not.toHaveBeenCalled();
     expect(mockTransport.connect).toHaveBeenCalledWith(
-      expect.objectContaining({ token: "direct-token" })
+      expect.objectContaining({ token: "direct-token" }),
     );
   });
 
@@ -608,7 +608,7 @@ describe("useConnection", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ token: "url-token" }),
-      })
+      }),
     );
 
     const opts = defaultOpts();
@@ -639,7 +639,7 @@ describe("useConnection", () => {
             token: "url-token",
             conversation_id: "url-conv-1",
           }),
-      })
+      }),
     );
 
     const opts = defaultOpts();
@@ -674,7 +674,7 @@ describe("useConnection", () => {
           version: expect.any(String),
           context: "mobile_app",
         },
-      })
+      }),
     );
   });
 

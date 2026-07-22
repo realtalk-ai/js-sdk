@@ -1,8 +1,10 @@
 import { Stack } from "expo-router";
 import { RealTalkProvider } from "@realtalk-ai/react-native";
 
-const TOKEN_URL = process.env.EXPO_PUBLIC_TOKEN_URL ?? "http://localhost:8000/api/token";
-const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL ?? "ws://localhost:8000/api/v1";
+const TOKEN_URL =
+  process.env.EXPO_PUBLIC_TOKEN_URL ?? "http://localhost:8000/api/token";
+const BASE_URL =
+  process.env.EXPO_PUBLIC_BASE_URL ?? "ws://localhost:8000/api/v1";
 
 export default function RootLayout() {
   return (
