@@ -10,7 +10,8 @@
     "typecheck": "turbo typecheck",
     "embed-demo": "turbo build --filter @realtalk-ai/embed && http-server . -a 127.0.0.1 -p 4173 -c-1",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "release": "pnpm install && pnpm build && changeset publish"
   },
   "lint-staged": {
     "*": "prettier --check --ignore-unknown"

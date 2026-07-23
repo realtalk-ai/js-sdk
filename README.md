@@ -111,6 +111,44 @@ pnpm --filter @realtalk-ai/react test
 pnpm --filter @realtalk-ai/react-native test
 ```
 
+## Releasing (for maintainers)
+
+Versioning and publishing are managed with [Changesets](https://github.com/changesets/changesets).
+
+### 1. With each PR that changes a package
+
+```bash
+pnpm changeset
+```
+
+Select the affected packages, pick a bump level (patch/minor/major), and write a one-line summary. Commit the generated `.changeset/*.md` file together with your changes. Skip this step for changes that don't need a release (docs, CI, tooling).
+
+### 2. When it's time to release
+
+```bash
+pnpm changeset version
+```
+
+This consumes all pending changesets: it bumps the affected `package.json` versions and updates each package's `CHANGELOG.md`. Review and commit the result:
+
+```bash
+git add -A && git commit -m "chore: version packages"
+```
+
+### 3. Publish
+
+```bash
+# Installs, builds, publishes unpublished packages to npm, and creates local git tags
+pnpm release
+
+# Pushes the branch commits and the release tags to the remote
+git push --follow-tags
+```
+
+`pnpm release` installs, builds all packages in dependency order, and publishes every package whose local version is not on npm yet, creating one git tag per published package (e.g. `@realtalk-ai/core@0.3.0`). Always publish through `pnpm release` — a bare `pnpm publish` skips the build.
+
+Publishing requires an npm account (`npm login`) with publish access to the `@realtalk-ai` organization.
+
 ## License
 
 MIT

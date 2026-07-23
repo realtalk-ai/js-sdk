@@ -14,7 +14,6 @@
     "dist"
   ],
   "scripts": {
-    "prepack": "pnpm build",
     "build": "vite build",
     "dev": "vite build --watch",
     "clean": "rm -rf dist .turbo",
