@@ -21,7 +21,6 @@
     "app.plugin.cjs"
   ],
   "scripts": {
-    "prepack": "pnpm build",
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist .turbo",
