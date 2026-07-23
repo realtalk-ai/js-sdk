@@ -6,6 +6,7 @@
 [![npm core](https://img.shields.io/npm/v/@realtalk-ai/core?label=%40realtalk-ai%2Fcore)](https://www.npmjs.com/package/@realtalk-ai/core)
 [![npm react](https://img.shields.io/npm/v/@realtalk-ai/react?label=%40realtalk-ai%2Freact)](https://www.npmjs.com/package/@realtalk-ai/react)
 [![npm react-native](https://img.shields.io/npm/v/@realtalk-ai/react-native?label=%40realtalk-ai%2Freact-native)](https://www.npmjs.com/package/@realtalk-ai/react-native)
+[![npm embed](https://img.shields.io/npm/v/@realtalk-ai/embed?label=%40realtalk-ai%2Fembed)](https://www.npmjs.com/package/@realtalk-ai/embed)
 
 TypeScript SDK's for building voice agents with [Real Talk](https://realtalk.ml/home).
 
