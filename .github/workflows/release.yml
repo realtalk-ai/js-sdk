@@ -30,7 +30,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - uses: changesets/action@v1
+        id: changesets
         with:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.CHANGESETS_TOKEN || github.token }}
+
+      - name: Purge jsDelivr cache for the embed widget
+        if: steps.changesets.outputs.published == 'true' && contains(steps.changesets.outputs.publishedPackages, '@realtalk-ai/embed')
+        run: curl -fsS https://purge.jsdelivr.net/npm/@realtalk-ai/embed || echo "purge failed, CDN cache will refresh on its own"
