@@ -123,31 +123,24 @@ pnpm changeset
 
 Select the affected packages, pick a bump level (patch/minor/major), and write a one-line summary. Commit the generated `.changeset/*.md` file together with your changes. Skip this step for changes that don't need a release (docs, CI, tooling). If CI's changeset check still complains about such a change, add an empty changeset with `pnpm changeset --empty`.
 
-### 2. When it's time to release
+### 2. The Version Packages PR
 
-```bash
-pnpm changeset version
-```
+Whenever pending changesets exist on `main`, the Release workflow opens (and keeps updating) a **"Version Packages"** PR from the `changeset-release/main` branch. Its diff is the combined result of all pending changesets: bumped `package.json` versions, updated changelogs, and the consumed changeset files removed. It is a live preview of the next release — more changesets merged to `main` update it automatically, and it can stay open as long as you like.
 
-This consumes all pending changesets: it bumps the affected `package.json` versions and updates each package's `CHANGELOG.md`. Review and commit the result:
+### 3. Merge it to release
 
-```bash
-git add -A && git commit -m "chore: version packages"
-```
+Merging the Version Packages PR is the release. The Release workflow builds all packages in dependency order, publishes every package whose version is not on npm yet, pushes one git tag per published package (e.g. `@realtalk-ai/core@0.3.0`), and creates matching GitHub releases with the changelog entries as notes.
 
-### 3. Publish
+Publishing authenticates with npm via [trusted publishing (OIDC)](https://docs.npmjs.com/trusted-publishers) — no npm token is stored anywhere and no `npm login` is involved.
 
-```bash
-# Installs, builds, publishes unpublished packages to npm, and creates local git tags
-pnpm release
+### One-time setup (already done, documented for reference)
 
-# Pushes the branch commits and the release tags to the remote
-git push --follow-tags
-```
+- Each `@realtalk-ai` package on npmjs.com has a trusted publisher configured: GitHub Actions, repository `realtalk-ai/js-sdk`, workflow `release.yml`.
+- The repo has a `CHANGESETS_TOKEN` actions secret containing a fine-grained PAT with contents + pull-requests write access. The workflow uses it to open the Version Packages PR, because PRs created with the default `GITHUB_TOKEN` never trigger CI and would be blocked by the required checks.
 
-`pnpm release` installs, builds all packages in dependency order, and publishes every package whose local version is not on npm yet, creating one git tag per published package (e.g. `@realtalk-ai/core@0.3.0`). Always publish through `pnpm release` — a bare `pnpm publish` skips the build.
+### Manual release (fallback)
 
-Publishing requires an npm account (`npm login`) with publish access to the `@realtalk-ai` organization.
+The old local flow still works if CI is unavailable: run `pnpm changeset version` on a branch, merge it via PR, then from an up-to-date `main` checkout run `pnpm release && git push --follow-tags`. This requires `npm login` with publish access to `@realtalk-ai` and prompts for a 2FA code.
 
 ## License
 
