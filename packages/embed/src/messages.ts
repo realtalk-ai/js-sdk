@@ -13,11 +13,3 @@ export function hasVisibleContent(message: Message): boolean {
   const hasSubTasks = (message.metadata?.subTasks?.length ?? 0) > 0;
   return hasText || hasSubTasks;
 }
-
-export function hasPendingSubTasks(messages: Message[]): boolean {
-  const latestAgentMessage = [...messages]
-    .reverse()
-    .find((message) => message.role === "agent");
-  const subTasks = latestAgentMessage?.metadata?.subTasks ?? [];
-  return subTasks.some((subTask) => subTask.status === "pending");
-}

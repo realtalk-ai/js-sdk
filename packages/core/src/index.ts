@@ -33,6 +33,8 @@ export {
 
 export { normalizeMessage, sortChronological } from "./events.js";
 
+export { hasPendingSubTasks } from "./messages.js";
+
 export { pcmToBase64, base64ToPcm } from "./audio.js";
 
 export { DEFAULT_WS_URL } from "./constants.js";

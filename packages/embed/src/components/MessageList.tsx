@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useRef } from "react";
-import type { AgentState, Message } from "@realtalk-ai/core";
 import {
-  formatMessageText,
   hasPendingSubTasks,
-  hasVisibleContent,
-} from "../messages.js";
+  type AgentState,
+  type Message,
+} from "@realtalk-ai/core";
+import { formatMessageText, hasVisibleContent } from "../messages.js";
 import { SubTasksBadge } from "./SubTasksBadge.js";
 
 export function MessageList({
