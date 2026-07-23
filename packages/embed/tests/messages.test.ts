@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Message, SubTask, SubTaskStatus } from "@realtalk-ai/core";
-import {
-  formatMessageText,
-  hasPendingSubTasks,
-  hasVisibleContent,
-} from "../src/messages.js";
+import { formatMessageText, hasVisibleContent } from "../src/messages.js";
 
 function message(overrides: Partial<Message>): Message {
   return {
@@ -48,39 +44,5 @@ describe("hasVisibleContent", () => {
       metadata: { subTasks: [subTask("t1", "look_up", "pending")] },
     });
     expect(hasVisibleContent(withSubTasks)).toBe(true);
-  });
-});
-
-describe("hasPendingSubTasks", () => {
-  it("is false with no messages", () => {
-    expect(hasPendingSubTasks([])).toBe(false);
-  });
-
-  it("only considers the latest agent message", () => {
-    const messages = [
-      message({
-        id: "old",
-        metadata: {
-          subTasks: [subTask("t1", "look_up", "pending")],
-        },
-      }),
-      message({ id: "latest", metadata: { subTasks: [] } }),
-    ];
-    expect(hasPendingSubTasks(messages)).toBe(false);
-  });
-
-  it("is true while the latest agent message has a pending sub-task", () => {
-    const messages = [
-      message({
-        metadata: {
-          subTasks: [
-            subTask("t1", "look_up", "completed"),
-            subTask("t2", "send_email", "pending"),
-          ],
-        },
-      }),
-      message({ id: "user-1", role: "user", text: "hi" }),
-    ];
-    expect(hasPendingSubTasks(messages)).toBe(true);
   });
 });
