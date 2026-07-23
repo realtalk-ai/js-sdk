@@ -7,10 +7,10 @@ Add your [Real Talk](https://realtalk.ml/home) agent to any website as a floatin
 
 ```html
 <realtalk-embed agent-id="YOUR_AGENT_ID"></realtalk-embed>
-<script src="https://cdn.jsdelivr.net/npm/@realtalk-ai/embed@0" async></script>
+<script src="https://cdn.jsdelivr.net/npm/@realtalk-ai/embed" async></script>
 ```
 
-There is nothing to install or build. The script is a single self-contained file served from [jsDelivr](https://www.jsdelivr.com/) (unpkg also works). The `@0` in the URL means the page always loads the newest 0.x release: improvements and fixes reach your site automatically without touching the snippet, while a future breaking 1.0 will never load until you opt in by updating the URL. New releases roll out as the CDN's cache refreshes, typically within about 12 hours. If your organization requires strict change control, you can pin an exact version instead, e.g. `@realtalk-ai/embed@0.1.1`.
+There is nothing to install or build. The script is a single self-contained file served from [jsDelivr](https://www.jsdelivr.com/) (unpkg also works), and the snippet always loads the newest release: improvements and fixes reach your site automatically, and you never need to touch the snippet again. We treat the `<realtalk-embed>` element and its attributes as a stable API — widget updates will not break an embedded page, and if we ever need an incompatible widget we will ship it under a new URL rather than change this one. New releases roll out as the CDN's cache refreshes, typically within about 12 hours. If your organization requires strict change control, you can pin an exact version instead, e.g. `@realtalk-ai/embed@0.1.1`.
 
 The script registers the `<realtalk-embed>` element and renders into a shadow root, so the widget's styles and your site's styles can't interfere with each other.
 
