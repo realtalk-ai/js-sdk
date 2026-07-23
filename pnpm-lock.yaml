@@ -40,13 +40,14 @@ importers:
         version: 3.2.4(@types/node@25.3.2)(jsdom@28.1.0)(lightningcss@1.27.0)(terser@5.46.0)(yaml@2.9.0)
 
   packages/embed:
-    devDependencies:
+    dependencies:
       '@realtalk-ai/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       '@realtalk-ai/react':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../react
+    devDependencies:
       '@types/react':
         specifier: ^18.0.0
         version: 18.3.28
