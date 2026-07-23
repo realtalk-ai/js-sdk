@@ -22,8 +22,6 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@realtalk-ai/core": "workspace:^",
-    "@realtalk-ai/react": "workspace:^",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "jsdom": "^28.0.0",
@@ -36,5 +34,9 @@
   "publishConfig": {
     "access": "public"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@realtalk-ai/core": "workspace:*",
+    "@realtalk-ai/react": "workspace:*"
+  }
 }
