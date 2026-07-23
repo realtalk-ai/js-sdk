@@ -121,7 +121,7 @@ Versioning and publishing are managed with [Changesets](https://github.com/chang
 pnpm changeset
 ```
 
-Select the affected packages, pick a bump level (patch/minor/major), and write a one-line summary. Commit the generated `.changeset/*.md` file together with your changes. Skip this step for changes that don't need a release (docs, CI, tooling).
+Select the affected packages, pick a bump level (patch/minor/major), and write a one-line summary. Commit the generated `.changeset/*.md` file together with your changes. Skip this step for changes that don't need a release (docs, CI, tooling). If CI's changeset check still complains about such a change, add an empty changeset with `pnpm changeset --empty`.
 
 ### 2. When it's time to release
 
