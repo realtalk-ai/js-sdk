@@ -38,5 +38,10 @@
   "dependencies": {
     "@realtalk-ai/core": "workspace:*",
     "@realtalk-ai/react": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/realtalk-ai/js-sdk.git",
+    "directory": "packages/embed"
   }
 }

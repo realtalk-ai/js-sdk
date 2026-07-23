@@ -39,5 +39,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/realtalk-ai/js-sdk.git",
+    "directory": "packages/react"
+  }
 }
