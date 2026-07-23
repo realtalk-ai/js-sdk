@@ -1,13 +1,18 @@
 # @realtalk-ai/embed
 
+[![CI](https://github.com/realtalk-ai/js-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/realtalk-ai/js-sdk/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@realtalk-ai/embed)](https://www.npmjs.com/package/@realtalk-ai/embed)
+
 Add your [Real Talk](https://realtalk.ml/home) agent to any website as a floating chat widget, with both text and voice, by pasting two lines of HTML:
 
 ```html
 <realtalk-embed agent-id="YOUR_AGENT_ID"></realtalk-embed>
-<script src="https://unpkg.com/@realtalk-ai/embed" async></script>
+<script src="https://cdn.jsdelivr.net/npm/@realtalk-ai/embed@0" async></script>
 ```
 
-There is nothing to install or build. The script is a single self-contained file served from a CDN (unpkg or jsDelivr both work). Pin a version in production, e.g. `https://unpkg.com/@realtalk-ai/embed@0.1.0`. The script registers the `<realtalk-embed>` element and renders into a shadow root, so the widget's styles and your site's styles can't interfere with each other.
+There is nothing to install or build. The script is a single self-contained file served from [jsDelivr](https://www.jsdelivr.com/) (unpkg also works). The `@0` in the URL means the page always loads the newest 0.x release: improvements and fixes reach your site automatically without touching the snippet, while a future breaking 1.0 will never load until you opt in by updating the URL. New releases roll out as the CDN's cache refreshes, typically within about 12 hours. If your organization requires strict change control, you can pin an exact version instead, e.g. `@realtalk-ai/embed@0.1.1`.
+
+The script registers the `<realtalk-embed>` element and renders into a shadow root, so the widget's styles and your site's styles can't interfere with each other.
 
 ## Enabling embedding for your agent
 
