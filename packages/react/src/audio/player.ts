@@ -1,3 +1,5 @@
+import type { AudioSource } from "@realtalk-ai/core";
+
 const TARGET_SAMPLE_RATE = 16000;
 const BUFFER_THRESHOLD_MS = 100;
 const BUFFER_THRESHOLD_SAMPLES =
@@ -13,96 +15,145 @@ export interface AudioPlayerCallbacks {
   onPlaybackEnd?: (traceId: string) => void;
 }
 
+interface SourceStream {
+  queue: QueuedChunk[];
+  bufferedSamples: number;
+  isPlaying: boolean;
+  scheduledEndTime: number;
+  currentTraceId: string | null;
+  gainNode: GainNode;
+}
+
 export class AudioPlayer {
   private audioContext: AudioContext | null = null;
-  private queue: QueuedChunk[] = [];
-  private isPlaying = false;
-  private currentTraceId: string | null = null;
-  private gainNode: GainNode | null = null;
+  private masterGain: GainNode | null = null;
+  private streams = new Map<AudioSource, SourceStream>();
   private callbacks: AudioPlayerCallbacks;
-  private bufferedSamples = 0;
-  private scheduledEndTime = 0;
   private volume = 1;
 
   constructor(callbacks: AudioPlayerCallbacks = {}) {
     this.callbacks = callbacks;
   }
 
-  async play(pcm: Int16Array, traceId: string): Promise<void> {
+  async play(
+    pcm: Int16Array,
+    traceId: string,
+    source: AudioSource = "agent",
+  ): Promise<void> {
     if (!this.audioContext) {
       this.audioContext = new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
-      this.gainNode = this.audioContext.createGain();
-      this.gainNode.gain.value = this.volume;
-      this.gainNode.connect(this.audioContext.destination);
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.gain.value = this.volume;
+      this.masterGain.connect(this.audioContext.destination);
     }
 
     if (this.audioContext.state === "suspended") {
       await this.audioContext.resume();
     }
 
-    this.queue.push({ pcm, traceId });
-    this.bufferedSamples += pcm.length;
+    const stream = this.getStream(source);
+    stream.queue.push({ pcm, traceId });
+    stream.bufferedSamples += pcm.length;
 
-    if (!this.isPlaying && this.bufferedSamples >= BUFFER_THRESHOLD_SAMPLES) {
-      this.processQueue();
+    if (
+      !stream.isPlaying &&
+      stream.bufferedSamples >= BUFFER_THRESHOLD_SAMPLES
+    ) {
+      this.processQueue(source);
     }
   }
 
   clear(): void {
-    this.queue = [];
-    this.bufferedSamples = 0;
-    this.isPlaying = false;
-    this.scheduledEndTime = 0;
-
-    if (this.currentTraceId) {
-      this.callbacks.onPlaybackEnd?.(this.currentTraceId);
-      this.currentTraceId = null;
-    }
-
-    if (this.audioContext && this.gainNode) {
-      this.gainNode.disconnect();
-      this.gainNode = this.audioContext.createGain();
-      this.gainNode.gain.value = this.volume;
-      this.gainNode.connect(this.audioContext.destination);
-    }
+    this.clearStream("agent");
   }
 
   stop(): void {
-    this.clear();
+    for (const source of this.streams.keys()) {
+      this.clearStream(source);
+    }
+    this.streams.clear();
 
     if (this.audioContext) {
       this.audioContext.close();
       this.audioContext = null;
-      this.gainNode = null;
+      this.masterGain = null;
     }
   }
 
   setVolume(volume: number): void {
     this.volume = Math.max(0, Math.min(1, volume));
-    if (this.gainNode) {
-      this.gainNode.gain.value = this.volume;
+    if (this.masterGain) {
+      this.masterGain.gain.value = this.volume;
     }
     if (this.volume > 0 && this.audioContext?.state === "suspended") {
       void this.audioContext.resume().catch(() => {});
     }
   }
 
-  private processQueue(): void {
-    if (!this.audioContext || !this.gainNode || this.queue.length === 0) {
-      this.isPlaying = false;
+  private getStream(source: AudioSource): SourceStream {
+    let stream = this.streams.get(source);
+    if (!stream) {
+      const gainNode = this.audioContext!.createGain();
+      gainNode.connect(this.masterGain!);
+      stream = {
+        queue: [],
+        bufferedSamples: 0,
+        isPlaying: false,
+        scheduledEndTime: 0,
+        currentTraceId: null,
+        gainNode,
+      };
+      this.streams.set(source, stream);
+    }
+    return stream;
+  }
+
+  private clearStream(source: AudioSource): void {
+    const stream = this.streams.get(source);
+    if (!stream) {
       return;
     }
 
-    this.isPlaying = true;
-    const chunk = this.queue.shift()!;
-    this.bufferedSamples -= chunk.pcm.length;
+    stream.queue = [];
+    stream.bufferedSamples = 0;
+    stream.isPlaying = false;
+    stream.scheduledEndTime = 0;
 
-    if (this.currentTraceId !== chunk.traceId) {
-      if (this.currentTraceId) {
-        this.callbacks.onPlaybackEnd?.(this.currentTraceId);
+    if (stream.currentTraceId) {
+      if (source === "agent") {
+        this.callbacks.onPlaybackEnd?.(stream.currentTraceId);
       }
-      this.currentTraceId = chunk.traceId;
-      this.callbacks.onPlaybackStart?.(chunk.traceId);
+      stream.currentTraceId = null;
+    }
+
+    if (this.audioContext && this.masterGain) {
+      stream.gainNode.disconnect();
+      stream.gainNode = this.audioContext.createGain();
+      stream.gainNode.connect(this.masterGain);
+    }
+  }
+
+  private processQueue(source: AudioSource): void {
+    const stream = this.streams.get(source);
+    if (!this.audioContext || !stream || stream.queue.length === 0) {
+      if (stream) {
+        stream.isPlaying = false;
+      }
+      return;
+    }
+
+    stream.isPlaying = true;
+    const chunk = stream.queue.shift()!;
+    stream.bufferedSamples -= chunk.pcm.length;
+
+    if (stream.currentTraceId !== chunk.traceId) {
+      if (source === "agent") {
+        if (stream.currentTraceId) {
+          this.callbacks.onPlaybackEnd?.(stream.currentTraceId);
+        }
+        this.callbacks.onPlaybackStart?.(chunk.traceId);
+      }
+      stream.currentTraceId = chunk.traceId;
     }
 
     const floatData = this.int16ToFloat32(chunk.pcm);
@@ -113,29 +164,31 @@ export class AudioPlayer {
     );
     audioBuffer.getChannelData(0).set(floatData);
 
-    const source = this.audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(this.gainNode);
+    const bufferSource = this.audioContext.createBufferSource();
+    bufferSource.buffer = audioBuffer;
+    bufferSource.connect(stream.gainNode);
 
     const startTime = Math.max(
       this.audioContext.currentTime,
-      this.scheduledEndTime,
+      stream.scheduledEndTime,
     );
-    source.start(startTime);
+    bufferSource.start(startTime);
 
     const duration = audioBuffer.duration;
-    this.scheduledEndTime = startTime + duration;
+    stream.scheduledEndTime = startTime + duration;
 
-    source.onended = () => {
-      if (this.queue.length > 0) {
-        this.processQueue();
+    bufferSource.onended = () => {
+      if (stream.queue.length > 0) {
+        this.processQueue(source);
       } else {
-        this.isPlaying = false;
-        if (this.currentTraceId) {
-          this.callbacks.onPlaybackEnd?.(this.currentTraceId);
-          this.currentTraceId = null;
+        stream.isPlaying = false;
+        if (stream.currentTraceId) {
+          if (source === "agent") {
+            this.callbacks.onPlaybackEnd?.(stream.currentTraceId);
+          }
+          stream.currentTraceId = null;
         }
-        this.scheduledEndTime = 0;
+        stream.scheduledEndTime = 0;
       }
     };
   }

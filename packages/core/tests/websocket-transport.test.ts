@@ -306,6 +306,31 @@ describe("WebSocketTransport", () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler.mock.calls[0][1]).toBe("tr-1");
+      expect(handler.mock.calls[0][2]).toBe("agent");
+    });
+
+    it("emits audio events with the user source from media.source", async () => {
+      const transport = new WebSocketTransport();
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "",
+        sdkInfo: coreSdkInfo,
+      });
+      mockWs.simulateOpen();
+      await p;
+
+      const handler = vi.fn();
+      transport.onAudio(handler);
+
+      mockWs.simulateMessage(
+        JSON.stringify({
+          type: "media",
+          media: { payload: btoa("test"), source: "user" },
+        }),
+      );
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler.mock.calls[0][2]).toBe("user");
     });
 
     it("emits transport events for non-media messages", async () => {

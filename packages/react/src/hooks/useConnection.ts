@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { MutableRefObject, Dispatch, SetStateAction } from "react";
 import type {
+  AudioSource,
   ClientEvent,
   ConnectionStatus,
   ConversationStatus,
@@ -53,7 +54,7 @@ export function useConnection(opts: {
   optionsRef: MutableRefObject<UseConversationOptions>;
   onEvent: (event: ConversationEvent) => void;
   setMessages: Dispatch<SetStateAction<Message[]>>;
-  onAudio: (pcm: Int16Array, traceId: string) => void;
+  onAudio: (pcm: Int16Array, traceId: string, source: AudioSource) => void;
   onClear: () => void;
   onCleanup: () => void;
 }): UseConnectionReturn {
@@ -226,8 +227,8 @@ export function useConnection(opts: {
       const transport = new WebSocketTransport();
       transportRef.current = transport;
 
-      transport.onAudio((pcmData, traceId) => {
-        onAudio(pcmData, traceId);
+      transport.onAudio((pcmData, traceId, source) => {
+        onAudio(pcmData, traceId, source);
       });
 
       transport.onEvent((event) => {

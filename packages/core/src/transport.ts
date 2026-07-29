@@ -1,4 +1,5 @@
 import type {
+  AudioSource,
   ConnectionStatus,
   ClientEvent,
   ConversationEvent,
@@ -26,7 +27,13 @@ export interface AudioTransport {
   gracefulDisconnect(timeoutMs?: number): Promise<void>;
   sendAudio(pcmData: Int16Array): void;
   sendEvent(payload: ClientEvent): void;
-  onAudio(callback: (pcmData: Int16Array, traceId: string) => void): void;
+  onAudio(
+    callback: (
+      pcmData: Int16Array,
+      traceId: string,
+      source: AudioSource,
+    ) => void,
+  ): void;
   onEvent(callback: (event: ConversationEvent) => void): void;
   onStatusChange(callback: (status: ConnectionStatus) => void): void;
   removeAllListeners(): void;

@@ -138,6 +138,8 @@ export type AgentState = "idle" | "thinking" | "speaking";
 
 export type UserState = "idle" | "speaking";
 
+export type AudioSource = "agent" | "user";
+
 export interface ConversationError {
   error: Error;
   fatal: boolean;
