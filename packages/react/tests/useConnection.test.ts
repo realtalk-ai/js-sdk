@@ -405,10 +405,10 @@ describe("useConnection", () => {
 
     const pcm = new Int16Array(160);
     await act(async () => {
-      onAudioCb(pcm, "trace-1");
+      onAudioCb(pcm, "trace-1", "user");
     });
 
-    expect(opts.onAudio).toHaveBeenCalledWith(pcm, "trace-1");
+    expect(opts.onAudio).toHaveBeenCalledWith(pcm, "trace-1", "user");
   });
 
   it("startConversation passes token to WS connect", async () => {

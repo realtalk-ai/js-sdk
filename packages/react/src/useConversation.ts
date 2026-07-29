@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from "react";
 import type {
   AgentState,
+  AudioSource,
   ClientEvent,
   ConnectionStatus,
   ConversationStatus,
@@ -76,9 +77,12 @@ export function useConversation(
   const [isMicEnabled, setIsMicEnabled] = useState(false);
   const sendEventRef = useRef<(payload: ClientEvent) => void>(() => {});
 
-  const handleAudio = useCallback((pcm: Int16Array, traceId: string) => {
-    playerRef.current?.play(pcm, traceId);
-  }, []);
+  const handleAudio = useCallback(
+    (pcm: Int16Array, traceId: string, source: AudioSource) => {
+      playerRef.current?.play(pcm, traceId, source);
+    },
+    [],
+  );
 
   const handleClear = useCallback(() => {
     playerRef.current?.clear();

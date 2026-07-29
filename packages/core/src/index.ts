@@ -17,6 +17,7 @@ export type {
   ConversationError,
   AgentState,
   UserState,
+  AudioSource,
   ClientEvent,
   ConversationEvent,
 } from "./types.js";

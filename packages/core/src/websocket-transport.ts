@@ -1,5 +1,6 @@
 import type { AudioTransport, ConnectOptions } from "./transport.js";
 import type {
+  AudioSource,
   ClientEvent,
   ConnectionStatus,
   ConversationEvent,
@@ -25,7 +26,7 @@ export interface WebSocketTransportOptions {
 }
 
 type ConversationEventMap = {
-  audio: [pcmData: Int16Array, traceId: string];
+  audio: [pcmData: Int16Array, traceId: string, source: AudioSource];
   event: [event: ConversationEvent];
   statusChange: [status: ConnectionStatus];
 };
@@ -166,7 +167,13 @@ export class WebSocketTransport implements AudioTransport {
     this.ws.send(JSON.stringify(convertEventForTransport(payload)));
   }
 
-  onAudio(callback: (pcmData: Int16Array, traceId: string) => void): void {
+  onAudio(
+    callback: (
+      pcmData: Int16Array,
+      traceId: string,
+      source: AudioSource,
+    ) => void,
+  ): void {
     this.emitter.on("audio", callback);
   }
 
@@ -347,7 +354,9 @@ export class WebSocketTransport implements AudioTransport {
       if (message.type === "media" && message.media?.payload) {
         const pcmData = base64ToPcm(message.media.payload);
         const traceId = message.trace_id ?? "default";
-        this.emitter.emit("audio", pcmData, traceId);
+        const source: AudioSource =
+          message.media.source === "user" ? "user" : "agent";
+        this.emitter.emit("audio", pcmData, traceId, source);
         return;
       }
 

@@ -149,7 +149,7 @@ describe("AudioPlayer", () => {
     expect(mockCtx.gainNode.gain.value).toBe(1);
   });
 
-  it("clear() preserves gain value when recreating GainNode", async () => {
+  it("clear() preserves volume on the master gain when recreating stream gain", async () => {
     const gainNodes: Array<{
       gain: { value: number };
       connect: ReturnType<typeof vi.fn>;
@@ -173,8 +173,53 @@ describe("AudioPlayer", () => {
 
     player.clear();
 
-    expect(gainNodes.length).toBe(2);
-    expect(gainNodes[1].gain.value).toBe(0);
+    expect(gainNodes.length).toBe(3);
+    expect(gainNodes[0].gain.value).toBe(0);
+  });
+
+  it("schedules agent and user streams on independent timelines", async () => {
+    const player = new AudioPlayer();
+
+    await player.play(new Int16Array(3200), "agent-1", "agent");
+    await player.play(new Int16Array(1600), "default", "user");
+
+    const agentSource = mockCtx.ctx.createBufferSource.mock.results[0].value;
+    const userSource = mockCtx.ctx.createBufferSource.mock.results[1].value;
+    expect(agentSource.start).toHaveBeenCalledWith(0);
+    expect(userSource.start).toHaveBeenCalledWith(0);
+  });
+
+  it("does not fire playback callbacks for the user stream", async () => {
+    const onPlaybackStart = vi.fn();
+    const onPlaybackEnd = vi.fn();
+    const player = new AudioPlayer({ onPlaybackStart, onPlaybackEnd });
+
+    await player.play(new Int16Array(1600), "default", "user");
+
+    const source = mockCtx.ctx.createBufferSource.mock.results[0].value;
+    source.onended();
+
+    expect(onPlaybackStart).not.toHaveBeenCalled();
+    expect(onPlaybackEnd).not.toHaveBeenCalled();
+  });
+
+  it("clear() flushes the agent stream but keeps the user stream timeline", async () => {
+    const onPlaybackEnd = vi.fn();
+    const player = new AudioPlayer({ onPlaybackEnd });
+
+    await player.play(new Int16Array(1600), "agent-1", "agent");
+    await player.play(new Int16Array(1600), "default", "user");
+
+    player.clear();
+    expect(onPlaybackEnd).toHaveBeenCalledWith("agent-1");
+
+    await player.play(new Int16Array(1600), "default", "user");
+    const userSource1 = mockCtx.ctx.createBufferSource.mock.results[1].value;
+    userSource1.onended();
+
+    const sources = mockCtx.ctx.createBufferSource.mock.results;
+    expect(sources).toHaveLength(3);
+    expect(sources[2].value.start).toHaveBeenCalledWith(0.1);
   });
 
   it("resumes suspended AudioContext", async () => {
