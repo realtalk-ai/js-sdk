@@ -43,7 +43,7 @@ The agent's audio playback starts muted and is unmuted with the speaker button. 
 
 ## Demo
 
-See [`examples/embed-demo`](../../examples/embed-demo) for a minimal page using the snippet.
+Try the widget on a live stand-in website at [realtalk-ai.github.io/embed-demo](https://realtalk-ai.github.io/embed-demo/). See [`examples/embed-demo`](../../examples/embed-demo) for a minimal page using the snippet.
 
 ## Development
 

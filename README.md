@@ -93,7 +93,7 @@ A minimal FastAPI server that creates short-lived session tokens for use in fron
 
 ### [Embed demo](./examples/embed-demo)
 
-A minimal page showing the copy-paste `@realtalk-ai/embed` snippet on a stand-in website. Run it with `pnpm embed-demo`.
+A minimal page showing the copy-paste `@realtalk-ai/embed` snippet on a stand-in website. Run it with `pnpm embed-demo`, or try the hosted version at [realtalk-ai.github.io/embed-demo](https://realtalk-ai.github.io/embed-demo/).
 
 ## Development
 
