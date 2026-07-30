@@ -197,10 +197,39 @@ describe("AudioPlayer", () => {
     await player.play(new Int16Array(1600), "default", "user");
 
     const source = mockCtx.ctx.createBufferSource.mock.results[0].value;
-    source.onended();
-
+    expect(source.start).toHaveBeenCalledWith(0);
+    expect(source.onended).toBeNull();
     expect(onPlaybackStart).not.toHaveBeenCalled();
     expect(onPlaybackEnd).not.toHaveBeenCalled();
+  });
+
+  it("schedules user frames back to back without waiting for onended", async () => {
+    const player = new AudioPlayer();
+
+    await player.play(new Int16Array(1600), "default", "user");
+    await player.play(new Int16Array(1600), "default", "user");
+    await player.play(new Int16Array(1600), "default", "user");
+
+    const sources = mockCtx.ctx.createBufferSource.mock.results;
+    expect(sources).toHaveLength(3);
+    expect(sources[0].value.start).toHaveBeenCalledWith(0);
+    expect(sources[1].value.start).toHaveBeenCalledWith(0.1);
+    expect(sources[2].value.start).toHaveBeenCalledWith(0.2);
+  });
+
+  it("rebuffers the user stream after an underrun", async () => {
+    const player = new AudioPlayer();
+
+    await player.play(new Int16Array(1600), "default", "user");
+    mockCtx.ctx.currentTime = 0.5;
+
+    await player.play(new Int16Array(320), "default", "user");
+    expect(mockCtx.ctx.createBufferSource.mock.results).toHaveLength(1);
+
+    await player.play(new Int16Array(1280), "default", "user");
+    const sources = mockCtx.ctx.createBufferSource.mock.results;
+    expect(sources).toHaveLength(3);
+    expect(sources[1].value.start).toHaveBeenCalledWith(0.5);
   });
 
   it("clear() flushes the agent stream but keeps the user stream timeline", async () => {
@@ -214,8 +243,6 @@ describe("AudioPlayer", () => {
     expect(onPlaybackEnd).toHaveBeenCalledWith("agent-1");
 
     await player.play(new Int16Array(1600), "default", "user");
-    const userSource1 = mockCtx.ctx.createBufferSource.mock.results[1].value;
-    userSource1.onended();
 
     const sources = mockCtx.ctx.createBufferSource.mock.results;
     expect(sources).toHaveLength(3);
