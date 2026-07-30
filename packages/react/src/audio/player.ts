@@ -52,6 +52,12 @@ export class AudioPlayer {
     }
 
     const stream = this.getStream(source);
+
+    if (source === "user") {
+      this.playContinuous(stream, pcm, traceId);
+      return;
+    }
+
     stream.queue.push({ pcm, traceId });
     stream.bufferedSamples += pcm.length;
 
@@ -133,6 +139,63 @@ export class AudioPlayer {
     }
   }
 
+  private playContinuous(
+    stream: SourceStream,
+    pcm: Int16Array,
+    traceId: string,
+  ): void {
+    if (
+      stream.isPlaying &&
+      stream.scheduledEndTime <= this.audioContext!.currentTime
+    ) {
+      stream.isPlaying = false;
+      stream.scheduledEndTime = 0;
+    }
+
+    if (!stream.isPlaying) {
+      stream.queue.push({ pcm, traceId });
+      stream.bufferedSamples += pcm.length;
+      if (stream.bufferedSamples < BUFFER_THRESHOLD_SAMPLES) {
+        return;
+      }
+      stream.isPlaying = true;
+      for (const chunk of stream.queue) {
+        this.scheduleChunk(stream, chunk.pcm);
+      }
+      stream.queue = [];
+      stream.bufferedSamples = 0;
+      return;
+    }
+
+    this.scheduleChunk(stream, pcm);
+  }
+
+  private scheduleChunk(
+    stream: SourceStream,
+    pcm: Int16Array,
+  ): AudioBufferSourceNode {
+    const floatData = this.int16ToFloat32(pcm);
+    const audioBuffer = this.audioContext!.createBuffer(
+      1,
+      floatData.length,
+      TARGET_SAMPLE_RATE,
+    );
+    audioBuffer.getChannelData(0).set(floatData);
+
+    const bufferSource = this.audioContext!.createBufferSource();
+    bufferSource.buffer = audioBuffer;
+    bufferSource.connect(stream.gainNode);
+
+    const startTime = Math.max(
+      this.audioContext!.currentTime,
+      stream.scheduledEndTime,
+    );
+    bufferSource.start(startTime);
+    stream.scheduledEndTime = startTime + audioBuffer.duration;
+
+    return bufferSource;
+  }
+
   private processQueue(source: AudioSource): void {
     const stream = this.streams.get(source);
     if (!this.audioContext || !stream || stream.queue.length === 0) {
@@ -156,26 +219,7 @@ export class AudioPlayer {
       stream.currentTraceId = chunk.traceId;
     }
 
-    const floatData = this.int16ToFloat32(chunk.pcm);
-    const audioBuffer = this.audioContext.createBuffer(
-      1,
-      floatData.length,
-      TARGET_SAMPLE_RATE,
-    );
-    audioBuffer.getChannelData(0).set(floatData);
-
-    const bufferSource = this.audioContext.createBufferSource();
-    bufferSource.buffer = audioBuffer;
-    bufferSource.connect(stream.gainNode);
-
-    const startTime = Math.max(
-      this.audioContext.currentTime,
-      stream.scheduledEndTime,
-    );
-    bufferSource.start(startTime);
-
-    const duration = audioBuffer.duration;
-    stream.scheduledEndTime = startTime + duration;
+    const bufferSource = this.scheduleChunk(stream, chunk.pcm);
 
     bufferSource.onended = () => {
       if (stream.queue.length > 0) {
