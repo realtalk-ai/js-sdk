@@ -1,5 +1,14 @@
 # @realtalk-ai/embed
 
+## 0.1.2
+
+### Patch Changes
+
+- 7371981: Recommend jsDelivr with an always-latest URL in the embed docs.
+- Updated dependencies [596cc09]
+  - @realtalk-ai/core@0.5.0
+  - @realtalk-ai/react@0.4.0
+
 ## 0.1.1
 
 ### Patch Changes
