@@ -110,7 +110,7 @@ function Widget({
   const active = status === "active";
   const paused = status === "paused";
   const mode = active ? conversation.mode : startMode;
-  const isAudioMuted = mode === "text";
+  const isAudioMuted = mode === "text" || conversation.isAudioMuted;
 
   useConversationExpiry(paused, config, () => {
     minter.reset();
@@ -170,6 +170,7 @@ function Widget({
 
   const changeMode = async (newMode: ConversationMode) => {
     setStartMode(newMode);
+    conversationRef.current.setVolume(1);
     if (active) {
       await conversationRef.current.setMode(newMode);
     } else if (newMode !== "voice") {
@@ -179,13 +180,17 @@ function Widget({
 
   const handleAudioToggle = async () => {
     setNotice(null);
+    if (mode === "voice") {
+      conversation.toggleAudio();
+      return;
+    }
     await changeMode(isAudioMuted ? "text_with_audio" : "text");
   };
 
   const handleMicToggle = async () => {
     setNotice(null);
     if (isMicEnabled) {
-      await changeMode("text_with_audio");
+      await changeMode(isAudioMuted ? "text" : "text_with_audio");
       return;
     }
     try {
@@ -197,6 +202,7 @@ function Widget({
       return;
     }
     setStartMode("voice");
+    conversationRef.current.setVolume(isAudioMuted ? 0 : 1);
     try {
       if (!active) await start("voice");
     } catch (error) {
