@@ -39,7 +39,7 @@ By default the widget floats in the bottom-right corner. The `<realtalk-embed>` 
 
 The widget supports both text chat and voice. Voice is started with the microphone button in the widget header, which asks the visitor for microphone permission via the browser's standard prompt, so the page must be served over HTTPS (or localhost) for voice to work.
 
-The widget starts as a text chat: no speech is generated, so replies arrive as fast as they are written. The speaker button turns the agent's voice on (text with audio) and the microphone button turns the chat into a voice conversation, both on the same connection. Turning the microphone off keeps the agent's voice on, and turning the speaker off goes back to a text chat.
+The widget starts as a text chat: no speech is generated, so replies arrive as fast as they are written. The speaker button turns the agent's voice on (text with audio) and the microphone button turns the chat into a voice conversation, both on the same connection. In a voice conversation the speaker button only mutes playback, so a visitor can dictate messages with the microphone while reading the replies as text. Turning the microphone off goes back to the text chat the speaker button last chose.
 
 ## Demo
 
