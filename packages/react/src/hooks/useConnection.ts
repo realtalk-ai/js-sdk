@@ -6,6 +6,7 @@ import type {
   ConnectionStatus,
   ConversationStatus,
   ConversationError,
+  ConversationMode,
   DTMFDigit,
   Message,
   SdkContext,
@@ -30,12 +31,14 @@ import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+export const DEFAULT_CONVERSATION_MODE: ConversationMode = "text_with_audio";
 
 export interface UseConnectionReturn {
   connectionStatus: ConnectionStatus;
   status: ConversationStatus;
   conversationId: string | null;
   error: ConversationError | null;
+  mode: ConversationMode;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
@@ -44,6 +47,8 @@ export interface UseConnectionReturn {
   sendDTMF: (digit: DTMFDigit) => void;
   sendEvent: (payload: ClientEvent) => void;
   sendAudio: (pcm: Int16Array) => void;
+  requestMode: (mode: ConversationMode) => void;
+  getMode: () => ConversationMode;
 }
 
 export function useConnection(opts: {
@@ -57,6 +62,10 @@ export function useConnection(opts: {
   onAudio: (pcm: Int16Array, traceId: string, source: AudioSource) => void;
   onClear: () => void;
   onCleanup: () => void;
+  onModeRefused: (
+    requestedMode: ConversationMode,
+    currentMode: ConversationMode,
+  ) => void;
 }): UseConnectionReturn {
   const {
     baseUrl,
@@ -69,6 +78,7 @@ export function useConnection(opts: {
     onAudio,
     onClear,
     onCleanup,
+    onModeRefused,
   } = opts;
 
   const [connectionStatus, setConnectionStatus] =
@@ -76,7 +86,10 @@ export function useConnection(opts: {
   const [status, setStatus] = useState<ConversationStatus>("not_started");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<ConversationError | null>(null);
+  const [mode, setMode] = useState<ConversationMode>(DEFAULT_CONVERSATION_MODE);
 
+  const modeRef = useRef<ConversationMode>(DEFAULT_CONVERSATION_MODE);
+  const requestedModeRef = useRef<ConversationMode | null>(null);
   const transportRef = useRef<WebSocketTransport | null>(null);
   const conversationIdRef = useRef<string | null>(null);
   const sessionOptionsRef = useRef<UseConversationSessionOptions | null>(null);
@@ -90,6 +103,11 @@ export function useConnection(opts: {
   const setConversationIdBoth = useCallback((id: string | null) => {
     conversationIdRef.current = id;
     setConversationId(id);
+  }, []);
+
+  const setModeBoth = useCallback((newMode: ConversationMode) => {
+    modeRef.current = newMode;
+    setMode(newMode);
   }, []);
 
   const updateConnectionStatus = useCallback(
@@ -141,6 +159,26 @@ export function useConnection(opts: {
           break;
         case EventType.Clear: {
           onClear();
+          break;
+        }
+        case EventType.ConversationMode: {
+          const requestedMode = requestedModeRef.current;
+          requestedModeRef.current = null;
+          setModeBoth(event.data.mode);
+          const wasRefused =
+            requestedMode !== null && requestedMode !== event.data.mode;
+          if (wasRefused) {
+            const conversationError: ConversationError = {
+              error: new ProtocolError(
+                `Conversation mode "${requestedMode}" is not available right now`,
+              ),
+              fatal: false,
+              timestamp: Date.now(),
+            };
+            setError(conversationError);
+            optionsRef.current.onError?.(conversationError);
+            onModeRefused(requestedMode, event.data.mode);
+          }
           break;
         }
         case EventType.ConversationFinished: {
@@ -205,6 +243,8 @@ export function useConnection(opts: {
       setConversationIdBoth,
       onEvent,
       onClear,
+      onModeRefused,
+      setModeBoth,
       optionsRef,
     ],
   );
@@ -243,6 +283,7 @@ export function useConnection(opts: {
           version: SDK_VERSION,
           context: context ?? SDK_CONTEXT,
         },
+        mode: modeRef.current,
       });
 
       reconnectAttemptRef.current = 0;
@@ -378,6 +419,8 @@ export function useConnection(opts: {
       const resolvedOptions = { ...sessionOptions };
       intentionalDisconnectRef.current = false;
       sessionOptionsRef.current = resolvedOptions;
+      requestedModeRef.current = null;
+      setModeBoth(sessionOptions.mode ?? DEFAULT_CONVERSATION_MODE);
       setMessages([]);
 
       const tokenConversationId = await resolveToken(sessionOptions);
@@ -414,6 +457,7 @@ export function useConnection(opts: {
       updateConversationStatus,
       resolveToken,
       setConversationIdBoth,
+      setModeBoth,
       optionsRef,
       setMessages,
     ],
@@ -453,6 +497,17 @@ export function useConnection(opts: {
     }
   }, []);
 
+  const requestMode = useCallback((newMode: ConversationMode) => {
+    if (!transportRef.current) return;
+    requestedModeRef.current = newMode;
+    transportRef.current.sendEvent({
+      type: "set_conversation_mode",
+      data: { mode: newMode },
+    });
+  }, []);
+
+  const getMode = useCallback(() => modeRef.current, []);
+
   const sendAudio = useCallback((pcm: Int16Array) => {
     if (transportRef.current) {
       transportRef.current.sendAudio(pcm);
@@ -471,11 +526,14 @@ export function useConnection(opts: {
     status,
     conversationId,
     error,
+    mode,
     startConversation,
     endConversation,
     sendMessage,
     sendDTMF,
     sendEvent,
     sendAudio,
+    requestMode,
+    getMode,
   };
 }

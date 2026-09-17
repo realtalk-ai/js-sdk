@@ -10,7 +10,7 @@ export type ConversationStatus =
   | "paused"
   | "finished";
 
-export type ConversationMode = "voice" | "text";
+export type ConversationMode = "text" | "text_with_audio" | "voice";
 
 export interface ToolCall {
   id: string;
@@ -153,6 +153,7 @@ export const EventType = {
   Vad: "vad",
   Clear: "clear",
   ConversationFinished: "conversation_finished",
+  ConversationMode: "conversation_mode",
   Close: "close",
   Error: "error",
 } as const;
@@ -165,6 +166,7 @@ export type ClientEvent =
   | { type: "end_conversation"; data?: Record<string, unknown> }
   | { type: "start"; agent_id: string; metadata?: Record<string, unknown> }
   | { event: "dtmf"; data: DTMFDigit }
+  | { type: "set_conversation_mode"; data: { mode: ConversationMode } }
   | { type: string; [key: string]: unknown };
 
 export type ConversationEvent =
@@ -174,5 +176,6 @@ export type ConversationEvent =
   | { type: "vad"; data: { state: VadState } }
   | { type: "clear" }
   | { type: "conversation_finished" }
+  | { type: "conversation_mode"; data: { mode: ConversationMode } }
   | { type: "close"; code: number; reason: string }
   | { type: "error"; message?: string };

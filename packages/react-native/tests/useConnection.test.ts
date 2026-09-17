@@ -678,6 +678,23 @@ describe("useConnection", () => {
     );
   });
 
+  it("startConversation connects in the requested conversation mode", async () => {
+    const opts = defaultOpts();
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+        mode: "text",
+      });
+    });
+
+    expect(mockTransport.connect).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "text" }),
+    );
+  });
+
   it("reconnect refreshes token via getToken before connecting", async () => {
     vi.useFakeTimers();
 

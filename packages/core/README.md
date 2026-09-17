@@ -103,16 +103,17 @@ The SDK communicates over WebSocket using typed events. Use `onEvent` to receive
 
 Events received from the server during a conversation:
 
-| Event                   | `EventType` constant             | Data                               | Description                            |
-| ----------------------- | -------------------------------- | ---------------------------------- | -------------------------------------- |
-| `existing_messages`     | `EventType.ExistingMessages`     | `Message[]`                        | All prior messages, sent on connection |
-| `message_created`       | `EventType.MessageCreated`       | `Message`                          | New message from the agent or user     |
-| `message_updated`       | `EventType.MessageUpdated`       | `Message`                          | An existing message was updated        |
-| `vad`                   | `EventType.Vad`                  | `{ state: "speech" \| "silence" }` | Voice activity detection state changed |
-| `clear`                 | `EventType.Clear`                | —                                  | Audio buffer should be cleared         |
-| `conversation_finished` | `EventType.ConversationFinished` | —                                  | The conversation session has ended     |
-| `close`                 | `EventType.Close`                | `{ code: number; reason: string }` | WebSocket connection closed            |
-| `error`                 | `EventType.Error`                | `{ message?: string }`             | A protocol or backend error occurred   |
+| Event                   | `EventType` constant             | Data                               | Description                                                               |
+| ----------------------- | -------------------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| `existing_messages`     | `EventType.ExistingMessages`     | `Message[]`                        | All prior messages, sent on connection                                    |
+| `message_created`       | `EventType.MessageCreated`       | `Message`                          | New message from the agent or user                                        |
+| `message_updated`       | `EventType.MessageUpdated`       | `Message`                          | An existing message was updated                                           |
+| `vad`                   | `EventType.Vad`                  | `{ state: "speech" \| "silence" }` | Voice activity detection state changed                                    |
+| `clear`                 | `EventType.Clear`                | —                                  | Audio buffer should be cleared                                            |
+| `conversation_finished` | `EventType.ConversationFinished` | —                                  | The conversation session has ended                                        |
+| `conversation_mode`     | `EventType.ConversationMode`     | `{ mode: ConversationMode }`       | The mode the conversation is in, sent in reply to `set_conversation_mode` |
+| `close`                 | `EventType.Close`                | `{ code: number; reason: string }` | WebSocket connection closed                                               |
+| `error`                 | `EventType.Error`                | `{ message?: string }`             | A protocol or backend error occurred                                      |
 
 Two exported sets classify `close` codes: `RECONNECTABLE_CLOSE_CODES` (transient failures worth retrying with a fresh token) and `PAUSED_CLOSE_CODES` (the server paused an idle conversation, which can be resumed with the same conversation id, so don't auto-reconnect and don't treat it as an error). Codes in neither set are fatal.
 
@@ -120,10 +121,11 @@ Two exported sets classify `close` codes: `RECONNECTABLE_CLOSE_CODES` (transient
 
 Events you can send to the server:
 
-| Event     | Payload                              | Description                        |
-| --------- | ------------------------------------ | ---------------------------------- |
-| `message` | `{ type: "message"; data: string }`  | Send a text message                |
-| `dtmf`    | `{ event: "dtmf"; data: DTMFDigit }` | Send a DTMF tone (0–9, \*, #, A–D) |
+| Event                   | Payload                                                               | Description                                                                              |
+| ----------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `message`               | `{ type: "message"; data: string }`                                   | Send a text message                                                                      |
+| `dtmf`                  | `{ event: "dtmf"; data: DTMFDigit }`                                  | Send a DTMF tone (0–9, \*, #, A–D)                                                       |
+| `set_conversation_mode` | `{ type: "set_conversation_mode"; data: { mode: ConversationMode } }` | Change the conversation mode (`text`, `text_with_audio` or `voice`) without reconnecting |
 
 You can also send arbitrary custom events — any object with a `type` string field will be forwarded.
 

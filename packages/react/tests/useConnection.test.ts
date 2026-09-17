@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import type { ConversationEvent } from "@realtalk-ai/core";
-import { useConnection } from "../src/hooks/useConnection.js";
+import {
+  DEFAULT_CONVERSATION_MODE,
+  useConnection,
+} from "../src/hooks/useConnection.js";
 
 const mockTransport = {
   connect: vi.fn(),
@@ -50,6 +53,7 @@ function defaultOpts() {
     onAudio: vi.fn(),
     onClear: vi.fn(),
     onCleanup: vi.fn(),
+    onModeRefused: vi.fn(),
   };
 }
 
@@ -844,5 +848,82 @@ describe("useConnection", () => {
     expect(result.current.conversationId).toBe("conv-1");
     expect(opts.getToken).toHaveBeenCalledTimes(2);
     expect(vi.mocked(WebSocketTransport).mock.results).toHaveLength(2);
+  });
+  describe("conversation mode", () => {
+    async function startedConnection(
+      mode?: "text" | "text_with_audio" | "voice",
+    ) {
+      const opts = defaultOpts();
+      const rendered = renderHook(() => useConnection(opts));
+      await act(async () => {
+        await rendered.result.current.startConversation({
+          agentId: "agent-1",
+          conversationId: "conv-1",
+          mode,
+        });
+      });
+      const { WebSocketTransport } = await import("@realtalk-ai/core");
+      const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+      const emit = transport.onEvent.mock.calls[0][0] as (
+        event: ConversationEvent,
+      ) => void;
+      return { ...rendered, opts, transport, emit };
+    }
+
+    it("connects in the requested mode", async () => {
+      const { result, transport } = await startedConnection("text");
+
+      expect(transport.connect).toHaveBeenCalledWith(
+        expect.objectContaining({ mode: "text" }),
+      );
+      expect(result.current.mode).toBe("text");
+    });
+
+    it("connects in the default mode when none is given", async () => {
+      const { result, transport } = await startedConnection();
+
+      expect(transport.connect).toHaveBeenCalledWith(
+        expect.objectContaining({ mode: DEFAULT_CONVERSATION_MODE }),
+      );
+      expect(result.current.mode).toBe(DEFAULT_CONVERSATION_MODE);
+    });
+
+    it("requestMode asks the server and adopts the confirmed mode", async () => {
+      const { result, transport, emit, opts } = await startedConnection("text");
+
+      act(() => result.current.requestMode("text_with_audio"));
+      expect(transport.sendEvent).toHaveBeenCalledWith({
+        type: "set_conversation_mode",
+        data: { mode: "text_with_audio" },
+      });
+      expect(result.current.mode).toBe("text");
+
+      act(() =>
+        emit({ type: "conversation_mode", data: { mode: "text_with_audio" } }),
+      );
+
+      expect(result.current.mode).toBe("text_with_audio");
+      expect(result.current.getMode()).toBe("text_with_audio");
+      expect(opts.onModeRefused).not.toHaveBeenCalled();
+    });
+
+    it("keeps the mode and reports an error when the server refuses", async () => {
+      const { result, emit, opts } = await startedConnection("text");
+
+      act(() => result.current.requestMode("voice"));
+      act(() => emit({ type: "conversation_mode", data: { mode: "text" } }));
+
+      expect(result.current.mode).toBe("text");
+      expect(opts.onModeRefused).toHaveBeenCalledWith("voice", "text");
+      expect(result.current.error?.fatal).toBe(false);
+    });
+
+    it("requestMode does nothing without a connection", () => {
+      const { result } = renderHook(() => useConnection(defaultOpts()));
+
+      act(() => result.current.requestMode("voice"));
+
+      expect(mockTransport.sendEvent).not.toHaveBeenCalled();
+    });
   });
 });

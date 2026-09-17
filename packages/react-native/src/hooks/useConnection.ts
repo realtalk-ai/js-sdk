@@ -239,6 +239,7 @@ export function useConnection(opts: {
           version: SDK_VERSION,
           context: SDK_CONTEXT,
         },
+        mode: sessionOptions.mode ?? "text_with_audio",
       });
 
       reconnectAttemptRef.current = 0;
