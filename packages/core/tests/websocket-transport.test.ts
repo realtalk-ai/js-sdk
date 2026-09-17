@@ -195,6 +195,33 @@ describe("WebSocketTransport", () => {
       expect(mockWs.url).toContain(`&sdk_version=${SDK_VERSION}`);
     });
 
+    it("appends the conversation mode as a URL param when provided", async () => {
+      const transport = new WebSocketTransport();
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "tok",
+        sdkInfo: coreSdkInfo,
+        mode: "text",
+      });
+      mockWs.simulateOpen();
+      await p;
+
+      expect(mockWs.url).toContain("&mode=text");
+    });
+
+    it("leaves the mode out of the URL when not provided", async () => {
+      const transport = new WebSocketTransport();
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "tok",
+        sdkInfo: coreSdkInfo,
+      });
+      mockWs.simulateOpen();
+      await p;
+
+      expect(mockWs.url).not.toContain("mode=");
+    });
+
     it("supports AbortSignal (already aborted)", async () => {
       const transport = new WebSocketTransport();
       const controller = new AbortController();

@@ -195,6 +195,9 @@ export class WebSocketTransport implements AudioTransport {
       wsUrl += `&context=${encodeURIComponent(options.sdkInfo.context)}`;
       wsUrl += `&sdk_name=${encodeURIComponent(options.sdkInfo.name)}`;
       wsUrl += `&sdk_version=${encodeURIComponent(options.sdkInfo.version)}`;
+      if (options.mode) {
+        wsUrl += `&mode=${encodeURIComponent(options.mode)}`;
+      }
       let settled = false;
 
       const timeoutId = setTimeout(() => {

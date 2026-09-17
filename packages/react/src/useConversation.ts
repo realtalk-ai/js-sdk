@@ -33,6 +33,10 @@ export interface UseConversationOptions {
   onStatusChange?: (status: ConversationStatus) => void;
   onConnectionStatusChange?: (status: ConnectionStatus) => void;
   onEvent?: (event: ConversationEvent) => void;
+  onModeRefused?: (
+    requestedMode: ConversationMode,
+    currentMode: ConversationMode,
+  ) => void;
   startMuted?: boolean;
 }
 
@@ -48,6 +52,7 @@ export interface UseConversationReturn {
   isMicEnabled: boolean;
   isAudioMuted: boolean;
   volume: number;
+  mode: ConversationMode;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
@@ -61,6 +66,7 @@ export interface UseConversationReturn {
   setVolume: (volume: number) => void;
   enableMic: (deviceId?: string) => Promise<void>;
   disableMic: () => void;
+  setMode: (mode: ConversationMode, audioDeviceId?: string) => Promise<void>;
 }
 
 export function useConversation(
@@ -100,6 +106,18 @@ export function useConversation(
     }
   }, []);
 
+  const handleModeRefused = useCallback(
+    (requestedMode: ConversationMode, currentMode: ConversationMode) => {
+      if (requestedMode === "voice") {
+        recorderRef.current?.stop();
+        recorderRef.current = null;
+        setIsMicEnabled(false);
+      }
+      optionsRef.current.onModeRefused?.(requestedMode, currentMode);
+    },
+    [],
+  );
+
   const {
     messages,
     userState,
@@ -113,12 +131,15 @@ export function useConversation(
     status,
     conversationId,
     error,
+    mode,
     startConversation: connectionStart,
     endConversation,
     sendMessage,
     sendDTMF,
     sendEvent,
     sendAudio,
+    requestMode,
+    getMode,
   } = useConnection({
     baseUrl,
     tokenUrl,
@@ -130,6 +151,7 @@ export function useConversation(
     onAudio: handleAudio,
     onClear: handleClear,
     onCleanup: handleAudioCleanup,
+    onModeRefused: handleModeRefused,
   });
 
   sendEventRef.current = sendEvent;
@@ -145,21 +167,25 @@ export function useConversation(
 
   const enableMic = useCallback(
     async (deviceId?: string): Promise<void> => {
-      if (recorderRef.current) return;
-      const recorder = new AudioRecorder();
-      recorderRef.current = recorder;
-      try {
-        await recorder.start(
-          (pcm) => sendAudio(pcm),
-          deviceId ? { deviceId } : undefined,
-        );
-      } catch (error) {
-        recorderRef.current = null;
-        throw error;
+      if (!recorderRef.current) {
+        const recorder = new AudioRecorder();
+        recorderRef.current = recorder;
+        try {
+          await recorder.start(
+            (pcm) => sendAudio(pcm),
+            deviceId ? { deviceId } : undefined,
+          );
+        } catch (error) {
+          recorderRef.current = null;
+          throw error;
+        }
+        setIsMicEnabled(true);
       }
-      setIsMicEnabled(true);
+      if (getMode() !== "voice") {
+        requestMode("voice");
+      }
     },
-    [sendAudio],
+    [sendAudio, getMode, requestMode],
   );
 
   const disableMic = useCallback(() => {
@@ -169,6 +195,18 @@ export function useConversation(
     }
     setIsMicEnabled(false);
   }, []);
+
+  const setMode = useCallback(
+    async (newMode: ConversationMode, audioDeviceId?: string) => {
+      if (newMode === "voice") {
+        await enableMic(audioDeviceId);
+        return;
+      }
+      disableMic();
+      requestMode(newMode);
+    },
+    [enableMic, disableMic, requestMode],
+  );
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -225,6 +263,7 @@ export function useConversation(
     isMicEnabled,
     isAudioMuted,
     volume,
+    mode,
     startConversation,
     endConversation,
     sendMessage,
@@ -236,5 +275,6 @@ export function useConversation(
     setVolume,
     enableMic,
     disableMic,
+    setMode,
   };
 }

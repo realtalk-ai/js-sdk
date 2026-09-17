@@ -506,4 +506,67 @@ describe("useConversation", () => {
 
     expect(result.current.messages).toHaveLength(0);
   });
+  describe("setMode", () => {
+    async function startedConversation() {
+      const rendered = renderHook(() => useConversation(), { wrapper });
+      await act(async () => {
+        await rendered.result.current.startConversation({
+          agentId: "agent-1",
+          conversationId: "conv-1",
+          mode: "text",
+        });
+      });
+      const { WebSocketTransport } = await import("@realtalk-ai/core");
+      const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+      const emit = transport.onEvent.mock.calls[0][0];
+      return { ...rendered, transport, emit };
+    }
+
+    it("voice enables the microphone and asks the server for voice mode", async () => {
+      const { result, transport, emit } = await startedConversation();
+
+      await act(async () => {
+        await result.current.setMode("voice");
+      });
+      act(() => emit({ type: "conversation_mode", data: { mode: "voice" } }));
+
+      expect(transport.sendEvent).toHaveBeenCalledWith({
+        type: "set_conversation_mode",
+        data: { mode: "voice" },
+      });
+      expect(result.current.isMicEnabled).toBe(true);
+      expect(result.current.mode).toBe("voice");
+    });
+
+    it("leaving voice releases the microphone", async () => {
+      const { result, transport, emit } = await startedConversation();
+      await act(async () => {
+        await result.current.setMode("voice");
+      });
+      act(() => emit({ type: "conversation_mode", data: { mode: "voice" } }));
+
+      await act(async () => {
+        await result.current.setMode("text_with_audio");
+      });
+
+      expect(transport.sendEvent).toHaveBeenLastCalledWith({
+        type: "set_conversation_mode",
+        data: { mode: "text_with_audio" },
+      });
+      expect(result.current.isMicEnabled).toBe(false);
+    });
+
+    it("a refused voice mode releases the microphone again", async () => {
+      const { result, emit } = await startedConversation();
+
+      await act(async () => {
+        await result.current.setMode("voice");
+      });
+      act(() => emit({ type: "conversation_mode", data: { mode: "text" } }));
+
+      expect(result.current.isMicEnabled).toBe(false);
+      expect(result.current.mode).toBe("text");
+      expect(result.current.error?.fatal).toBe(false);
+    });
+  });
 });

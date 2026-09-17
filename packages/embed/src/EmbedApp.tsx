@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RealTalkProvider, useConversation } from "@realtalk-ai/react";
+import type { ConversationMode } from "@realtalk-ai/core";
 import {
   createSessionMinter,
   resolveServer,
@@ -53,7 +54,14 @@ function Widget({
   const [expired, setExpired] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const conversation = useConversation({ startMuted: true });
+  const [startMode, setStartMode] = useState<ConversationMode>("text");
+
+  const conversation = useConversation({
+    onModeRefused: (_requestedMode, currentMode) => {
+      setStartMode(currentMode);
+      setNotice("Voice is not available right now. Please try again later.");
+    },
+  });
   const conversationRef = useRef(conversation);
   conversationRef.current = conversation;
 
@@ -63,7 +71,6 @@ function Widget({
     messages,
     agentState,
     userState,
-    isAudioMuted,
     isMicEnabled,
   } = conversation;
 
@@ -82,7 +89,7 @@ function Widget({
       try {
         await conversationRef.current.startConversation({
           agentId,
-          mode: "text",
+          mode: startMode,
         });
         const resumeWasDropped = minter.conversationId !== storedConversationId;
         if (resumeWasDropped) setPreviousChatEnded(true);
@@ -94,7 +101,7 @@ function Widget({
       }
     };
     void resumeConversation();
-  }, [open, status, agentId, minter]);
+  }, [open, status, agentId, minter, startMode]);
 
   useEffect(() => {
     if (status === "finished") minter.reset();
@@ -102,6 +109,8 @@ function Widget({
 
   const active = status === "active";
   const paused = status === "paused";
+  const mode = active ? conversation.mode : startMode;
+  const isAudioMuted = mode === "text";
 
   useConversationExpiry(paused, config, () => {
     minter.reset();
@@ -115,15 +124,12 @@ function Widget({
   const ended = conversationOver && hasMessages;
   const canReset = active || paused || ended;
 
-  const start = async () => {
+  const start = async (mode: ConversationMode = startMode) => {
     if (starting || active) return;
     setStarting(true);
     const storedConversationId = minter.conversationId;
     try {
-      await conversationRef.current.startConversation({
-        agentId,
-        mode: "text",
-      });
+      await conversationRef.current.startConversation({ agentId, mode });
       const resumeWasDropped =
         storedConversationId !== undefined &&
         minter.conversationId !== storedConversationId;
@@ -156,18 +162,32 @@ function Widget({
     }
     minter.reset();
     conversationRef.current.clearMessages();
-    conversationRef.current.setVolume(0);
+    setStartMode("text");
     setPreviousChatEnded(false);
     setExpired(false);
     setNotice(null);
   };
 
+  const changeMode = async (newMode: ConversationMode) => {
+    setStartMode(newMode);
+    if (active) {
+      await conversationRef.current.setMode(newMode);
+    } else if (newMode !== "voice") {
+      conversationRef.current.disableMic();
+    }
+  };
+
+  const handleAudioToggle = async () => {
+    setNotice(null);
+    await changeMode(isAudioMuted ? "text_with_audio" : "text");
+  };
+
   const handleMicToggle = async () => {
+    setNotice(null);
     if (isMicEnabled) {
-      conversation.disableMic();
+      await changeMode("text_with_audio");
       return;
     }
-    setNotice(null);
     try {
       await conversation.enableMic();
     } catch {
@@ -176,11 +196,13 @@ function Widget({
       );
       return;
     }
+    setStartMode("voice");
     try {
-      if (!active) await start();
+      if (!active) await start("voice");
     } catch (error) {
       console.error("[realtalk-embed] failed to start conversation", error);
       conversationRef.current.disableMic();
+      setStartMode("text");
       setNotice("Could not connect. Please try again.");
     }
   };
@@ -221,7 +243,7 @@ function Widget({
           isAudioMuted={isAudioMuted}
           canReset={canReset}
           onToggleMic={() => void handleMicToggle()}
-          onToggleAudio={conversation.toggleAudio}
+          onToggleAudio={() => void handleAudioToggle()}
           onReset={() => void handleReset()}
           onMinimize={() => setOpen(false)}
         />
