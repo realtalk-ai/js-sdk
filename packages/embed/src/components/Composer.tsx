@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import { SendIcon } from "./icons.js";
 
 export function Composer({
@@ -23,14 +23,26 @@ export function Composer({
     }
   };
 
+  const sendOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.nativeEvent.isComposing
+    )
+      return;
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  };
+
   return (
     <form className="composer" onSubmit={handleSubmit}>
-      <input
-        type="text"
+      <textarea
+        rows={1}
         placeholder="Type a message…"
         autoComplete="off"
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={sendOnEnter}
       />
       <button
         className="send"
