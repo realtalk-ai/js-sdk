@@ -1,5 +1,11 @@
 # @realtalk-ai/embed
 
+## 0.1.3
+
+### Patch Changes
+
+- 89c49ad: Grow the embed widget text input box with its content up to five lines.
+
 ## 0.1.2
 
 ### Patch Changes
