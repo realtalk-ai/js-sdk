@@ -334,26 +334,33 @@ button {
 
 .composer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
   padding: 12px;
   border-top: 1px solid var(--rt-border);
 }
 
-.composer input {
+.composer textarea {
   flex: 1;
   min-width: 0;
+  box-sizing: border-box;
+  field-sizing: content;
+  max-height: 118px;
   padding: 8px 12px;
   border: 1px solid var(--rt-border);
   border-radius: 8px;
   font-size: 14px;
+  line-height: 20px;
   font-family: inherit;
   color: inherit;
   background: var(--rt-bg);
   outline: none;
+  resize: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.composer input:focus {
+.composer textarea:focus {
   border-color: var(--rt-accent);
 }
 
@@ -361,7 +368,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: stretch;
+  box-sizing: border-box;
+  height: 38px;
   padding: 0 8px;
   border: none;
   border-radius: 8px;
