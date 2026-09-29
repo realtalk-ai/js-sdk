@@ -230,7 +230,7 @@ player.stop();
 
 ## Text-only mode
 
-Skip audio entirely by starting a text session. The server generates no speech for it:
+A `text` session is text only, which gives the fastest responses when no speech is needed:
 
 ```ts
 const { messages, sendMessage, startConversation, status } = useConversation();

@@ -162,7 +162,7 @@ startConversation({
 });
 ```
 
-`"text"` (the default) is a pure text chat where the server generates no speech, `"text_with_agent_audio"` adds the agent's voice to typed conversations, and `"voice"` also enables the microphone.
+`"text"` (the default) is text only, `"text_with_agent_audio"` adds the agent's voice to typed conversations, and `"voice"` also enables the microphone.
 
 ### Callbacks
 
