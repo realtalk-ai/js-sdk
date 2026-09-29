@@ -145,11 +145,11 @@ startConversation({
 
 ### Conversation modes
 
-| Mode                      | You send       | The agent replies with | Notes                                                                 |
-| ------------------------- | -------------- | ---------------------- | --------------------------------------------------------------------- |
-| `"text"`                  | typed messages | text                   | No speech is generated, so replies arrive as fast as they are written |
-| `"text_with_agent_audio"` | typed messages | text and speech        | The default. Text appears in step with the speech                     |
-| `"voice"`                 | speech or text | text and speech        | Enables the microphone                                                |
+| Mode                      | You send       | The agent replies with | Notes                                                                              |
+| ------------------------- | -------------- | ---------------------- | ---------------------------------------------------------------------------------- |
+| `"text"`                  | typed messages | text                   | The default. No speech is generated, so replies arrive as fast as they are written |
+| `"text_with_agent_audio"` | typed messages | text and speech        | Text appears in step with the speech                                               |
+| `"voice"`                 | speech or text | text and speech        | Enables the microphone                                                             |
 
 Change mode mid-conversation with `setMode`. The connection and the conversation stay the same, and an ongoing reply becomes audible (or silent) from its next sentence. The server may refuse a change when it is out of capacity for audio; `mode` then keeps its value and `onError` receives a non-fatal error.
 
