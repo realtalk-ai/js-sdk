@@ -184,13 +184,13 @@ function Widget({
       conversation.toggleAudio();
       return;
     }
-    await changeMode(isAudioMuted ? "text_with_audio" : "text");
+    await changeMode(isAudioMuted ? "text_with_agent_audio" : "text");
   };
 
   const handleMicToggle = async () => {
     setNotice(null);
     if (isMicEnabled) {
-      await changeMode(isAudioMuted ? "text" : "text_with_audio");
+      await changeMode(isAudioMuted ? "text" : "text_with_agent_audio");
       return;
     }
     try {

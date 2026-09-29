@@ -546,12 +546,12 @@ describe("useConversation", () => {
       act(() => emit({ type: "conversation_mode", data: { mode: "voice" } }));
 
       await act(async () => {
-        await result.current.setMode("text_with_audio");
+        await result.current.setMode("text_with_agent_audio");
       });
 
       expect(transport.sendEvent).toHaveBeenLastCalledWith({
         type: "set_conversation_mode",
-        data: { mode: "text_with_audio" },
+        data: { mode: "text_with_agent_audio" },
       });
       expect(result.current.isMicEnabled).toBe(false);
     });

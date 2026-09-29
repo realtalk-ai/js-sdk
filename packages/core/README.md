@@ -121,11 +121,11 @@ Two exported sets classify `close` codes: `RECONNECTABLE_CLOSE_CODES` (transient
 
 Events you can send to the server:
 
-| Event                   | Payload                                                               | Description                                                                              |
-| ----------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `message`               | `{ type: "message"; data: string }`                                   | Send a text message                                                                      |
-| `dtmf`                  | `{ event: "dtmf"; data: DTMFDigit }`                                  | Send a DTMF tone (0–9, \*, #, A–D)                                                       |
-| `set_conversation_mode` | `{ type: "set_conversation_mode"; data: { mode: ConversationMode } }` | Change the conversation mode (`text`, `text_with_audio` or `voice`) without reconnecting |
+| Event                   | Payload                                                               | Description                                                                                    |
+| ----------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `message`               | `{ type: "message"; data: string }`                                   | Send a text message                                                                            |
+| `dtmf`                  | `{ event: "dtmf"; data: DTMFDigit }`                                  | Send a DTMF tone (0–9, \*, #, A–D)                                                             |
+| `set_conversation_mode` | `{ type: "set_conversation_mode"; data: { mode: ConversationMode } }` | Change the conversation mode (`text`, `text_with_agent_audio` or `voice`) without reconnecting |
 
 You can also send arbitrary custom events — any object with a `type` string field will be forwarded.
 
