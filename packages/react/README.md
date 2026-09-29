@@ -138,25 +138,25 @@ const conversation = useConversation(options);
 ```ts
 startConversation({
   agentId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  mode: "voice", // "text" | "text_with_audio" | "voice"
+  mode: "voice", // "text" | "text_with_agent_audio" | "voice"
   audioDeviceId: "...", // specific microphone
 });
 ```
 
 ### Conversation modes
 
-| Mode                | You send       | The agent replies with | Notes                                                                 |
-| ------------------- | -------------- | ---------------------- | --------------------------------------------------------------------- |
-| `"text"`            | typed messages | text                   | No speech is generated, so replies arrive as fast as they are written |
-| `"text_with_audio"` | typed messages | text and speech        | The default. Text appears in step with the speech                     |
-| `"voice"`           | speech or text | text and speech        | Enables the microphone                                                |
+| Mode                      | You send       | The agent replies with | Notes                                                                 |
+| ------------------------- | -------------- | ---------------------- | --------------------------------------------------------------------- |
+| `"text"`                  | typed messages | text                   | No speech is generated, so replies arrive as fast as they are written |
+| `"text_with_agent_audio"` | typed messages | text and speech        | The default. Text appears in step with the speech                     |
+| `"voice"`                 | speech or text | text and speech        | Enables the microphone                                                |
 
 Change mode mid-conversation with `setMode`. The connection and the conversation stay the same, and an ongoing reply becomes audible (or silent) from its next sentence. The server may refuse a change when it is out of capacity for audio; `mode` then keeps its value and `onError` receives a non-fatal error.
 
 ```ts
 const { mode, setMode } = useConversation();
 
-await setMode("text_with_audio"); // start hearing the agent
+await setMode("text_with_agent_audio"); // start hearing the agent
 await setMode("voice"); // and talk to it
 ```
 

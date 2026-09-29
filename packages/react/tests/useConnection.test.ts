@@ -851,7 +851,7 @@ describe("useConnection", () => {
   });
   describe("conversation mode", () => {
     async function startedConnection(
-      mode?: "text" | "text_with_audio" | "voice",
+      mode?: "text" | "text_with_agent_audio" | "voice",
     ) {
       const opts = defaultOpts();
       const rendered = renderHook(() => useConnection(opts));
@@ -891,19 +891,22 @@ describe("useConnection", () => {
     it("requestMode asks the server and adopts the confirmed mode", async () => {
       const { result, transport, emit, opts } = await startedConnection("text");
 
-      act(() => result.current.requestMode("text_with_audio"));
+      act(() => result.current.requestMode("text_with_agent_audio"));
       expect(transport.sendEvent).toHaveBeenCalledWith({
         type: "set_conversation_mode",
-        data: { mode: "text_with_audio" },
+        data: { mode: "text_with_agent_audio" },
       });
       expect(result.current.mode).toBe("text");
 
       act(() =>
-        emit({ type: "conversation_mode", data: { mode: "text_with_audio" } }),
+        emit({
+          type: "conversation_mode",
+          data: { mode: "text_with_agent_audio" },
+        }),
       );
 
-      expect(result.current.mode).toBe("text_with_audio");
-      expect(result.current.getMode()).toBe("text_with_audio");
+      expect(result.current.mode).toBe("text_with_agent_audio");
+      expect(result.current.getMode()).toBe("text_with_agent_audio");
       expect(opts.onModeRefused).not.toHaveBeenCalled();
     });
 

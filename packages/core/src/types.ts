@@ -10,7 +10,7 @@ export type ConversationStatus =
   | "paused"
   | "finished";
 
-export type ConversationMode = "text" | "text_with_audio" | "voice";
+export type ConversationMode = "text" | "text_with_agent_audio" | "voice";
 
 export interface ToolCall {
   id: string;

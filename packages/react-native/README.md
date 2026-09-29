@@ -158,11 +158,11 @@ The main hook — combines connection, messages, and audio controls.
 ```ts
 startConversation({
   agentId: "your-agent-id",
-  mode: "voice", // "text" | "text_with_audio" | "voice"
+  mode: "voice", // "text" | "text_with_agent_audio" | "voice"
 });
 ```
 
-`"text"` is a pure text chat where the server generates no speech, `"text_with_audio"` (the default) adds the agent's voice to typed conversations, and `"voice"` also enables the microphone.
+`"text"` is a pure text chat where the server generates no speech, `"text_with_agent_audio"` (the default) adds the agent's voice to typed conversations, and `"voice"` also enables the microphone.
 
 ### Callbacks
 
