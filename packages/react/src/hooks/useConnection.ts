@@ -31,8 +31,7 @@ import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
-export const DEFAULT_CONVERSATION_MODE: ConversationMode =
-  "text_with_agent_audio";
+export const DEFAULT_CONVERSATION_MODE: ConversationMode = "text";
 
 export interface UseConnectionReturn {
   connectionStatus: ConnectionStatus;

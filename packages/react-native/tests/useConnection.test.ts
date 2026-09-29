@@ -686,7 +686,23 @@ describe("useConnection", () => {
       await result.current.startConversation({
         agentId: "agent-1",
         conversationId: "conv-1",
-        mode: "text",
+        mode: "voice",
+      });
+    });
+
+    expect(mockTransport.connect).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "voice" }),
+    );
+  });
+
+  it("startConversation connects in text mode by default", async () => {
+    const opts = defaultOpts();
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
       });
     });
 
