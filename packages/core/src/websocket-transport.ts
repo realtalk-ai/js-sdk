@@ -196,7 +196,8 @@ export class WebSocketTransport implements AudioTransport {
       wsUrl += `&sdk_name=${encodeURIComponent(options.sdkInfo.name)}`;
       wsUrl += `&sdk_version=${encodeURIComponent(options.sdkInfo.version)}`;
       if (options.mode) {
-        wsUrl += `&mode=${encodeURIComponent(options.mode)}`;
+        wsUrl += `&user_audio=${options.mode.userAudio}`;
+        wsUrl += `&agent_audio=${options.mode.agentAudio}`;
       }
       let settled = false;
 

@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import type { ConversationEvent } from "@realtalk-ai/core";
-import { useConnection } from "../src/hooks/useConnection.js";
+import {
+  DEFAULT_CONVERSATION_MODE,
+  useConnection,
+} from "../src/hooks/useConnection.js";
+
+const AUDIO_BOTH_WAYS = { userAudio: true, agentAudio: true };
 
 vi.mock("react-native", () => ({
   Platform: { OS: "android" },
@@ -119,7 +124,7 @@ describe("useConnection", () => {
       id = await result.current.startConversation({
         agentId: "agent-1",
         conversationId: "conv-1",
-        mode: "voice",
+        mode: AUDIO_BOTH_WAYS,
       });
     });
 
@@ -219,7 +224,7 @@ describe("useConnection", () => {
       await result.current.startConversation({
         agentId: "agent-1",
         conversationId: "conv-1",
-        mode: "text",
+        mode: DEFAULT_CONVERSATION_MODE,
       });
     });
 
@@ -686,16 +691,16 @@ describe("useConnection", () => {
       await result.current.startConversation({
         agentId: "agent-1",
         conversationId: "conv-1",
-        mode: "voice",
+        mode: AUDIO_BOTH_WAYS,
       });
     });
 
     expect(mockTransport.connect).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: "voice" }),
+      expect.objectContaining({ mode: AUDIO_BOTH_WAYS }),
     );
   });
 
-  it("startConversation connects in text mode by default", async () => {
+  it("startConversation connects without audio by default", async () => {
     const opts = defaultOpts();
     const { result } = renderHook(() => useConnection(opts));
 
@@ -707,7 +712,7 @@ describe("useConnection", () => {
     });
 
     expect(mockTransport.connect).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: "text" }),
+      expect.objectContaining({ mode: DEFAULT_CONVERSATION_MODE }),
     );
   });
 

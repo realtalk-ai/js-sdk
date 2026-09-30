@@ -1,8 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import type { ReactNode } from "react";
+import type { ConversationMode } from "@realtalk-ai/core";
 import { RealTalkProvider } from "../src/provider.js";
 import { useConversation } from "../src/useConversation.js";
+
+const TEXT_ONLY = { userAudio: false, agentAudio: false };
+const TEXT_WITH_AGENT_AUDIO = { userAudio: false, agentAudio: true };
+const USER_AUDIO_WITH_TEXT_REPLIES = { userAudio: true, agentAudio: false };
+const AUDIO_BOTH_WAYS = { userAudio: true, agentAudio: true };
+
+function onTheWire(mode: ConversationMode) {
+  return { user_audio: mode.userAudio, agent_audio: mode.agentAudio };
+}
 
 const mockTransport = {
   connect: vi.fn(),
@@ -162,7 +172,7 @@ describe("useConversation", () => {
       await result.current.startConversation({
         agentId: "agent-1",
         conversationId: "conv-1",
-        mode: "voice",
+        mode: AUDIO_BOTH_WAYS,
       });
     });
 
@@ -414,7 +424,7 @@ describe("useConversation", () => {
       await result.current.startConversation({
         agentId: "agent-1",
         conversationId: "conv-1",
-        mode: "text",
+        mode: TEXT_ONLY,
       });
     });
 
@@ -441,7 +451,7 @@ describe("useConversation", () => {
       await result.current.startConversation({
         agentId: "agent-1",
         conversationId: "conv-1",
-        mode: "text",
+        mode: TEXT_ONLY,
       });
     });
 
@@ -461,7 +471,7 @@ describe("useConversation", () => {
       await result.current.startConversation({
         agentId: "agent-1",
         conversationId: "conv-1",
-        mode: "voice",
+        mode: AUDIO_BOTH_WAYS,
       });
     });
 
@@ -513,7 +523,7 @@ describe("useConversation", () => {
         await rendered.result.current.startConversation({
           agentId: "agent-1",
           conversationId: "conv-1",
-          mode: "text",
+          mode: TEXT_ONLY,
         });
       });
       const { WebSocketTransport } = await import("@realtalk-ai/core");
@@ -522,51 +532,117 @@ describe("useConversation", () => {
       return { ...rendered, transport, emit };
     }
 
-    it("voice enables the microphone and asks the server for voice mode", async () => {
+    it.each([AUDIO_BOTH_WAYS, USER_AUDIO_WITH_TEXT_REPLIES])(
+      "a mode with user audio enables the microphone and asks the server for it",
+      async (mode) => {
+        const { result, transport, emit } = await startedConversation();
+
+        await act(async () => {
+          await result.current.setMode(mode);
+        });
+        act(() => emit({ type: "conversation_mode", data: onTheWire(mode) }));
+
+        expect(transport.sendEvent).toHaveBeenCalledWith({
+          type: "set_conversation_mode",
+          data: onTheWire(mode),
+        });
+        expect(result.current.isMicEnabled).toBe(true);
+        expect(result.current.mode).toEqual(mode);
+      },
+    );
+
+    it("turning user audio off releases the microphone", async () => {
       const { result, transport, emit } = await startedConversation();
+      await act(async () => {
+        await result.current.setMode(AUDIO_BOTH_WAYS);
+      });
+      act(() =>
+        emit({ type: "conversation_mode", data: onTheWire(AUDIO_BOTH_WAYS) }),
+      );
 
       await act(async () => {
-        await result.current.setMode("voice");
-      });
-      act(() => emit({ type: "conversation_mode", data: { mode: "voice" } }));
-
-      expect(transport.sendEvent).toHaveBeenCalledWith({
-        type: "set_conversation_mode",
-        data: { mode: "voice" },
-      });
-      expect(result.current.isMicEnabled).toBe(true);
-      expect(result.current.mode).toBe("voice");
-    });
-
-    it("leaving voice releases the microphone", async () => {
-      const { result, transport, emit } = await startedConversation();
-      await act(async () => {
-        await result.current.setMode("voice");
-      });
-      act(() => emit({ type: "conversation_mode", data: { mode: "voice" } }));
-
-      await act(async () => {
-        await result.current.setMode("text_with_agent_audio");
+        await result.current.setMode(TEXT_WITH_AGENT_AUDIO);
       });
 
       expect(transport.sendEvent).toHaveBeenLastCalledWith({
         type: "set_conversation_mode",
-        data: { mode: "text_with_agent_audio" },
+        data: onTheWire(TEXT_WITH_AGENT_AUDIO),
       });
       expect(result.current.isMicEnabled).toBe(false);
     });
 
-    it("a refused voice mode releases the microphone again", async () => {
+    it("refused user audio releases the microphone again", async () => {
       const { result, emit } = await startedConversation();
 
       await act(async () => {
-        await result.current.setMode("voice");
+        await result.current.setMode(AUDIO_BOTH_WAYS);
       });
-      act(() => emit({ type: "conversation_mode", data: { mode: "text" } }));
+      act(() =>
+        emit({ type: "conversation_mode", data: onTheWire(TEXT_ONLY) }),
+      );
 
       expect(result.current.isMicEnabled).toBe(false);
-      expect(result.current.mode).toBe("text");
+      expect(result.current.mode).toEqual(TEXT_ONLY);
       expect(result.current.error?.fatal).toBe(false);
+    });
+
+    it("a refused change keeps the microphone while user audio stays on", async () => {
+      const { result, emit } = await startedConversation();
+      await act(async () => {
+        await result.current.setMode(USER_AUDIO_WITH_TEXT_REPLIES);
+      });
+      act(() =>
+        emit({
+          type: "conversation_mode",
+          data: onTheWire(USER_AUDIO_WITH_TEXT_REPLIES),
+        }),
+      );
+
+      await act(async () => {
+        await result.current.setMode(AUDIO_BOTH_WAYS);
+      });
+      act(() =>
+        emit({
+          type: "conversation_mode",
+          data: onTheWire(USER_AUDIO_WITH_TEXT_REPLIES),
+        }),
+      );
+
+      expect(result.current.isMicEnabled).toBe(true);
+      expect(result.current.mode).toEqual(USER_AUDIO_WITH_TEXT_REPLIES);
+    });
+
+    it("enableMic turns a conversation without user audio into audio both ways", async () => {
+      const { result, transport } = await startedConversation();
+
+      await act(async () => {
+        await result.current.enableMic();
+      });
+
+      expect(transport.sendEvent).toHaveBeenLastCalledWith({
+        type: "set_conversation_mode",
+        data: onTheWire(AUDIO_BOTH_WAYS),
+      });
+    });
+
+    it("enableMic keeps the mode when user audio is already on", async () => {
+      const { result, transport, emit } = await startedConversation();
+      await act(async () => {
+        await result.current.setMode(USER_AUDIO_WITH_TEXT_REPLIES);
+      });
+      act(() =>
+        emit({
+          type: "conversation_mode",
+          data: onTheWire(USER_AUDIO_WITH_TEXT_REPLIES),
+        }),
+      );
+      transport.sendEvent.mockClear();
+
+      await act(async () => {
+        await result.current.enableMic();
+      });
+
+      expect(transport.sendEvent).not.toHaveBeenCalled();
     });
   });
 });

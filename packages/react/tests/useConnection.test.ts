@@ -1,10 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import type { ConversationEvent } from "@realtalk-ai/core";
+import type { ConversationEvent, ConversationMode } from "@realtalk-ai/core";
 import {
   DEFAULT_CONVERSATION_MODE,
   useConnection,
 } from "../src/hooks/useConnection.js";
+
+const TEXT_ONLY = { userAudio: false, agentAudio: false };
+const TEXT_WITH_AGENT_AUDIO = { userAudio: false, agentAudio: true };
+const AUDIO_BOTH_WAYS = { userAudio: true, agentAudio: true };
+
+function onTheWire(mode: ConversationMode) {
+  return { user_audio: mode.userAudio, agent_audio: mode.agentAudio };
+}
 
 const mockTransport = {
   connect: vi.fn(),
@@ -850,9 +858,7 @@ describe("useConnection", () => {
     expect(vi.mocked(WebSocketTransport).mock.results).toHaveLength(2);
   });
   describe("conversation mode", () => {
-    async function startedConnection(
-      mode?: "text" | "text_with_agent_audio" | "voice",
-    ) {
+    async function startedConnection(mode?: ConversationMode) {
       const opts = defaultOpts();
       const rendered = renderHook(() => useConnection(opts));
       await act(async () => {
@@ -871,12 +877,14 @@ describe("useConnection", () => {
     }
 
     it("connects in the requested mode", async () => {
-      const { result, transport } = await startedConnection("text");
+      const { result, transport } = await startedConnection(
+        TEXT_WITH_AGENT_AUDIO,
+      );
 
       expect(transport.connect).toHaveBeenCalledWith(
-        expect.objectContaining({ mode: "text" }),
+        expect.objectContaining({ mode: TEXT_WITH_AGENT_AUDIO }),
       );
-      expect(result.current.mode).toBe("text");
+      expect(result.current.mode).toEqual(TEXT_WITH_AGENT_AUDIO);
     });
 
     it("connects in the default mode when none is given", async () => {
@@ -885,46 +893,63 @@ describe("useConnection", () => {
       expect(transport.connect).toHaveBeenCalledWith(
         expect.objectContaining({ mode: DEFAULT_CONVERSATION_MODE }),
       );
-      expect(result.current.mode).toBe(DEFAULT_CONVERSATION_MODE);
+      expect(result.current.mode).toEqual(DEFAULT_CONVERSATION_MODE);
     });
 
     it("requestMode asks the server and adopts the confirmed mode", async () => {
-      const { result, transport, emit, opts } = await startedConnection("text");
+      const { result, transport, emit, opts } =
+        await startedConnection(TEXT_ONLY);
 
-      act(() => result.current.requestMode("text_with_agent_audio"));
+      act(() => result.current.requestMode(TEXT_WITH_AGENT_AUDIO));
       expect(transport.sendEvent).toHaveBeenCalledWith({
         type: "set_conversation_mode",
-        data: { mode: "text_with_agent_audio" },
+        data: { user_audio: false, agent_audio: true },
       });
-      expect(result.current.mode).toBe("text");
+      expect(result.current.mode).toEqual(TEXT_ONLY);
 
       act(() =>
         emit({
           type: "conversation_mode",
-          data: { mode: "text_with_agent_audio" },
+          data: onTheWire(TEXT_WITH_AGENT_AUDIO),
         }),
       );
 
-      expect(result.current.mode).toBe("text_with_agent_audio");
-      expect(result.current.getMode()).toBe("text_with_agent_audio");
+      expect(result.current.mode).toEqual(TEXT_WITH_AGENT_AUDIO);
+      expect(result.current.getMode()).toEqual(TEXT_WITH_AGENT_AUDIO);
       expect(opts.onModeRefused).not.toHaveBeenCalled();
     });
 
     it("keeps the mode and reports an error when the server refuses", async () => {
-      const { result, emit, opts } = await startedConnection("text");
+      const { result, emit, opts } = await startedConnection(TEXT_ONLY);
 
-      act(() => result.current.requestMode("voice"));
-      act(() => emit({ type: "conversation_mode", data: { mode: "text" } }));
+      act(() => result.current.requestMode(AUDIO_BOTH_WAYS));
+      act(() =>
+        emit({ type: "conversation_mode", data: onTheWire(TEXT_ONLY) }),
+      );
 
-      expect(result.current.mode).toBe("text");
-      expect(opts.onModeRefused).toHaveBeenCalledWith("voice", "text");
+      expect(result.current.mode).toEqual(TEXT_ONLY);
+      expect(opts.onModeRefused).toHaveBeenCalledWith(
+        AUDIO_BOTH_WAYS,
+        TEXT_ONLY,
+      );
       expect(result.current.error?.fatal).toBe(false);
+    });
+
+    it("keeps the same mode object when the server confirms the current mode", async () => {
+      const { result, emit } = await startedConnection(TEXT_ONLY);
+      const modeBefore = result.current.mode;
+
+      act(() =>
+        emit({ type: "conversation_mode", data: onTheWire(TEXT_ONLY) }),
+      );
+
+      expect(result.current.mode).toBe(modeBefore);
     });
 
     it("requestMode does nothing without a connection", () => {
       const { result } = renderHook(() => useConnection(defaultOpts()));
 
-      act(() => result.current.requestMode("voice"));
+      act(() => result.current.requestMode(AUDIO_BOTH_WAYS));
 
       expect(mockTransport.sendEvent).not.toHaveBeenCalled();
     });

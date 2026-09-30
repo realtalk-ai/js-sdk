@@ -190,7 +190,7 @@ describe("useConversation", () => {
       await result.current.startConversation({
         agentId: "agent-1",
         conversationId: "conv-1",
-        mode: "voice",
+        mode: { userAudio: true, agentAudio: true },
       });
     });
 
