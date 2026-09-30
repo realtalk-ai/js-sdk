@@ -15,6 +15,12 @@ import { Header } from "./components/Header.js";
 import { MessageList } from "./components/MessageList.js";
 import { ChatIcon } from "./components/icons.js";
 
+const TEXT_ONLY: ConversationMode = { userAudio: false, agentAudio: false };
+const AUDIO_BOTH_WAYS: ConversationMode = {
+  userAudio: true,
+  agentAudio: true,
+};
+
 export interface EmbedAppProps {
   agentId: string;
   serverUrl: string;
@@ -54,7 +60,7 @@ function Widget({
   const [expired, setExpired] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const [startMode, setStartMode] = useState<ConversationMode>("text");
+  const [startMode, setStartMode] = useState<ConversationMode>(TEXT_ONLY);
 
   const conversation = useConversation({
     onModeRefused: (_requestedMode, currentMode) => {
@@ -110,7 +116,7 @@ function Widget({
   const active = status === "active";
   const paused = status === "paused";
   const mode = active ? conversation.mode : startMode;
-  const isAudioMuted = mode === "text" || conversation.isAudioMuted;
+  const isAudioMuted = !mode.agentAudio || conversation.isAudioMuted;
 
   useConversationExpiry(paused, config, () => {
     minter.reset();
@@ -162,7 +168,7 @@ function Widget({
     }
     minter.reset();
     conversationRef.current.clearMessages();
-    setStartMode("text");
+    setStartMode(TEXT_ONLY);
     setPreviousChatEnded(false);
     setExpired(false);
     setNotice(null);
@@ -173,24 +179,24 @@ function Widget({
     conversationRef.current.setVolume(1);
     if (active) {
       await conversationRef.current.setMode(newMode);
-    } else if (newMode !== "voice") {
+    } else if (!newMode.userAudio) {
       conversationRef.current.disableMic();
     }
   };
 
   const handleAudioToggle = async () => {
     setNotice(null);
-    if (mode === "voice") {
+    if (mode.userAudio) {
       conversation.toggleAudio();
       return;
     }
-    await changeMode(isAudioMuted ? "text_with_agent_audio" : "text");
+    await changeMode({ userAudio: false, agentAudio: isAudioMuted });
   };
 
   const handleMicToggle = async () => {
     setNotice(null);
     if (isMicEnabled) {
-      await changeMode(isAudioMuted ? "text" : "text_with_agent_audio");
+      await changeMode({ userAudio: false, agentAudio: !isAudioMuted });
       return;
     }
     try {
@@ -201,14 +207,14 @@ function Widget({
       );
       return;
     }
-    setStartMode("voice");
+    setStartMode(AUDIO_BOTH_WAYS);
     conversationRef.current.setVolume(isAudioMuted ? 0 : 1);
     try {
-      if (!active) await start("voice");
+      if (!active) await start(AUDIO_BOTH_WAYS);
     } catch (error) {
       console.error("[realtalk-embed] failed to start conversation", error);
       conversationRef.current.disableMic();
-      setStartMode("text");
+      setStartMode(TEXT_ONLY);
       setNotice("Could not connect. Please try again.");
     }
   };

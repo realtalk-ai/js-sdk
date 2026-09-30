@@ -151,7 +151,7 @@ export function useConversation(
 
       const id = await connectionStart(sessionOptions);
 
-      if (sessionOptions.mode === "voice") {
+      if (sessionOptions.mode?.userAudio) {
         const recorder = new AudioRecorder();
         recorderRef.current = recorder;
         await recorder.start((pcm) => sendAudio(pcm));

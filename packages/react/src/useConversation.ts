@@ -19,6 +19,11 @@ import { useAudioControls } from "./hooks/useAudioControls.js";
 import { AudioPlayer } from "./audio/player.js";
 import { AudioRecorder } from "./audio/recorder.js";
 
+const AUDIO_BOTH_WAYS: ConversationMode = {
+  userAudio: true,
+  agentAudio: true,
+};
+
 export interface UseConversationSessionOptions {
   agentId: string;
   conversationId?: string;
@@ -108,7 +113,9 @@ export function useConversation(
 
   const handleModeRefused = useCallback(
     (requestedMode: ConversationMode, currentMode: ConversationMode) => {
-      if (requestedMode === "voice") {
+      const userAudioWasRefused =
+        requestedMode.userAudio && !currentMode.userAudio;
+      if (userAudioWasRefused) {
         recorderRef.current?.stop();
         recorderRef.current = null;
         setIsMicEnabled(false);
@@ -165,27 +172,33 @@ export function useConversation(
     setVolume,
   } = useAudioControls(playerRef, recorderRef, options.startMuted);
 
+  const startRecorder = useCallback(
+    async (deviceId?: string): Promise<void> => {
+      if (recorderRef.current) return;
+      const recorder = new AudioRecorder();
+      recorderRef.current = recorder;
+      try {
+        await recorder.start(
+          (pcm) => sendAudio(pcm),
+          deviceId ? { deviceId } : undefined,
+        );
+      } catch (error) {
+        recorderRef.current = null;
+        throw error;
+      }
+      setIsMicEnabled(true);
+    },
+    [sendAudio],
+  );
+
   const enableMic = useCallback(
     async (deviceId?: string): Promise<void> => {
-      if (!recorderRef.current) {
-        const recorder = new AudioRecorder();
-        recorderRef.current = recorder;
-        try {
-          await recorder.start(
-            (pcm) => sendAudio(pcm),
-            deviceId ? { deviceId } : undefined,
-          );
-        } catch (error) {
-          recorderRef.current = null;
-          throw error;
-        }
-        setIsMicEnabled(true);
-      }
-      if (getMode() !== "voice") {
-        requestMode("voice");
+      await startRecorder(deviceId);
+      if (!getMode().userAudio) {
+        requestMode(AUDIO_BOTH_WAYS);
       }
     },
-    [sendAudio, getMode, requestMode],
+    [startRecorder, getMode, requestMode],
   );
 
   const disableMic = useCallback(() => {
@@ -198,14 +211,14 @@ export function useConversation(
 
   const setMode = useCallback(
     async (newMode: ConversationMode, audioDeviceId?: string) => {
-      if (newMode === "voice") {
-        await enableMic(audioDeviceId);
-        return;
+      if (newMode.userAudio) {
+        await startRecorder(audioDeviceId);
+      } else {
+        disableMic();
       }
-      disableMic();
       requestMode(newMode);
     },
-    [enableMic, disableMic, requestMode],
+    [startRecorder, disableMic, requestMode],
   );
 
   const clearMessages = useCallback(() => {
@@ -236,13 +249,13 @@ export function useConversation(
 
       const id = await connectionStart(sessionOptions);
 
-      if (sessionOptions.mode === "voice") {
-        await enableMic(sessionOptions.audioDeviceId);
+      if (sessionOptions.mode?.userAudio) {
+        await startRecorder(sessionOptions.audioDeviceId);
       }
 
       return id;
     },
-    [connectionStart, enableMic, volume],
+    [connectionStart, startRecorder, volume],
   );
 
   const agentState: AgentState = agentIsSpeaking

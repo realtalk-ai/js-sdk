@@ -55,7 +55,7 @@ const Chat = () => {
           onClick={() =>
             startConversation({
               agentId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-              mode: "voice",
+              mode: { userAudio: true, agentAudio: true },
             })
           }
         >
@@ -130,7 +130,7 @@ const conversation = useConversation(options);
 | `enableMic(deviceId?)`       | Ask for mic permission and start streaming, so a text conversation can turn into a voice one |
 | `disableMic()`               | Stop streaming and release the microphone                                                    |
 | `mode`                       | The conversation mode the server has confirmed                                               |
-| `setMode(mode, deviceId?)`   | Change the conversation mode on the open connection; `"voice"` also enables the microphone   |
+| `setMode(mode, deviceId?)`   | Change the conversation mode on the open connection; `userAudio` also enables the microphone |
 | `clearMessages()`            | Clear the local message array                                                                |
 
 ### Session options
@@ -138,26 +138,31 @@ const conversation = useConversation(options);
 ```ts
 startConversation({
   agentId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  mode: "voice", // "text" | "text_with_agent_audio" | "voice"
+  mode: { userAudio: true, agentAudio: true }, // both default to false
   audioDeviceId: "...", // specific microphone
 });
 ```
 
 ### Conversation modes
 
-| Mode                      | You send       | The agent replies with | Notes                                |
-| ------------------------- | -------------- | ---------------------- | ------------------------------------ |
-| `"text"`                  | typed messages | text                   | The default                          |
-| `"text_with_agent_audio"` | typed messages | text and speech        | Text appears in step with the speech |
-| `"voice"`                 | speech or text | text and speech        | Enables the microphone               |
+The mode is two independent flags that say which audio the conversation carries. Text always goes both ways.
+
+| `userAudio` | `agentAudio` | You send       | The agent replies with | Notes                                |
+| ----------- | ------------ | -------------- | ---------------------- | ------------------------------------ |
+| `false`     | `false`      | typed messages | text                   | The default                          |
+| `false`     | `true`       | typed messages | text and speech        | Text appears in step with the speech |
+| `true`      | `true`       | speech or text | text and speech        | A voice conversation                 |
+| `true`      | `false`      | speech or text | text                   | Speak and read the replies           |
+
+`userAudio` enables the microphone. `enableMic()` is a shortcut that turns both flags on.
 
 Change mode mid-conversation with `setMode`. The connection and the conversation stay the same, and an ongoing reply becomes audible (or silent) from its next sentence. The server may refuse a change when it is out of capacity for audio; `mode` then keeps its value and `onError` receives a non-fatal error.
 
 ```ts
 const { mode, setMode } = useConversation();
 
-await setMode("text_with_agent_audio"); // start hearing the agent
-await setMode("voice"); // and talk to it
+await setMode({ userAudio: false, agentAudio: true }); // start hearing the agent
+await setMode({ userAudio: true, agentAudio: true }); // and talk to it
 ```
 
 ### Paused conversations
@@ -230,14 +235,14 @@ player.stop();
 
 ## Text-only mode
 
-A `text` session is text only, which gives the fastest responses when no speech is needed:
+A session with both flags off is text only, which gives the fastest responses when no speech is needed:
 
 ```ts
 const { messages, sendMessage, startConversation, status } = useConversation();
 
 await startConversation({
   agentId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  mode: "text",
+  mode: { userAudio: false, agentAudio: false },
 });
 
 sendMessage("Hello!");

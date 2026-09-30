@@ -5,6 +5,7 @@ import type {
   ConnectionStatus,
   ConversationStatus,
   ConversationError,
+  ConversationMode,
   DTMFDigit,
   Message,
   SessionToken,
@@ -28,6 +29,10 @@ import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+export const DEFAULT_CONVERSATION_MODE: ConversationMode = {
+  userAudio: false,
+  agentAudio: false,
+};
 
 export interface UseConnectionReturn {
   connectionStatus: ConnectionStatus;
@@ -239,7 +244,7 @@ export function useConnection(opts: {
           version: SDK_VERSION,
           context: SDK_CONTEXT,
         },
-        mode: sessionOptions.mode ?? "text",
+        mode: sessionOptions.mode ?? DEFAULT_CONVERSATION_MODE,
       });
 
       reconnectAttemptRef.current = 0;

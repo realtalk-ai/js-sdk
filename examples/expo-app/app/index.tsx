@@ -154,9 +154,12 @@ function StatusIndicators({
   );
 }
 
+const VOICE: ConversationMode = { userAudio: true, agentAudio: true };
+const TEXT: ConversationMode = { userAudio: false, agentAudio: false };
+
 export default function ConversationScreen() {
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<ConversationMode>("voice");
+  const [mode, setMode] = useState<ConversationMode>(VOICE);
   const [textInput, setTextInput] = useState("");
   const flatListRef = useRef<FlatList<Message>>(null);
 
@@ -243,14 +246,14 @@ export default function ConversationScreen() {
               <TouchableOpacity
                 style={[
                   styles.modeButton,
-                  mode === "voice" && styles.modeButtonActive,
+                  mode.userAudio && styles.modeButtonActive,
                 ]}
-                onPress={() => setMode("voice")}
+                onPress={() => setMode(VOICE)}
               >
                 <Text
                   style={[
                     styles.modeButtonText,
-                    mode === "voice" && styles.modeButtonTextActive,
+                    mode.userAudio && styles.modeButtonTextActive,
                   ]}
                 >
                   Voice
@@ -259,14 +262,14 @@ export default function ConversationScreen() {
               <TouchableOpacity
                 style={[
                   styles.modeButton,
-                  mode === "text" && styles.modeButtonActive,
+                  !mode.userAudio && styles.modeButtonActive,
                 ]}
-                onPress={() => setMode("text")}
+                onPress={() => setMode(TEXT)}
               >
                 <Text
                   style={[
                     styles.modeButtonText,
-                    mode === "text" && styles.modeButtonTextActive,
+                    !mode.userAudio && styles.modeButtonTextActive,
                   ]}
                 >
                   Text
@@ -315,7 +318,7 @@ export default function ConversationScreen() {
               { paddingBottom: Math.max(insets.bottom, 16) },
             ]}
           >
-            {isConnected && mode === "text" && (
+            {isConnected && !mode.userAudio && (
               <View style={styles.inputRow}>
                 <TextInput
                   style={styles.textInput}
@@ -335,7 +338,7 @@ export default function ConversationScreen() {
               </View>
             )}
 
-            {isConnected && mode === "voice" && (
+            {isConnected && mode.userAudio && (
               <View style={styles.actionRow}>
                 <TouchableOpacity
                   style={[

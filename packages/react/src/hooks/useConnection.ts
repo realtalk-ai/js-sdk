@@ -31,7 +31,14 @@ import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
-export const DEFAULT_CONVERSATION_MODE: ConversationMode = "text";
+export const DEFAULT_CONVERSATION_MODE: ConversationMode = {
+  userAudio: false,
+  agentAudio: false,
+};
+
+function isSameMode(a: ConversationMode, b: ConversationMode): boolean {
+  return a.userAudio === b.userAudio && a.agentAudio === b.agentAudio;
+}
 
 export interface UseConnectionReturn {
   connectionStatus: ConnectionStatus;
@@ -106,6 +113,7 @@ export function useConnection(opts: {
   }, []);
 
   const setModeBoth = useCallback((newMode: ConversationMode) => {
+    if (isSameMode(modeRef.current, newMode)) return;
     modeRef.current = newMode;
     setMode(newMode);
   }, []);
@@ -164,20 +172,24 @@ export function useConnection(opts: {
         case EventType.ConversationMode: {
           const requestedMode = requestedModeRef.current;
           requestedModeRef.current = null;
-          setModeBoth(event.data.mode);
+          setModeBoth({
+            userAudio: event.data.user_audio,
+            agentAudio: event.data.agent_audio,
+          });
           const wasRefused =
-            requestedMode !== null && requestedMode !== event.data.mode;
+            requestedMode !== null &&
+            !isSameMode(requestedMode, modeRef.current);
           if (wasRefused) {
             const conversationError: ConversationError = {
               error: new ProtocolError(
-                `Conversation mode "${requestedMode}" is not available right now`,
+                "The requested conversation mode is not available right now",
               ),
               fatal: false,
               timestamp: Date.now(),
             };
             setError(conversationError);
             optionsRef.current.onError?.(conversationError);
-            onModeRefused(requestedMode, event.data.mode);
+            onModeRefused(requestedMode, modeRef.current);
           }
           break;
         }
@@ -502,7 +514,10 @@ export function useConnection(opts: {
     requestedModeRef.current = newMode;
     transportRef.current.sendEvent({
       type: "set_conversation_mode",
-      data: { mode: newMode },
+      data: {
+        user_audio: newMode.userAudio,
+        agent_audio: newMode.agentAudio,
+      },
     });
   }, []);
 

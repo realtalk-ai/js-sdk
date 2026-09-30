@@ -60,7 +60,10 @@ const Chat = () => {
       {status === "not_started" || status === "finished" ? (
         <button
           onClick={() =>
-            startConversation({ agentId: "your-agent-id", mode: "voice" })
+            startConversation({
+              agentId: "your-agent-id",
+              mode: { userAudio: true, agentAudio: true },
+            })
           }
         >
           Start
