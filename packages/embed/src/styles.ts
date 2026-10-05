@@ -32,6 +32,7 @@ button {
 }
 
 .launcher {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -47,6 +48,17 @@ button {
 
 .launcher:hover {
   background: var(--rt-accent-hover);
+}
+
+.launcher-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--rt-online);
+  border: 2px solid var(--rt-bg);
 }
 
 .panel {

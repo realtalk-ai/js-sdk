@@ -12,8 +12,8 @@ import { useConversationExpiry } from "./hooks/useConversationExpiry.js";
 import { deriveWidgetStatus } from "./status.js";
 import { Composer } from "./components/Composer.js";
 import { Header } from "./components/Header.js";
+import { Launcher } from "./components/Launcher.js";
 import { MessageList } from "./components/MessageList.js";
-import { ChatIcon } from "./components/icons.js";
 
 const TEXT_ONLY: ConversationMode = { userAudio: false, agentAudio: false };
 const AUDIO_BOTH_WAYS: ConversationMode = {
@@ -128,6 +128,7 @@ function Widget({
   const conversationOver = status === "finished" || expired;
   const hasMessages = messages.length > 0;
   const ended = conversationOver && hasMessages;
+  const conversationInProgress = (active || paused) && !expired;
   const canReset = active || paused || ended;
 
   const start = async (mode: ConversationMode = startMode) => {
@@ -234,13 +235,10 @@ function Widget({
   if (!open) {
     return (
       <div className="container">
-        <button
-          className="launcher"
-          aria-label="Open chat"
-          onClick={() => setOpen(true)}
-        >
-          <ChatIcon />
-        </button>
+        <Launcher
+          conversationInProgress={conversationInProgress}
+          onOpen={() => setOpen(true)}
+        />
       </div>
     );
   }
