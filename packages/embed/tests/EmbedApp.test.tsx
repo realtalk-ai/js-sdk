@@ -161,6 +161,78 @@ describe("EmbedApp", () => {
     });
   });
 
+  describe("voice", () => {
+    it("turns the mic on without touching the agent audio", async () => {
+      await renderWidget();
+      openPanel();
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Enable microphone" }),
+      );
+      const micOnly = { userAudio: true, agentAudio: false };
+      await vi.waitFor(() =>
+        expect(conversation.startConversation).toHaveBeenCalledWith({
+          agentId: AGENT_ID,
+          mode: micOnly,
+        }),
+      );
+      expect(conversation.setMode).toHaveBeenCalledWith(micOnly);
+    });
+
+    it("turns the agent audio on without touching the mic", async () => {
+      await renderWidget();
+      openPanel();
+
+      fireEvent.click(screen.getByRole("button", { name: "Unmute audio" }));
+      expect(screen.getByRole("button", { name: "Mute audio" })).toBeTruthy();
+      expect(conversation.setMode).not.toHaveBeenCalled();
+
+      const textarea = screen.getByPlaceholderText("Type a message…");
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      await vi.waitFor(() =>
+        expect(conversation.startConversation).toHaveBeenCalledWith({
+          agentId: AGENT_ID,
+          mode: { userAudio: false, agentAudio: true },
+        }),
+      );
+    });
+
+    it("turns the agent audio off without touching the mic", async () => {
+      await renderWidget({
+        status: "active",
+        isMicEnabled: true,
+        mode: { userAudio: true, agentAudio: true },
+      });
+      openPanel();
+
+      fireEvent.click(screen.getByRole("button", { name: "Mute audio" }));
+      expect(conversation.setMode).toHaveBeenCalledWith({
+        userAudio: true,
+        agentAudio: false,
+      });
+      expect(conversation.toggleAudio).not.toHaveBeenCalled();
+      expect(conversation.setVolume).not.toHaveBeenCalled();
+    });
+
+    it("turns the mic off without touching the agent audio", async () => {
+      await renderWidget({
+        status: "active",
+        isMicEnabled: true,
+        mode: { userAudio: true, agentAudio: true },
+      });
+      openPanel();
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Disable microphone" }),
+      );
+      expect(conversation.setMode).toHaveBeenCalledWith({
+        userAudio: false,
+        agentAudio: true,
+      });
+    });
+  });
+
   describe("ending", () => {
     it("ends an active conversation and keeps the history", async () => {
       const { update } = await renderWidget({
@@ -272,7 +344,7 @@ describe("EmbedApp", () => {
       expect(audioButton.hasAttribute("disabled")).toBe(true);
 
       fireEvent.click(micButton);
-      expect(conversation.enableMic).not.toHaveBeenCalled();
+      expect(conversation.setMode).not.toHaveBeenCalled();
       expect(conversation.startConversation).not.toHaveBeenCalled();
 
       fireEvent.click(

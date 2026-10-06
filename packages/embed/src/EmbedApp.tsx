@@ -17,10 +17,6 @@ import { MessageList } from "./components/MessageList.js";
 import { NewConversation } from "./components/NewConversation.js";
 
 const TEXT_ONLY: ConversationMode = { userAudio: false, agentAudio: false };
-const AUDIO_BOTH_WAYS: ConversationMode = {
-  userAudio: true,
-  agentAudio: true,
-};
 
 export interface EmbedAppProps {
   agentId: string;
@@ -117,7 +113,7 @@ function Widget({
   const active = status === "active";
   const paused = status === "paused";
   const mode = active ? conversation.mode : startMode;
-  const isAudioMuted = !mode.agentAudio || conversation.isAudioMuted;
+  const isAudioMuted = !mode.agentAudio;
 
   useConversationExpiry(paused, config, () => {
     minter.reset();
@@ -178,7 +174,6 @@ function Widget({
 
   const changeMode = async (newMode: ConversationMode) => {
     setStartMode(newMode);
-    conversationRef.current.setVolume(1);
     if (active) {
       await conversationRef.current.setMode(newMode);
     } else if (!newMode.userAudio) {
@@ -188,35 +183,32 @@ function Widget({
 
   const handleAudioToggle = async () => {
     setNotice(null);
-    if (mode.userAudio) {
-      conversation.toggleAudio();
-      return;
-    }
-    await changeMode({ userAudio: false, agentAudio: isAudioMuted });
+    await changeMode({ ...mode, agentAudio: !mode.agentAudio });
   };
 
   const handleMicToggle = async () => {
     setNotice(null);
+    const withoutMic = { ...mode, userAudio: false };
     if (isMicEnabled) {
-      await changeMode({ userAudio: false, agentAudio: !isAudioMuted });
+      await changeMode(withoutMic);
       return;
     }
+    const withMic = { ...mode, userAudio: true };
     try {
-      await conversation.enableMic();
+      await conversation.setMode(withMic);
     } catch {
       setNotice(
         "Could not access the microphone. Check your browser permissions.",
       );
       return;
     }
-    setStartMode(AUDIO_BOTH_WAYS);
-    conversationRef.current.setVolume(isAudioMuted ? 0 : 1);
+    setStartMode(withMic);
     try {
-      if (!active) await start(AUDIO_BOTH_WAYS);
+      if (!active) await start(withMic);
     } catch (error) {
       console.error("[realtalk-embed] failed to start conversation", error);
       conversationRef.current.disableMic();
-      setStartMode(TEXT_ONLY);
+      setStartMode(withoutMic);
       setNotice("Could not connect. Please try again.");
     }
   };
