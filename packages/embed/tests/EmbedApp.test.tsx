@@ -355,6 +355,18 @@ describe("EmbedApp", () => {
       expect(audioButton.hasAttribute("disabled")).toBe(false);
     });
 
+    it("shows the agent audio as off once the conversation has ended", async () => {
+      const { update } = await renderWidget();
+      openPanel();
+
+      fireEvent.click(screen.getByRole("button", { name: "Unmute audio" }));
+      expect(screen.getByRole("button", { name: "Mute audio" })).toBeTruthy();
+
+      update({ status: "finished", messages: [message("m1", "Bye")] });
+      const audioButton = screen.getByRole("button", { name: "Unmute audio" });
+      expect(audioButton.hasAttribute("disabled")).toBe(true);
+    });
+
     it("expires a paused conversation once the server idle window has passed", async () => {
       const { update } = await renderWidget({
         status: "active",

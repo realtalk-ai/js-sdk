@@ -113,7 +113,6 @@ function Widget({
   const active = status === "active";
   const paused = status === "paused";
   const mode = active ? conversation.mode : startMode;
-  const isAudioMuted = !mode.agentAudio;
 
   useConversationExpiry(paused, config, () => {
     minter.reset();
@@ -125,6 +124,7 @@ function Widget({
   const conversationOver = status === "finished" || expired;
   const hasMessages = messages.length > 0;
   const ended = conversationOver && hasMessages;
+  const isAudioMuted = ended || !mode.agentAudio;
   const conversationInProgress = (active || paused) && !expired;
 
   const start = async (mode: ConversationMode = startMode) => {
