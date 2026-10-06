@@ -1,8 +1,17 @@
 export const styles = `
 :host {
   all: initial;
-  --rt-accent: #2563eb;
-  --rt-accent-hover: #1d4ed8;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999999;
+}
+
+.theme {
+  --rt-accent: #000000;
+  --rt-accent-fg: #ffffff;
+  --rt-accent-hover: color-mix(in srgb, var(--rt-accent) 85%, var(--rt-accent-fg));
+  --rt-accent-subtle: color-mix(in srgb, var(--rt-accent) 10%, transparent);
   --rt-bg: #ffffff;
   --rt-fg: #111827;
   --rt-muted: #6b7280;
@@ -10,11 +19,9 @@ export const styles = `
   --rt-agent-bg: #f3f4f6;
   --rt-danger: #dc2626;
   --rt-online: #16a34a;
+  --rt-online-fg: #ffffff;
+  --rt-online-subtle: color-mix(in srgb, var(--rt-online) 12%, transparent);
   --rt-warn: #f59e0b;
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 999999;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   color: var(--rt-fg);
@@ -41,7 +48,7 @@ button {
   border: none;
   border-radius: 50%;
   background: var(--rt-accent);
-  color: #ffffff;
+  color: var(--rt-accent-fg);
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   transition: transform 0.15s ease;
@@ -114,7 +121,7 @@ button {
 }
 
 .status.live .status-dot {
-  background: var(--rt-accent);
+  background: var(--rt-online);
   animation: rt-pulse 1.4s infinite ease-in-out;
 }
 
@@ -156,6 +163,7 @@ button {
 }
 
 .icon-button.active {
+  background: var(--rt-accent-subtle);
   color: var(--rt-accent);
 }
 
@@ -190,7 +198,7 @@ button {
 .message.user {
   align-self: flex-end;
   background: var(--rt-accent);
-  color: #ffffff;
+  color: var(--rt-accent-fg);
 }
 
 .message.agent {
@@ -244,12 +252,12 @@ button {
 }
 
 .subtasks-badge.pending {
-  background: rgba(37, 99, 235, 0.1);
+  background: var(--rt-accent-subtle);
   color: var(--rt-accent);
 }
 
 .subtasks-badge.completed {
-  background: rgba(22, 163, 74, 0.12);
+  background: var(--rt-online-subtle);
   color: var(--rt-online);
 }
 
@@ -321,7 +329,7 @@ button {
   top: 1.5px;
   width: 3px;
   height: 6px;
-  border: solid #ffffff;
+  border: solid var(--rt-online-fg);
   border-width: 0 1.5px 1.5px 0;
   transform: rotate(45deg);
 }
@@ -402,7 +410,7 @@ button {
   border: none;
   border-radius: 8px;
   background: var(--rt-accent);
-  color: #ffffff;
+  color: var(--rt-accent-fg);
   cursor: pointer;
 }
 
@@ -421,7 +429,7 @@ button {
   border: none;
   border-radius: 8px;
   background: var(--rt-accent);
-  color: #ffffff;
+  color: var(--rt-accent-fg);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;

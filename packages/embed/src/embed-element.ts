@@ -30,6 +30,7 @@ export class RealtalkEmbedElement extends BaseElement {
       shadowRoot.appendChild(styleElement);
 
       this.mountPoint = document.createElement("div");
+      this.mountPoint.className = "theme";
       shadowRoot.appendChild(this.mountPoint);
     }
 
