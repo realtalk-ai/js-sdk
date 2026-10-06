@@ -130,7 +130,7 @@ describe("useConversation", () => {
     expect(result.current.conversationId).toBe("conv-1");
   });
 
-  it("endConversation disconnects", async () => {
+  it("endConversation disconnects and keeps the messages", async () => {
     const { result } = renderHook(() => useConversation(), { wrapper });
 
     await act(async () => {
@@ -140,12 +140,28 @@ describe("useConversation", () => {
       });
     });
 
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+    act(() =>
+      onEventCb({
+        type: "message_created",
+        data: {
+          id: "msg-1",
+          role: "agent",
+          text: "Hello!",
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+      }),
+    );
+
     await act(async () => {
       await result.current.endConversation();
     });
 
     expect(result.current.connectionStatus).toBe("disconnected");
-    expect(result.current.status).toBe("not_started");
+    expect(result.current.status).toBe("finished");
+    expect(result.current.messages).toHaveLength(1);
   });
 
   it("sendMessage delegates to transport", async () => {
@@ -375,7 +391,7 @@ describe("useConversation", () => {
       data: {},
     });
     expect(result.current.connectionStatus).toBe("disconnected");
-    expect(result.current.status).toBe("not_started");
+    expect(result.current.status).toBe("finished");
   });
 
   it("sendDTMF sends dtmf event", async () => {
