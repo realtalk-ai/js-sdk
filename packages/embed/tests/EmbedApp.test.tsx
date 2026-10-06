@@ -144,6 +144,23 @@ describe("EmbedApp", () => {
     });
   });
 
+  describe("composer", () => {
+    it("disables the send button until there is text to send", async () => {
+      await renderWidget();
+      openPanel();
+
+      const sendButton = screen.getByRole("button", { name: "Send message" });
+      const textarea = screen.getByPlaceholderText("Type a message…");
+      expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+      fireEvent.change(textarea, { target: { value: "   " } });
+      expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      expect(sendButton.hasAttribute("disabled")).toBe(false);
+    });
+  });
+
   describe("ending", () => {
     it("ends an active conversation and keeps the history", async () => {
       const { update } = await renderWidget({

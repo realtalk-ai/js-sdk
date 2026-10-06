@@ -10,6 +10,7 @@ export function Composer({
   onSend: (text: string) => Promise<void>;
 }): JSX.Element {
   const [draft, setDraft] = useState("");
+  const hasText = draft.trim() !== "";
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -36,23 +37,25 @@ export function Composer({
 
   return (
     <form className="composer" onSubmit={handleSubmit}>
-      <textarea
-        rows={1}
-        placeholder="Type a message…"
-        autoComplete="off"
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onKeyDown={sendOnEnter}
-      />
-      <button
-        className="send"
-        type="submit"
-        aria-label="Send message"
-        title="Send message"
-        disabled={disabled}
-      >
-        <SendIcon />
-      </button>
+      <div className="field">
+        <textarea
+          rows={2}
+          placeholder="Type a message…"
+          autoComplete="off"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={sendOnEnter}
+        />
+        <button
+          className="send"
+          type="submit"
+          aria-label="Send message"
+          title="Send message"
+          disabled={disabled || !hasText}
+        >
+          <SendIcon />
+        </button>
+      </div>
     </form>
   );
 }

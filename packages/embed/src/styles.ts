@@ -36,8 +36,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border: none;
   border-radius: 50%;
   background: var(--rt-accent);
@@ -67,9 +67,10 @@ button {
   display: flex;
   flex-direction: column;
   width: 360px;
-  height: 520px;
+  height: 540px;
   max-width: calc(100vw - 40px);
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
   background: var(--rt-bg);
   border: 1px solid var(--rt-border);
   border-radius: 12px;
@@ -170,7 +171,7 @@ button {
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 12px 12px 22px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -190,14 +191,12 @@ button {
   align-self: flex-end;
   background: var(--rt-accent);
   color: #ffffff;
-  border-bottom-right-radius: 4px;
 }
 
 .message.agent {
   align-self: flex-start;
   background: var(--rt-agent-bg);
   color: var(--rt-fg);
-  border-bottom-left-radius: 4px;
 }
 
 .thinking {
@@ -347,11 +346,26 @@ button {
 }
 
 .composer {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  padding: 12px;
-  border-top: 1px solid var(--rt-border);
+  margin-top: -10px;
+  padding: 0 12px 12px;
+}
+
+.composer .field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  border: 1px solid var(--rt-border);
+  border-radius: 8px;
+  background: var(--rt-bg);
+}
+
+.composer .field:has(textarea:focus) {
+  border-color: var(--rt-accent);
 }
 
 .composer textarea {
@@ -359,23 +373,20 @@ button {
   min-width: 0;
   box-sizing: border-box;
   field-sizing: content;
-  max-height: 118px;
-  padding: 8px 12px;
-  border: 1px solid var(--rt-border);
+  min-height: 56px;
+  max-height: 116px;
+  padding: 8px 4px 8px 12px;
+  border: none;
   border-radius: 8px;
   font-size: 14px;
   line-height: 20px;
   font-family: inherit;
   color: inherit;
-  background: var(--rt-bg);
+  background: transparent;
   outline: none;
   resize: none;
   overflow-y: auto;
   overscroll-behavior: contain;
-}
-
-.composer textarea:focus {
-  border-color: var(--rt-accent);
 }
 
 .composer .send {
@@ -383,8 +394,11 @@ button {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  height: 38px;
-  padding: 0 8px;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin: 6px;
+  padding: 0;
   border: none;
   border-radius: 8px;
   background: var(--rt-accent);
