@@ -44,10 +44,12 @@ button {
   color: #ffffff;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
 }
 
 .launcher:hover {
   background: var(--rt-accent-hover);
+  transform: scale(1.06);
 }
 
 .launcher-badge {
