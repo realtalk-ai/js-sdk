@@ -398,4 +398,20 @@ button {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.composer .start-new {
+  flex: 1;
+  height: 38px;
+  border: none;
+  border-radius: 8px;
+  background: var(--rt-accent);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.composer .start-new:hover {
+  background: var(--rt-accent-hover);
+}
 `;

@@ -14,6 +14,7 @@ import { Composer } from "./components/Composer.js";
 import { Header } from "./components/Header.js";
 import { Launcher } from "./components/Launcher.js";
 import { MessageList } from "./components/MessageList.js";
+import { NewConversation } from "./components/NewConversation.js";
 
 const TEXT_ONLY: ConversationMode = { userAudio: false, agentAudio: false };
 const AUDIO_BOTH_WAYS: ConversationMode = {
@@ -129,7 +130,6 @@ function Widget({
   const hasMessages = messages.length > 0;
   const ended = conversationOver && hasMessages;
   const conversationInProgress = (active || paused) && !expired;
-  const canReset = active || paused || ended;
 
   const start = async (mode: ConversationMode = startMode) => {
     if (starting || active) return;
@@ -140,7 +140,8 @@ function Widget({
       const resumeWasDropped =
         storedConversationId !== undefined &&
         minter.conversationId !== storedConversationId;
-      if (resumeWasDropped || expired) setPreviousChatEnded(true);
+      const replacesEndedChat = resumeWasDropped || ended;
+      if (replacesEndedChat) setPreviousChatEnded(true);
       setExpired(false);
     } finally {
       setStarting(false);
@@ -159,14 +160,15 @@ function Widget({
     }
   };
 
-  const handleReset = async () => {
-    if (active || paused) {
-      try {
-        await conversationRef.current.endConversation();
-      } catch {
-        // The server ends unreachable conversations on its own idle timeout.
-      }
+  const handleEnd = async () => {
+    try {
+      await conversationRef.current.endConversation();
+    } catch {
+      // The server ends unreachable conversations on its own idle timeout.
     }
+  };
+
+  const handleStartNew = () => {
     minter.reset();
     conversationRef.current.clearMessages();
     setStartMode(TEXT_ONLY);
@@ -251,10 +253,10 @@ function Widget({
           status={widgetStatus}
           isMicEnabled={isMicEnabled}
           isAudioMuted={isAudioMuted}
-          canReset={canReset}
+          canEnd={conversationInProgress}
           onToggleMic={() => void handleMicToggle()}
           onToggleAudio={() => void handleAudioToggle()}
-          onReset={() => void handleReset()}
+          onEnd={() => void handleEnd()}
           onMinimize={() => setOpen(false)}
         />
 
@@ -266,7 +268,11 @@ function Widget({
           notice={notice}
         />
 
-        <Composer disabled={starting} onSend={handleSend} />
+        {ended ? (
+          <NewConversation onStartNew={handleStartNew} />
+        ) : (
+          <Composer disabled={starting} onSend={handleSend} />
+        )}
       </div>
     </div>
   );

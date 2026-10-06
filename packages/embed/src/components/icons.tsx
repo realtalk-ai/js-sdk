@@ -78,11 +78,12 @@ export function SpeakerOffIcon(): JSX.Element {
   );
 }
 
-export function ResetIcon(): JSX.Element {
+export function EndIcon(): JSX.Element {
   return (
     <svg {...iconProps}>
-      <polyline points="1 4 1 10 7 10" />
-      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
     </svg>
   );
 }

@@ -1,9 +1,9 @@
 import type { WidgetStatus } from "../status.js";
 import {
   ChevronDownIcon,
+  EndIcon,
   MicIcon,
   MicOffIcon,
-  ResetIcon,
   SpeakerIcon,
   SpeakerOffIcon,
 } from "./icons.js";
@@ -13,20 +13,20 @@ export function Header({
   status,
   isMicEnabled,
   isAudioMuted,
-  canReset,
+  canEnd,
   onToggleMic,
   onToggleAudio,
-  onReset,
+  onEnd,
   onMinimize,
 }: {
   displayName: string;
   status: WidgetStatus;
   isMicEnabled: boolean;
   isAudioMuted: boolean;
-  canReset: boolean;
+  canEnd: boolean;
   onToggleMic: () => void;
   onToggleAudio: () => void;
-  onReset: () => void;
+  onEnd: () => void;
   onMinimize: () => void;
 }): JSX.Element {
   const micLabel = isMicEnabled ? "Disable microphone" : "Enable microphone";
@@ -60,12 +60,12 @@ export function Header({
         </button>
         <button
           className="icon-button"
-          aria-label="Reset chat"
-          title="Reset chat"
-          disabled={!canReset}
-          onClick={onReset}
+          aria-label="End conversation"
+          title="End conversation"
+          disabled={!canEnd}
+          onClick={onEnd}
         >
-          <ResetIcon />
+          <EndIcon />
         </button>
         <button
           className="icon-button"
