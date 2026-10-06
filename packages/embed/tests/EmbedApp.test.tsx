@@ -240,26 +240,30 @@ describe("EmbedApp", () => {
       expect(screen.queryByText(/previous conversation ended/)).toBeNull();
     });
 
-    it("starts a voice conversation from the ended state with an ended note", async () => {
-      conversation.enableMic.mockResolvedValue(undefined);
+    it("disables the mic and audio buttons until a new conversation is started", async () => {
       const { update } = await renderWidget({
         status: "finished",
         messages: [message("m1", "Bye")],
       });
       openPanel();
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Enable microphone" }),
-      );
-      await vi.waitFor(() =>
-        expect(conversation.startConversation).toHaveBeenCalledWith({
-          agentId: AGENT_ID,
-          mode: { userAudio: true, agentAudio: true },
-        }),
-      );
+      const micButton = screen.getByRole("button", {
+        name: "Enable microphone",
+      });
+      const audioButton = screen.getByRole("button", { name: "Unmute audio" });
+      expect(micButton.hasAttribute("disabled")).toBe(true);
+      expect(audioButton.hasAttribute("disabled")).toBe(true);
 
-      update({ status: "active", messages: [] });
-      expect(screen.getByText(/previous conversation ended/)).toBeTruthy();
+      fireEvent.click(micButton);
+      expect(conversation.enableMic).not.toHaveBeenCalled();
+      expect(conversation.startConversation).not.toHaveBeenCalled();
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Start new conversation" }),
+      );
+      update({ messages: [] });
+      expect(micButton.hasAttribute("disabled")).toBe(false);
+      expect(audioButton.hasAttribute("disabled")).toBe(false);
     });
 
     it("expires a paused conversation once the server idle window has passed", async () => {

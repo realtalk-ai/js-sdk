@@ -13,6 +13,7 @@ export function Header({
   status,
   isMicEnabled,
   isAudioMuted,
+  canChangeMode,
   canEnd,
   onToggleMic,
   onToggleAudio,
@@ -23,6 +24,7 @@ export function Header({
   status: WidgetStatus;
   isMicEnabled: boolean;
   isAudioMuted: boolean;
+  canChangeMode: boolean;
   canEnd: boolean;
   onToggleMic: () => void;
   onToggleAudio: () => void;
@@ -46,6 +48,7 @@ export function Header({
           className={`icon-button ${isMicEnabled ? "active" : ""}`}
           aria-label={micLabel}
           title={micLabel}
+          disabled={!canChangeMode}
           onClick={onToggleMic}
         >
           {isMicEnabled ? <MicIcon /> : <MicOffIcon />}
@@ -54,6 +57,7 @@ export function Header({
           className={`icon-button ${isAudioMuted ? "" : "active"}`}
           aria-label={audioLabel}
           title={audioLabel}
+          disabled={!canChangeMode}
           onClick={onToggleAudio}
         >
           {isAudioMuted ? <SpeakerOffIcon /> : <SpeakerIcon />}

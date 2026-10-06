@@ -140,8 +140,7 @@ function Widget({
       const resumeWasDropped =
         storedConversationId !== undefined &&
         minter.conversationId !== storedConversationId;
-      const replacesEndedChat = resumeWasDropped || ended;
-      if (replacesEndedChat) setPreviousChatEnded(true);
+      if (resumeWasDropped) setPreviousChatEnded(true);
       setExpired(false);
     } finally {
       setStarting(false);
@@ -253,6 +252,7 @@ function Widget({
           status={widgetStatus}
           isMicEnabled={isMicEnabled}
           isAudioMuted={isAudioMuted}
+          canChangeMode={!ended}
           canEnd={conversationInProgress}
           onToggleMic={() => void handleMicToggle()}
           onToggleAudio={() => void handleAudioToggle()}
