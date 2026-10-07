@@ -22,10 +22,11 @@ If the widget doesn't render, the most common cause is that the page's origin is
 
 ## Attributes
 
-| Attribute    | Required | Description                                                                                                            |
-| ------------ | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `agent-id`   | yes      | The agent to embed.                                                                                                    |
-| `server-url` | no       | Alternative Real Talk server origin. Defaults to the production server and is only needed for development and testing. |
+| Attribute      | Required | Description                                                                                                            |
+| -------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `agent-id`     | yes      | The agent to embed.                                                                                                    |
+| `server-url`   | no       | Alternative Real Talk server origin. Defaults to the production server and is only needed for development and testing. |
+| `accent-color` | no       | Hex color for the launcher, buttons and the visitor's messages, e.g. `#1d4ed8`. Defaults to black.                     |
 
 ## Conversations and tabs
 
@@ -33,7 +34,7 @@ The widget keeps the conversation in `sessionStorage`, so a chat survives page r
 
 ## Placement and styling
 
-By default the widget floats in the bottom-right corner. The `<realtalk-embed>` element lives in your page's normal DOM, so you can position it with your own CSS (`position`, `bottom`, `right`, `z-index`, etc.). The widget's internals stay isolated inside the shadow root.
+By default the widget floats in the bottom-right corner. The `<realtalk-embed>` element lives in your page's normal DOM, so you can position it with your own CSS (`position`, `bottom`, `right`, `z-index`, etc.). The widget's look is set through attributes, and its internals stay isolated inside the shadow root.
 
 ## Voice conversations
 

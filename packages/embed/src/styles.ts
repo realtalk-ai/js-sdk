@@ -1,3 +1,5 @@
+import { WIDGET_BACKGROUND, WIDGET_FOREGROUND } from "./theme.js";
+
 export const styles = `
 :host {
   all: initial;
@@ -10,10 +12,11 @@ export const styles = `
 .theme {
   --rt-accent: #000000;
   --rt-accent-fg: #ffffff;
+  --rt-accent-ink: var(--rt-accent);
   --rt-accent-hover: color-mix(in srgb, var(--rt-accent) 85%, var(--rt-accent-fg));
   --rt-accent-subtle: color-mix(in srgb, var(--rt-accent) 10%, transparent);
-  --rt-bg: #ffffff;
-  --rt-fg: #111827;
+  --rt-bg: ${WIDGET_BACKGROUND};
+  --rt-fg: ${WIDGET_FOREGROUND};
   --rt-muted: #6b7280;
   --rt-border: #e5e7eb;
   --rt-agent-bg: #f3f4f6;
@@ -164,7 +167,7 @@ button {
 
 .icon-button.active {
   background: var(--rt-accent-subtle);
-  color: var(--rt-accent);
+  color: var(--rt-accent-ink);
 }
 
 .icon-button.danger {
@@ -253,7 +256,7 @@ button {
 
 .subtasks-badge.pending {
   background: var(--rt-accent-subtle);
-  color: var(--rt-accent);
+  color: var(--rt-accent-ink);
 }
 
 .subtasks-badge.completed {
@@ -308,7 +311,7 @@ button {
   width: 12px;
   height: 12px;
   border: 2px solid var(--rt-border);
-  border-top-color: var(--rt-accent);
+  border-top-color: var(--rt-accent-ink);
   border-radius: 50%;
   animation: rt-spin 0.7s linear infinite;
 }
@@ -373,7 +376,7 @@ button {
 }
 
 .composer .field:has(textarea:focus) {
-  border-color: var(--rt-accent);
+  border-color: var(--rt-accent-ink);
 }
 
 .composer textarea {
