@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import type { ReactNode } from "react";
 import type { ConversationStatus, Message } from "@realtalk-ai/core";
-import { EmbedApp } from "../src/EmbedApp.js";
+import { EmbedApp, type EmbedAppProps } from "../src/EmbedApp.js";
 
 const AGENT_ID = "agent-1";
 const IDLE_PAUSE_SECONDS = 30;
@@ -68,18 +68,27 @@ function mockFetch() {
   );
 }
 
-function widget() {
-  return <EmbedApp agentId={AGENT_ID} serverUrl="https://api.example.com" />;
+function widget(props: Partial<EmbedAppProps> = {}) {
+  return (
+    <EmbedApp
+      agentId={AGENT_ID}
+      serverUrl="https://api.example.com"
+      {...props}
+    />
+  );
 }
 
-async function renderWidget(patch: Partial<typeof conversation> = {}) {
+async function renderWidget(
+  patch: Partial<typeof conversation> = {},
+  props: Partial<EmbedAppProps> = {},
+) {
   Object.assign(conversation, patch);
-  const rendered = render(widget());
+  const rendered = render(widget(props));
   await screen.findByRole("button", { name: /Open chat/ });
 
   const update = (next: Partial<typeof conversation>) => {
     Object.assign(conversation, next);
-    rendered.rerender(widget());
+    rendered.rerender(widget(props));
   };
 
   return { ...rendered, update };
@@ -162,6 +171,26 @@ describe("EmbedApp", () => {
   });
 
   describe("voice", () => {
+    it("hides the voice buttons and starts as text when voice is disabled", async () => {
+      await renderWidget({}, { voiceDisabled: true });
+      openPanel();
+
+      expect(
+        screen.queryByRole("button", { name: "Enable microphone" }),
+      ).toBeNull();
+      expect(screen.queryByRole("button", { name: "Unmute audio" })).toBeNull();
+
+      const textarea = screen.getByPlaceholderText("Type a message…");
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      await vi.waitFor(() =>
+        expect(conversation.startConversation).toHaveBeenCalledWith({
+          agentId: AGENT_ID,
+          mode: { userAudio: false, agentAudio: false },
+        }),
+      );
+    });
+
     it("turns the mic on without touching the agent audio", async () => {
       await renderWidget();
       openPanel();

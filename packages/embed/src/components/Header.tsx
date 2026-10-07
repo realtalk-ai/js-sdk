@@ -11,6 +11,7 @@ import {
 export function Header({
   displayName,
   status,
+  voiceEnabled,
   isMicEnabled,
   isAudioMuted,
   canChangeMode,
@@ -22,6 +23,7 @@ export function Header({
 }: {
   displayName: string;
   status: WidgetStatus;
+  voiceEnabled: boolean;
   isMicEnabled: boolean;
   isAudioMuted: boolean;
   canChangeMode: boolean;
@@ -44,24 +46,28 @@ export function Header({
         </div>
       </div>
       <div className="actions">
-        <button
-          className={`icon-button ${isMicEnabled ? "active" : ""}`}
-          aria-label={micLabel}
-          title={micLabel}
-          disabled={!canChangeMode}
-          onClick={onToggleMic}
-        >
-          {isMicEnabled ? <MicIcon /> : <MicOffIcon />}
-        </button>
-        <button
-          className={`icon-button ${isAudioMuted ? "" : "active"}`}
-          aria-label={audioLabel}
-          title={audioLabel}
-          disabled={!canChangeMode}
-          onClick={onToggleAudio}
-        >
-          {isAudioMuted ? <SpeakerOffIcon /> : <SpeakerIcon />}
-        </button>
+        {voiceEnabled && (
+          <>
+            <button
+              className={`icon-button ${isMicEnabled ? "active" : ""}`}
+              aria-label={micLabel}
+              title={micLabel}
+              disabled={!canChangeMode}
+              onClick={onToggleMic}
+            >
+              {isMicEnabled ? <MicIcon /> : <MicOffIcon />}
+            </button>
+            <button
+              className={`icon-button ${isAudioMuted ? "" : "active"}`}
+              aria-label={audioLabel}
+              title={audioLabel}
+              disabled={!canChangeMode}
+              onClick={onToggleAudio}
+            >
+              {isAudioMuted ? <SpeakerOffIcon /> : <SpeakerIcon />}
+            </button>
+          </>
+        )}
         <button
           className="icon-button"
           aria-label="End conversation"
