@@ -371,7 +371,7 @@ button {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   border: 1px solid var(--rt-border);
   border-radius: var(--rt-radius-sm);
   background: var(--rt-bg);
@@ -382,13 +382,11 @@ button {
 }
 
 .composer textarea {
-  flex: 1;
-  min-width: 0;
   box-sizing: border-box;
   field-sizing: content;
-  min-height: 56px;
-  max-height: 116px;
-  padding: 8px 4px 8px 12px;
+  min-height: 32px;
+  max-height: 112px;
+  padding: 8px 12px 4px;
   border: none;
   border-radius: var(--rt-radius-sm);
   font-size: 14px;
@@ -402,6 +400,14 @@ button {
   overscroll-behavior: contain;
 }
 
+.composer .field-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px 6px;
+  cursor: text;
+}
+
 .composer .send {
   display: flex;
   align-items: center;
@@ -410,7 +416,7 @@ button {
   flex: none;
   width: 32px;
   height: 32px;
-  margin: 6px;
+  margin-left: auto;
   padding: 0;
   border: none;
   border-radius: var(--rt-radius-sm);

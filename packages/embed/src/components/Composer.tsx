@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { FormEvent, KeyboardEvent } from "react";
+import { useRef, useState } from "react";
+import type { FormEvent, KeyboardEvent, MouseEvent } from "react";
 import { SendIcon } from "./icons.js";
 
 export function Composer({
@@ -11,6 +11,7 @@ export function Composer({
 }): JSX.Element {
   const [draft, setDraft] = useState("");
   const hasText = draft.trim() !== "";
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -35,26 +36,33 @@ export function Composer({
     event.currentTarget.form?.requestSubmit();
   };
 
+  const focusOnEmptyAreaClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) textareaRef.current?.focus();
+  };
+
   return (
     <form className="composer" onSubmit={handleSubmit}>
       <div className="field">
         <textarea
-          rows={2}
+          ref={textareaRef}
+          rows={1}
           placeholder="Type a message…"
           autoComplete="off"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={sendOnEnter}
         />
-        <button
-          className="send"
-          type="submit"
-          aria-label="Send message"
-          title="Send message"
-          disabled={disabled || !hasText}
-        >
-          <SendIcon />
-        </button>
+        <div className="field-actions" onClick={focusOnEmptyAreaClick}>
+          <button
+            className="send"
+            type="submit"
+            aria-label="Send message"
+            title="Send message"
+            disabled={disabled || !hasText}
+          >
+            <SendIcon />
+          </button>
+        </div>
       </div>
     </form>
   );
