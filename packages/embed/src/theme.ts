@@ -1,5 +1,8 @@
+export type Rounding = "small" | "medium" | "large";
+
 export interface ThemeOptions {
   accent?: string;
+  rounding?: Rounding;
 }
 
 export type ThemeTokens = Record<string, string>;
@@ -17,6 +20,13 @@ const INK_MIX_STEPS = 20;
 
 const HEX_COLOR_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
+// The panel and message radius, and the smaller one for buttons and fields.
+const ROUNDING_TOKENS: Record<Rounding, ThemeTokens> = {
+  small: { "--rt-radius": "6px", "--rt-radius-sm": "4px" },
+  medium: { "--rt-radius": "12px", "--rt-radius-sm": "8px" },
+  large: { "--rt-radius": "20px", "--rt-radius-sm": "12px" },
+};
+
 interface RgbColor {
   red: number;
   green: number;
@@ -25,6 +35,10 @@ interface RgbColor {
 
 export function isHexColor(value: string): boolean {
   return HEX_COLOR_PATTERN.test(value);
+}
+
+export function isRounding(value: string): value is Rounding {
+  return Object.keys(ROUNDING_TOKENS).includes(value);
 }
 
 function parseHexColor(hex: string): RgbColor {
@@ -127,6 +141,10 @@ export function resolveTheme(options: ThemeOptions): ThemeTokens {
     tokens["--rt-accent"] = accent;
     tokens["--rt-accent-fg"] = accentTextColor(accent);
     tokens["--rt-accent-ink"] = accentInkColor(accent);
+  }
+
+  if (options.rounding !== undefined) {
+    Object.assign(tokens, ROUNDING_TOKENS[options.rounding]);
   }
 
   return tokens;

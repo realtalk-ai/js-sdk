@@ -27,6 +27,7 @@ If the widget doesn't render, the most common cause is that the page's origin is
 | `agent-id`     | yes      | The agent to embed.                                                                                                    |
 | `server-url`   | no       | Alternative Real Talk server origin. Defaults to the production server and is only needed for development and testing. |
 | `accent-color` | no       | Hex color for the launcher, buttons and the visitor's messages, e.g. `#1d4ed8`. Defaults to black.                     |
+| `rounding`     | no       | How rounded the corners are: `small`, `medium` or `large`. Defaults to `medium`.                                       |
 
 ## Conversations and tabs
 

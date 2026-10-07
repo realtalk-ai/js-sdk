@@ -3,7 +3,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { EmbedApp } from "./EmbedApp.js";
 import { DEFAULT_SERVER_URL } from "./session.js";
 import { styles } from "./styles.js";
-import { isHexColor, resolveTheme, type ThemeOptions } from "./theme.js";
+import {
+  isHexColor,
+  isRounding,
+  resolveTheme,
+  type ThemeOptions,
+} from "./theme.js";
 
 // Lets server-side code import the package, where HTMLElement does not exist.
 const BaseElement =
@@ -12,7 +17,7 @@ const BaseElement =
     : (class {} as unknown as typeof HTMLElement);
 
 export class RealtalkEmbedElement extends BaseElement {
-  static observedAttributes = ["accent-color"];
+  static observedAttributes = ["accent-color", "rounding"];
 
   private root: Root | null = null;
   private mountPoint: HTMLElement | null = null;
@@ -66,16 +71,30 @@ export class RealtalkEmbedElement extends BaseElement {
   }
 
   private themeOptionsFromAttributes(): ThemeOptions {
+    const options: ThemeOptions = {};
+
     const accent = this.getAttribute("accent-color");
-    if (accent === null) {
-      return {};
+    if (accent !== null) {
+      if (isHexColor(accent)) {
+        options.accent = accent;
+      } else {
+        console.warn(
+          "[realtalk-embed] accent-color must be a hex color like #1d4ed8.",
+        );
+      }
     }
-    if (!isHexColor(accent)) {
-      console.warn(
-        "[realtalk-embed] accent-color must be a hex color like #1d4ed8.",
-      );
-      return {};
+
+    const rounding = this.getAttribute("rounding");
+    if (rounding !== null) {
+      if (isRounding(rounding)) {
+        options.rounding = rounding;
+      } else {
+        console.warn(
+          "[realtalk-embed] rounding must be small, medium or large.",
+        );
+      }
     }
-    return { accent };
+
+    return options;
   }
 }

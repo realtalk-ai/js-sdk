@@ -25,6 +25,8 @@ export const styles = `
   --rt-online-fg: #ffffff;
   --rt-online-subtle: color-mix(in srgb, var(--rt-online) 12%, transparent);
   --rt-warn: #f59e0b;
+  --rt-radius: 12px;
+  --rt-radius-sm: 8px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   color: var(--rt-fg);
@@ -83,7 +85,7 @@ button {
   max-height: calc(100dvh - 40px);
   background: var(--rt-bg);
   border: 1px solid var(--rt-border);
-  border-radius: 12px;
+  border-radius: var(--rt-radius);
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
 }
@@ -154,7 +156,7 @@ button {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--rt-radius-sm);
   background: transparent;
   color: var(--rt-muted);
   cursor: pointer;
@@ -191,7 +193,7 @@ button {
 .message {
   max-width: 80%;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: var(--rt-radius);
   font-size: 14px;
   line-height: 1.4;
   white-space: pre-wrap;
@@ -274,7 +276,7 @@ button {
   padding: 10px 12px;
   background: var(--rt-bg);
   border: 1px solid var(--rt-border);
-  border-radius: 8px;
+  border-radius: var(--rt-radius-sm);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   white-space: nowrap;
   z-index: 1;
@@ -371,7 +373,7 @@ button {
   display: flex;
   align-items: flex-end;
   border: 1px solid var(--rt-border);
-  border-radius: 8px;
+  border-radius: var(--rt-radius-sm);
   background: var(--rt-bg);
 }
 
@@ -388,7 +390,7 @@ button {
   max-height: 116px;
   padding: 8px 4px 8px 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--rt-radius-sm);
   font-size: 14px;
   line-height: 20px;
   font-family: inherit;
@@ -411,7 +413,7 @@ button {
   margin: 6px;
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--rt-radius-sm);
   background: var(--rt-accent);
   color: var(--rt-accent-fg);
   cursor: pointer;
@@ -430,7 +432,7 @@ button {
   flex: 1;
   height: 38px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--rt-radius-sm);
   background: var(--rt-accent);
   color: var(--rt-accent-fg);
   font-size: 14px;

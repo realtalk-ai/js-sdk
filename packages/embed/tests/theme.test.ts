@@ -4,6 +4,7 @@ import {
   WIDGET_FOREGROUND,
   contrastRatio,
   isHexColor,
+  isRounding,
   resolveTheme,
 } from "../src/theme.js";
 
@@ -80,5 +81,40 @@ describe("resolveTheme", () => {
     expect(contrastRatio(ink, WIDGET_BACKGROUND)).toBeLessThan(
       contrastRatio(WIDGET_FOREGROUND, WIDGET_BACKGROUND),
     );
+  });
+});
+
+describe("isRounding", () => {
+  it("accepts the three levels", () => {
+    expect(isRounding("small")).toBe(true);
+    expect(isRounding("medium")).toBe(true);
+    expect(isRounding("large")).toBe(true);
+  });
+
+  it("rejects anything else", () => {
+    expect(isRounding("Small")).toBe(false);
+    expect(isRounding("8px")).toBe(false);
+    expect(isRounding("toString")).toBe(false);
+  });
+});
+
+describe("resolveTheme rounding", () => {
+  it("returns both radius tokens", () => {
+    expect(resolveTheme({ rounding: "large" })).toEqual({
+      "--rt-radius": "20px",
+      "--rt-radius-sm": "12px",
+    });
+  });
+
+  it("combines with the accent", () => {
+    expect(
+      Object.keys(resolveTheme({ accent: "#2563eb", rounding: "small" })),
+    ).toEqual([
+      "--rt-accent",
+      "--rt-accent-fg",
+      "--rt-accent-ink",
+      "--rt-radius",
+      "--rt-radius-sm",
+    ]);
   });
 });
