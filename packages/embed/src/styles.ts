@@ -13,8 +13,9 @@ export const styles = `
   --rt-accent: #000000;
   --rt-accent-fg: #ffffff;
   --rt-accent-ink: var(--rt-accent);
+  --rt-accent-edge: var(--rt-accent);
   --rt-accent-hover: color-mix(in srgb, var(--rt-accent) 85%, var(--rt-accent-fg));
-  --rt-accent-subtle: color-mix(in srgb, var(--rt-accent) 10%, transparent);
+  --rt-accent-subtle: color-mix(in srgb, var(--rt-accent-ink) 10%, transparent);
   --rt-bg: ${WIDGET_BACKGROUND};
   --rt-fg: ${WIDGET_FOREGROUND};
   --rt-muted: #6b7280;
@@ -24,6 +25,7 @@ export const styles = `
   --rt-online: #16a34a;
   --rt-online-fg: #ffffff;
   --rt-online-subtle: color-mix(in srgb, var(--rt-online) 12%, transparent);
+  --rt-live: var(--rt-online);
   --rt-warn: #f59e0b;
   --rt-radius: 12px;
   --rt-radius-sm: 8px;
@@ -232,6 +234,7 @@ button {
   align-self: flex-end;
   background: var(--rt-accent);
   color: var(--rt-accent-fg);
+  box-shadow: inset 0 0 0 1px var(--rt-accent-edge);
 }
 
 .message.agent {

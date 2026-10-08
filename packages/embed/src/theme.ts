@@ -15,8 +15,14 @@ const WHITE = "#ffffff";
 // WCAG AA minimum for normal text.
 const MIN_TEXT_CONTRAST = 4.5;
 
-// How finely the ink search mixes the accent toward the foreground.
+// Enough contrast for an edge to separate a fill from the background without reading as a border.
+const MIN_EDGE_CONTRAST = 1.25;
+
+// How finely the ink and edge searches mix the accent toward the foreground.
 const INK_MIX_STEPS = 20;
+
+// The largest channel spread for an accent to still count as grayscale.
+const GRAYSCALE_SPREAD = 24;
 
 const HEX_COLOR_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
@@ -116,7 +122,9 @@ function accentTextColor(accent: string): string {
   return whiteContrast >= darkContrast ? WHITE : WIDGET_FOREGROUND;
 }
 
-function accentInkColor(accent: string): string {
+// The accent mixed toward the foreground until it reaches the given contrast against the
+// background. Accents that already pass come back unchanged.
+function darkenUntilContrast(accent: string, minContrast: number): string {
   const accentColor = parseHexColor(accent);
   const foreground = parseHexColor(WIDGET_FOREGROUND);
 
@@ -125,12 +133,32 @@ function accentInkColor(accent: string): string {
     const candidate = formatHexColor(
       mixColors(accentColor, foreground, amount),
     );
-    if (contrastRatio(candidate, WIDGET_BACKGROUND) >= MIN_TEXT_CONTRAST) {
+    if (contrastRatio(candidate, WIDGET_BACKGROUND) >= minContrast) {
       return candidate;
     }
   }
 
   return WIDGET_FOREGROUND;
+}
+
+function accentInkColor(accent: string): string {
+  return darkenUntilContrast(accent, MIN_TEXT_CONTRAST);
+}
+
+function accentEdgeColor(accent: string): string {
+  return darkenUntilContrast(accent, MIN_EDGE_CONTRAST);
+}
+
+function isGrayscale(accent: string): boolean {
+  const { red, green, blue } = parseHexColor(accent);
+  const channels = [red, green, blue];
+  return Math.max(...channels) - Math.min(...channels) <= GRAYSCALE_SPREAD;
+}
+
+// The color for live states such as voice mode. A grayscale accent has no hue to tint with,
+// so those fall back to the online green.
+function liveColor(accent: string): string {
+  return isGrayscale(accent) ? "var(--rt-online)" : "var(--rt-accent-ink)";
 }
 
 export function resolveTheme(options: ThemeOptions): ThemeTokens {
@@ -141,6 +169,8 @@ export function resolveTheme(options: ThemeOptions): ThemeTokens {
     tokens["--rt-accent"] = accent;
     tokens["--rt-accent-fg"] = accentTextColor(accent);
     tokens["--rt-accent-ink"] = accentInkColor(accent);
+    tokens["--rt-accent-edge"] = accentEdgeColor(accent);
+    tokens["--rt-live"] = liveColor(accent);
   }
 
   if (options.rounding !== undefined) {

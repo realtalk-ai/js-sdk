@@ -82,6 +82,39 @@ describe("resolveTheme", () => {
       contrastRatio(WIDGET_FOREGROUND, WIDGET_BACKGROUND),
     );
   });
+
+  it("keeps the edge invisible on accents that stand out from the background", () => {
+    for (const accent of ["#000000", "#2563eb", "#facc15"]) {
+      expect(resolveTheme({ accent })["--rt-accent-edge"]).toBe(accent);
+    }
+  });
+
+  it("uses the online green as the live color for grayscale accents", () => {
+    for (const accent of ["#000000", "#ffffff", "#6b7280"]) {
+      expect(resolveTheme({ accent })["--rt-live"]).toBe("var(--rt-online)");
+    }
+  });
+
+  it("uses the accent ink as the live color for colored accents", () => {
+    for (const accent of ["#2563eb", "#dc2626", "#facc15"]) {
+      expect(resolveTheme({ accent })["--rt-live"]).toBe(
+        "var(--rt-accent-ink)",
+      );
+    }
+  });
+
+  it("gives a white accent a faint gray edge", () => {
+    const edge = resolveTheme({ accent: "#ffffff" })["--rt-accent-edge"];
+
+    expect(edge).not.toBe("#ffffff");
+    expect(contrastRatio(edge, WIDGET_BACKGROUND)).toBeGreaterThanOrEqual(1.25);
+    expect(contrastRatio(edge, WIDGET_BACKGROUND)).toBeLessThan(
+      contrastRatio(
+        resolveTheme({ accent: "#ffffff" })["--rt-accent-ink"],
+        WIDGET_BACKGROUND,
+      ),
+    );
+  });
 });
 
 describe("isRounding", () => {
@@ -113,6 +146,8 @@ describe("resolveTheme rounding", () => {
       "--rt-accent",
       "--rt-accent-fg",
       "--rt-accent-ink",
+      "--rt-accent-edge",
+      "--rt-live",
       "--rt-radius",
       "--rt-radius-sm",
     ]);
