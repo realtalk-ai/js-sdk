@@ -1,13 +1,19 @@
 import { useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent, MouseEvent } from "react";
-import { SendIcon } from "./icons.js";
+import { PhoneIcon, SendIcon } from "./icons.js";
 
 export function Composer({
   disabled,
+  voiceEnabled,
+  voiceOn,
   onSend,
+  onToggleVoice,
 }: {
   disabled: boolean;
+  voiceEnabled: boolean;
+  voiceOn: boolean;
   onSend: (text: string) => Promise<void>;
+  onToggleVoice: () => void;
 }): JSX.Element {
   const [draft, setDraft] = useState("");
   const hasText = draft.trim() !== "";
@@ -37,8 +43,12 @@ export function Composer({
   };
 
   const focusOnEmptyAreaClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) textareaRef.current?.focus();
+    const target = event.target as HTMLElement;
+    if (target.closest("button")) return;
+    textareaRef.current?.focus();
   };
+
+  const voiceLabel = voiceOn ? "Disable voice mode" : "Enable voice mode";
 
   return (
     <form className="composer" onSubmit={handleSubmit}>
@@ -53,15 +63,28 @@ export function Composer({
           onKeyDown={sendOnEnter}
         />
         <div className="field-actions" onClick={focusOnEmptyAreaClick}>
-          <button
-            className="send"
-            type="submit"
-            aria-label="Send message"
-            title="Send message"
-            disabled={disabled || !hasText}
-          >
-            <SendIcon />
-          </button>
+          <div className="field-actions-end">
+            {voiceEnabled && (
+              <button
+                className={`icon-button voice-toggle ${voiceOn ? "active" : ""}`}
+                type="button"
+                aria-label={voiceLabel}
+                title={voiceLabel}
+                onClick={onToggleVoice}
+              >
+                <PhoneIcon />
+              </button>
+            )}
+            <button
+              className="button-primary send"
+              type="submit"
+              aria-label="Send message"
+              title="Send message"
+              disabled={disabled || !hasText}
+            >
+              <SendIcon />
+            </button>
+          </div>
         </div>
       </div>
     </form>

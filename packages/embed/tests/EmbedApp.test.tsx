@@ -5,10 +5,13 @@ import {
   fireEvent,
   act,
   cleanup,
+  within,
 } from "@testing-library/react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { ConversationStatus, Message } from "@realtalk-ai/core";
-import { EmbedApp, type EmbedAppProps } from "../src/EmbedApp.js";
+import { EmbedApp } from "../src/EmbedApp.js";
+
+type EmbedAppProps = ComponentProps<typeof EmbedApp>;
 
 const AGENT_ID = "agent-1";
 const IDLE_PAUSE_SECONDS = 30;
@@ -98,6 +101,21 @@ function openPanel() {
   fireEvent.click(screen.getByRole("button", { name: /Open chat/ }));
 }
 
+function openHeaderMenu() {
+  fireEvent.click(screen.getByRole("button", { name: "More" }));
+}
+
+function voiceToggle(name: RegExp): HTMLElement {
+  return screen.getByRole("menuitemcheckbox", { name });
+}
+
+function endConversation() {
+  fireEvent.click(screen.getByRole("button", { name: "End conversation" }));
+  fireEvent.click(
+    within(screen.getByRole("dialog")).getByRole("button", { name: "End" }),
+  );
+}
+
 function launcherLabel(): string | null {
   return screen
     .getByRole("button", { name: /Open chat/ })
@@ -171,14 +189,15 @@ describe("EmbedApp", () => {
   });
 
   describe("voice", () => {
-    it("hides the voice buttons and starts as text when voice is disabled", async () => {
+    it("hides the voice menu and starts as text when voice is disabled", async () => {
       await renderWidget({}, { voiceDisabled: true });
       openPanel();
 
       expect(
-        screen.queryByRole("button", { name: "Enable microphone" }),
+        screen.queryByRole("button", { name: "Enable voice mode" }),
       ).toBeNull();
-      expect(screen.queryByRole("button", { name: "Unmute audio" })).toBeNull();
+      openHeaderMenu();
+      expect(screen.queryByRole("menuitemcheckbox")).toBeNull();
 
       const textarea = screen.getByPlaceholderText("Type a message…");
       fireEvent.change(textarea, { target: { value: "Hello" } });
@@ -194,10 +213,9 @@ describe("EmbedApp", () => {
     it("turns the mic on without touching the agent audio", async () => {
       await renderWidget();
       openPanel();
+      openHeaderMenu();
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Enable microphone" }),
-      );
+      fireEvent.click(voiceToggle(/Microphone/));
       const micOnly = { userAudio: true, agentAudio: false };
       await vi.waitFor(() =>
         expect(conversation.startConversation).toHaveBeenCalledWith({
@@ -206,14 +224,19 @@ describe("EmbedApp", () => {
         }),
       );
       expect(conversation.setMode).toHaveBeenCalledWith(micOnly);
+      expect(conversation.sendMessage).not.toHaveBeenCalled();
     });
 
     it("turns the agent audio on without touching the mic", async () => {
       await renderWidget();
       openPanel();
+      openHeaderMenu();
 
-      fireEvent.click(screen.getByRole("button", { name: "Unmute audio" }));
-      expect(screen.getByRole("button", { name: "Mute audio" })).toBeTruthy();
+      fireEvent.click(voiceToggle(/Audio/));
+      expect(voiceToggle(/Audio/).getAttribute("aria-checked")).toBe("true");
+      expect(
+        screen.getByRole("button", { name: "Disable voice mode" }).classList,
+      ).toContain("active");
       expect(conversation.setMode).not.toHaveBeenCalled();
 
       const textarea = screen.getByPlaceholderText("Type a message…");
@@ -234,8 +257,9 @@ describe("EmbedApp", () => {
         mode: { userAudio: true, agentAudio: true },
       });
       openPanel();
+      openHeaderMenu();
 
-      fireEvent.click(screen.getByRole("button", { name: "Mute audio" }));
+      fireEvent.click(voiceToggle(/Audio/));
       expect(conversation.setMode).toHaveBeenCalledWith({
         userAudio: true,
         agentAudio: false,
@@ -251,14 +275,143 @@ describe("EmbedApp", () => {
         mode: { userAudio: true, agentAudio: true },
       });
       openPanel();
+      openHeaderMenu();
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Disable microphone" }),
-      );
+      fireEvent.click(voiceToggle(/Microphone/));
       expect(conversation.setMode).toHaveBeenCalledWith({
         userAudio: false,
         agentAudio: true,
       });
+    });
+  });
+
+  describe("voice toggle", () => {
+    it("turns the mic and audio on together and off together", async () => {
+      const { update } = await renderWidget();
+      openPanel();
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Enable voice mode" }),
+      );
+      const both = { userAudio: true, agentAudio: true };
+      await vi.waitFor(() =>
+        expect(conversation.startConversation).toHaveBeenCalledWith({
+          agentId: AGENT_ID,
+          mode: both,
+        }),
+      );
+      expect(conversation.setMode).toHaveBeenCalledWith(both);
+
+      update({ status: "active", isMicEnabled: true, mode: both });
+      const toggle = screen.getByRole("button", { name: "Disable voice mode" });
+
+      fireEvent.click(toggle);
+      expect(conversation.setMode).toHaveBeenLastCalledWith({
+        userAudio: false,
+        agentAudio: false,
+      });
+    });
+
+    it("turns everything off when only the audio is on", async () => {
+      await renderWidget({
+        status: "active",
+        isMicEnabled: false,
+        mode: { userAudio: false, agentAudio: true },
+      });
+      openPanel();
+
+      const toggle = screen.getByRole("button", { name: "Disable voice mode" });
+      fireEvent.click(toggle);
+      expect(conversation.setMode).toHaveBeenCalledWith({
+        userAudio: false,
+        agentAudio: false,
+      });
+    });
+  });
+
+  describe("voice menu", () => {
+    it("shows whether the mic and audio are on", async () => {
+      const { update } = await renderWidget();
+      openPanel();
+      expect(screen.queryByRole("menu")).toBeNull();
+
+      openHeaderMenu();
+      expect(voiceToggle(/Microphone/).getAttribute("aria-checked")).toBe(
+        "false",
+      );
+      expect(voiceToggle(/Audio/).getAttribute("aria-checked")).toBe("false");
+
+      update({
+        status: "active",
+        isMicEnabled: true,
+        mode: { userAudio: true, agentAudio: true },
+      });
+      expect(voiceToggle(/Microphone/).getAttribute("aria-checked")).toBe(
+        "true",
+      );
+      expect(voiceToggle(/Audio/).getAttribute("aria-checked")).toBe("true");
+    });
+
+    it("closes on Escape and on a click outside the menu", async () => {
+      await renderWidget();
+      openPanel();
+
+      openHeaderMenu();
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(screen.queryByRole("menu")).toBeNull();
+
+      openHeaderMenu();
+      fireEvent.pointerDown(screen.getByPlaceholderText("Type a message…"));
+      expect(screen.queryByRole("menu")).toBeNull();
+    });
+  });
+
+  describe("about page", () => {
+    it("opens from the header menu and goes back to the chat", async () => {
+      await renderWidget();
+      openPanel();
+      expect(screen.queryByRole("button", { name: "Back to chat" })).toBeNull();
+
+      fireEvent.click(screen.getByRole("button", { name: "More" }));
+      fireEvent.click(screen.getByRole("menuitem", { name: "About" }));
+
+      const link = screen.getByRole("link", { name: "callrealtalk.com" });
+      expect(link.getAttribute("href")).toBe("https://callrealtalk.com");
+      expect(link.getAttribute("target")).toBe("_blank");
+      expect(link.getAttribute("rel")).toBe("noopener nofollow");
+      expect(screen.queryByText("Hi there!")).toBeNull();
+      expect(screen.queryByPlaceholderText("Type a message…")).toBeNull();
+
+      fireEvent.click(screen.getByRole("button", { name: "Back to chat" }));
+      expect(screen.queryByRole("button", { name: "Back to chat" })).toBeNull();
+      expect(screen.getByText("Hi there!")).toBeTruthy();
+      expect(screen.getByPlaceholderText("Type a message…")).toBeTruthy();
+    });
+
+    it("offers the chat in the header menu while the page is open", async () => {
+      await renderWidget();
+      openPanel();
+
+      fireEvent.click(screen.getByRole("button", { name: "More" }));
+      fireEvent.click(screen.getByRole("menuitem", { name: "About" }));
+
+      fireEvent.click(screen.getByRole("button", { name: "More" }));
+      expect(screen.queryByRole("menuitem", { name: "About" })).toBeNull();
+      fireEvent.click(screen.getByRole("menuitem", { name: "Chat" }));
+      expect(screen.getByText("Hi there!")).toBeTruthy();
+    });
+
+    it("is closed again when the chat is reopened", async () => {
+      await renderWidget();
+      openPanel();
+
+      fireEvent.click(screen.getByRole("button", { name: "More" }));
+      fireEvent.click(screen.getByRole("menuitem", { name: "About" }));
+      fireEvent.click(screen.getByRole("button", { name: "Minimize chat" }));
+      openPanel();
+
+      expect(screen.queryByRole("button", { name: "Back to chat" })).toBeNull();
+      expect(screen.getByText("Hi there!")).toBeTruthy();
     });
   });
 
@@ -270,7 +423,7 @@ describe("EmbedApp", () => {
       });
       openPanel();
 
-      fireEvent.click(screen.getByRole("button", { name: "End conversation" }));
+      endConversation();
       expect(conversation.endConversation).toHaveBeenCalledTimes(1);
 
       update({ status: "finished" });
@@ -296,7 +449,7 @@ describe("EmbedApp", () => {
       });
       openPanel();
 
-      fireEvent.click(screen.getByRole("button", { name: "End conversation" }));
+      endConversation();
       expect(conversation.endConversation).toHaveBeenCalledTimes(1);
 
       update({ status: "finished" });
@@ -306,14 +459,17 @@ describe("EmbedApp", () => {
       ).toBeNull();
     });
 
-    it("disables the end button when no conversation is running", async () => {
-      await renderWidget();
+    it("asks before ending and offers no end button without a conversation", async () => {
+      const { update } = await renderWidget();
       openPanel();
+      expect(
+        screen.queryByRole("button", { name: "End conversation" }),
+      ).toBeNull();
 
-      const endButton = screen.getByRole("button", {
-        name: "End conversation",
-      });
-      expect(endButton.hasAttribute("disabled")).toBe(true);
+      update({ status: "active" });
+      fireEvent.click(screen.getByRole("button", { name: "End conversation" }));
+      expect(conversation.endConversation).not.toHaveBeenCalled();
+      expect(screen.getByText("End this conversation?")).toBeTruthy();
     });
   });
 
@@ -358,42 +514,27 @@ describe("EmbedApp", () => {
       expect(screen.queryByText(/previous conversation ended/)).toBeNull();
     });
 
-    it("disables the mic and audio buttons until a new conversation is started", async () => {
+    it("offers no voice controls until a new conversation is started", async () => {
       const { update } = await renderWidget({
         status: "finished",
         messages: [message("m1", "Bye")],
       });
       openPanel();
 
-      const micButton = screen.getByRole("button", {
-        name: "Enable microphone",
-      });
-      const audioButton = screen.getByRole("button", { name: "Unmute audio" });
-      expect(micButton.hasAttribute("disabled")).toBe(true);
-      expect(audioButton.hasAttribute("disabled")).toBe(true);
-
-      fireEvent.click(micButton);
-      expect(conversation.setMode).not.toHaveBeenCalled();
-      expect(conversation.startConversation).not.toHaveBeenCalled();
+      expect(
+        screen.queryByRole("button", { name: "Enable voice mode" }),
+      ).toBeNull();
+      openHeaderMenu();
+      expect(screen.queryByRole("menuitemcheckbox")).toBeNull();
+      fireEvent.keyDown(document, { key: "Escape" });
 
       fireEvent.click(
         screen.getByRole("button", { name: "Start new conversation" }),
       );
       update({ messages: [] });
-      expect(micButton.hasAttribute("disabled")).toBe(false);
-      expect(audioButton.hasAttribute("disabled")).toBe(false);
-    });
-
-    it("shows the agent audio as off once the conversation has ended", async () => {
-      const { update } = await renderWidget();
-      openPanel();
-
-      fireEvent.click(screen.getByRole("button", { name: "Unmute audio" }));
-      expect(screen.getByRole("button", { name: "Mute audio" })).toBeTruthy();
-
-      update({ status: "finished", messages: [message("m1", "Bye")] });
-      const audioButton = screen.getByRole("button", { name: "Unmute audio" });
-      expect(audioButton.hasAttribute("disabled")).toBe(true);
+      expect(
+        screen.getByRole("button", { name: "Enable voice mode" }),
+      ).toBeTruthy();
     });
 
     it("expires a paused conversation once the server idle window has passed", async () => {

@@ -5,7 +5,7 @@ export function NewConversation({
 }): JSX.Element {
   return (
     <div className="composer">
-      <button className="start-new" onClick={onStartNew}>
+      <button className="button-primary start-new" onClick={onStartNew}>
         Start new conversation
       </button>
     </div>

@@ -28,6 +28,38 @@ export function ChevronDownIcon(): JSX.Element {
   );
 }
 
+export function DotsIcon(): JSX.Element {
+  return (
+    <svg {...iconProps}>
+      <path d="M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+      <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+      <path d="M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+    </svg>
+  );
+}
+
+export function EndIcon(): JSX.Element {
+  return (
+    <svg {...iconProps}>
+      <path d="M8 9h8" />
+      <path d="M8 13h6" />
+      <path d="M13 18l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v4.5" />
+      <path d="M22 22l-5 -5" />
+      <path d="M17 22l5 -5" />
+    </svg>
+  );
+}
+
+export function InfoIcon(): JSX.Element {
+  return (
+    <svg {...iconProps}>
+      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+      <path d="M12 9h.01" />
+      <path d="M11 12h1v4h1" />
+    </svg>
+  );
+}
+
 export function MicIcon(): JSX.Element {
   return (
     <svg {...iconProps}>
@@ -81,11 +113,10 @@ export function SpeakerOffIcon(): JSX.Element {
   );
 }
 
-export function EndIcon(): JSX.Element {
+export function PhoneIcon(): JSX.Element {
   return (
     <svg {...iconProps}>
-      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-      <path d="M10 10l4 4m0 -4l-4 4" />
+      <path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" />
     </svg>
   );
 }

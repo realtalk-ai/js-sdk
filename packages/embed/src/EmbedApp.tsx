@@ -10,6 +10,7 @@ import {
 import { useEmbedConfig } from "./hooks/useEmbedConfig.js";
 import { useConversationExpiry } from "./hooks/useConversationExpiry.js";
 import { deriveWidgetStatus } from "./status.js";
+import { AboutPage } from "./components/AboutPage.js";
 import { Composer } from "./components/Composer.js";
 import { Header } from "./components/Header.js";
 import { Launcher } from "./components/Launcher.js";
@@ -18,17 +19,15 @@ import { NewConversation } from "./components/NewConversation.js";
 
 const TEXT_ONLY: ConversationMode = { userAudio: false, agentAudio: false };
 
-export interface EmbedAppProps {
-  agentId: string;
-  serverUrl: string;
-  voiceDisabled?: boolean;
-}
-
 export function EmbedApp({
   agentId,
   serverUrl,
   voiceDisabled = false,
-}: EmbedAppProps): JSX.Element {
+}: {
+  agentId: string;
+  serverUrl: string;
+  voiceDisabled?: boolean;
+}): JSX.Element {
   const server = useMemo(() => resolveServer(serverUrl), [serverUrl]);
   const minter = useMemo(
     () => createSessionMinter(server, agentId),
@@ -64,6 +63,7 @@ function Widget({
 }): JSX.Element | null {
   const config = useEmbedConfig(server, agentId);
   const [open, setOpen] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [starting, setStarting] = useState(false);
   const [previousChatEnded, setPreviousChatEnded] = useState(false);
   const [expired, setExpired] = useState(false);
@@ -138,6 +138,7 @@ function Widget({
   const hasMessages = messages.length > 0;
   const ended = conversationOver && hasMessages;
   const isAudioMuted = ended || !mode.agentAudio;
+  const voiceOn = isMicEnabled || !isAudioMuted;
   const conversationInProgress = (active || paused) && !expired;
 
   const start = async (mode: ConversationMode = startMode) => {
@@ -199,14 +200,10 @@ function Widget({
     await changeMode({ ...mode, agentAudio: !mode.agentAudio });
   };
 
-  const handleMicToggle = async () => {
-    setNotice(null);
-    const withoutMic = { ...mode, userAudio: false };
-    if (isMicEnabled) {
-      await changeMode(withoutMic);
-      return;
-    }
-    const withMic = { ...mode, userAudio: true };
+  const turnMicOn = async (
+    withMic: ConversationMode,
+    fallback: ConversationMode,
+  ) => {
     try {
       await conversation.setMode(withMic);
     } catch {
@@ -221,9 +218,28 @@ function Widget({
     } catch (error) {
       console.error("[realtalk-embed] failed to start conversation", error);
       conversationRef.current.disableMic();
-      setStartMode(withoutMic);
+      setStartMode(fallback);
       setNotice("Could not connect. Please try again.");
     }
+  };
+
+  const handleMicToggle = async () => {
+    setNotice(null);
+    const withoutMic = { ...mode, userAudio: false };
+    if (isMicEnabled) {
+      await changeMode(withoutMic);
+      return;
+    }
+    await turnMicOn({ ...mode, userAudio: true }, withoutMic);
+  };
+
+  const handleVoiceToggle = async () => {
+    setNotice(null);
+    if (voiceOn) {
+      await changeMode(TEXT_ONLY);
+      return;
+    }
+    await turnMicOn({ userAudio: true, agentAudio: true }, TEXT_ONLY);
   };
 
   const widgetStatus = deriveWidgetStatus({
@@ -255,29 +271,45 @@ function Widget({
         <Header
           displayName={config.displayName}
           status={widgetStatus}
-          voiceEnabled={voiceEnabled}
+          showVoice={voiceEnabled && !ended}
           isMicEnabled={isMicEnabled}
           isAudioMuted={isAudioMuted}
-          canChangeMode={!ended}
           canEnd={conversationInProgress}
+          aboutOpen={showAbout}
           onToggleMic={() => void handleMicToggle()}
           onToggleAudio={() => void handleAudioToggle()}
           onEnd={() => void handleEnd()}
-          onMinimize={() => setOpen(false)}
+          onAbout={() => setShowAbout(true)}
+          onBack={() => setShowAbout(false)}
+          onMinimize={() => {
+            setShowAbout(false);
+            setOpen(false);
+          }}
         />
 
-        <MessageList
-          messages={messages}
-          greeting={config.greeting}
-          previousChatEnded={previousChatEnded}
-          agentState={agentState}
-          notice={notice}
-        />
-
-        {ended ? (
-          <NewConversation onStartNew={handleStartNew} />
+        {showAbout ? (
+          <AboutPage onBack={() => setShowAbout(false)} />
         ) : (
-          <Composer disabled={starting} onSend={handleSend} />
+          <>
+            <MessageList
+              messages={messages}
+              greeting={config.greeting}
+              previousChatEnded={previousChatEnded}
+              agentState={agentState}
+              notice={notice}
+            />
+            {ended ? (
+              <NewConversation onStartNew={handleStartNew} />
+            ) : (
+              <Composer
+                disabled={starting}
+                voiceEnabled={voiceEnabled}
+                voiceOn={voiceOn}
+                onSend={handleSend}
+                onToggleVoice={() => void handleVoiceToggle()}
+              />
+            )}
+          </>
         )}
       </div>
     </div>
