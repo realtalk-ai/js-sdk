@@ -7,6 +7,10 @@ import {
 import { formatMessageText, hasVisibleContent } from "../messages.js";
 import { SubTasksBadge } from "./SubTasksBadge.js";
 
+// Sub tasks are hidden but could be enabled to show progress on long running
+// tasks we want to expose to end users, but all tasks are not relevant.
+const SHOW_SUB_TASKS = false;
+
 export function MessageList({
   messages,
   greeting,
@@ -26,8 +30,8 @@ export function MessageList({
     if (list) list.scrollTop = list.scrollHeight;
   }, [messages, agentState]);
 
-  const showThinking =
-    agentState === "thinking" && !hasPendingSubTasks(messages);
+  const showingPendingSubTasks = SHOW_SUB_TASKS && hasPendingSubTasks(messages);
+  const showThinking = agentState === "thinking" && !showingPendingSubTasks;
 
   return (
     <div className="messages" ref={listRef} aria-live="polite">
@@ -40,6 +44,7 @@ export function MessageList({
       {messages.filter(hasVisibleContent).map((message) => {
         const hasText = Boolean(message.text?.trim());
         const subTasks = message.metadata?.subTasks ?? [];
+        const showSubTasks = SHOW_SUB_TASKS && subTasks.length > 0;
         return (
           <Fragment key={message.id}>
             {hasText && (
@@ -47,17 +52,20 @@ export function MessageList({
                 {formatMessageText(message.text)}
               </div>
             )}
-            {subTasks.length > 0 && <SubTasksBadge subTasks={subTasks} />}
+            {showSubTasks && <SubTasksBadge subTasks={subTasks} />}
           </Fragment>
         );
       })}
-      {showThinking && (
-        <div className="thinking" aria-label="Agent is thinking">
-          <span />
-          <span />
-          <span />
-        </div>
-      )}
+      {/* Always laid out so the list does not jump when thinking starts. */}
+      <div
+        className={`thinking ${showThinking ? "visible" : ""}`}
+        aria-label={showThinking ? "Agent is thinking" : undefined}
+        aria-hidden={!showThinking}
+      >
+        <span />
+        <span />
+        <span />
+      </div>
       {notice && <div className="notice">{notice}</div>}
     </div>
   );

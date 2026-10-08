@@ -10,10 +10,12 @@ import {
 import { useEmbedConfig } from "./hooks/useEmbedConfig.js";
 import { useConversationExpiry } from "./hooks/useConversationExpiry.js";
 import { deriveWidgetStatus } from "./status.js";
+import { AboutPage } from "./components/AboutPage.js";
 import { Composer } from "./components/Composer.js";
 import { Header } from "./components/Header.js";
+import { Launcher } from "./components/Launcher.js";
 import { MessageList } from "./components/MessageList.js";
-import { ChatIcon } from "./components/icons.js";
+import { NewConversation } from "./components/NewConversation.js";
 
 const TEXT_ONLY: ConversationMode = { userAudio: false, agentAudio: false };
 const AUDIO_BOTH_WAYS: ConversationMode = {
@@ -21,12 +23,15 @@ const AUDIO_BOTH_WAYS: ConversationMode = {
   agentAudio: true,
 };
 
-export interface EmbedAppProps {
+export function EmbedApp({
+  agentId,
+  serverUrl,
+  voiceEnabled = false,
+}: {
   agentId: string;
   serverUrl: string;
-}
-
-export function EmbedApp({ agentId, serverUrl }: EmbedAppProps): JSX.Element {
+  voiceEnabled?: boolean;
+}): JSX.Element {
   const server = useMemo(() => resolveServer(serverUrl), [serverUrl]);
   const minter = useMemo(
     () => createSessionMinter(server, agentId),
@@ -39,7 +44,12 @@ export function EmbedApp({ agentId, serverUrl }: EmbedAppProps): JSX.Element {
       getToken={minter.getToken}
       context="embed_widget"
     >
-      <Widget agentId={agentId} server={server} minter={minter} />
+      <Widget
+        agentId={agentId}
+        server={server}
+        minter={minter}
+        voiceEnabled={voiceEnabled}
+      />
     </RealTalkProvider>
   );
 }
@@ -48,13 +58,16 @@ function Widget({
   agentId,
   server,
   minter,
+  voiceEnabled,
 }: {
   agentId: string;
   server: EmbedServer;
   minter: SessionMinter;
+  voiceEnabled: boolean;
 }): JSX.Element | null {
   const config = useEmbedConfig(server, agentId);
   const [open, setOpen] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [starting, setStarting] = useState(false);
   const [previousChatEnded, setPreviousChatEnded] = useState(false);
   const [expired, setExpired] = useState(false);
@@ -77,7 +90,7 @@ function Widget({
     messages,
     agentState,
     userState,
-    isMicEnabled,
+    isMicEnabled: micOn,
   } = conversation;
 
   const firstOpenHandledRef = useRef(false);
@@ -116,7 +129,6 @@ function Widget({
   const active = status === "active";
   const paused = status === "paused";
   const mode = active ? conversation.mode : startMode;
-  const isAudioMuted = !mode.agentAudio || conversation.isAudioMuted;
 
   useConversationExpiry(paused, config, () => {
     minter.reset();
@@ -128,7 +140,9 @@ function Widget({
   const conversationOver = status === "finished" || expired;
   const hasMessages = messages.length > 0;
   const ended = conversationOver && hasMessages;
-  const canReset = active || paused || ended;
+  const audioOn = !ended && mode.agentAudio;
+  const voiceOn = micOn || audioOn;
+  const conversationInProgress = (active || paused) && !expired;
 
   const start = async (mode: ConversationMode = startMode) => {
     if (starting || active) return;
@@ -139,7 +153,7 @@ function Widget({
       const resumeWasDropped =
         storedConversationId !== undefined &&
         minter.conversationId !== storedConversationId;
-      if (resumeWasDropped || expired) setPreviousChatEnded(true);
+      if (resumeWasDropped) setPreviousChatEnded(true);
       setExpired(false);
     } finally {
       setStarting(false);
@@ -158,14 +172,15 @@ function Widget({
     }
   };
 
-  const handleReset = async () => {
-    if (active || paused) {
-      try {
-        await conversationRef.current.endConversation();
-      } catch {
-        // The server ends unreachable conversations on its own idle timeout.
-      }
+  const handleEnd = async () => {
+    try {
+      await conversationRef.current.endConversation();
+    } catch {
+      // The server ends unreachable conversations on its own idle timeout.
     }
+  };
+
+  const handleStartNew = () => {
     minter.reset();
     conversationRef.current.clearMessages();
     setStartMode(TEXT_ONLY);
@@ -174,50 +189,47 @@ function Widget({
     setNotice(null);
   };
 
-  const changeMode = async (newMode: ConversationMode) => {
-    setStartMode(newMode);
-    conversationRef.current.setVolume(1);
-    if (active) {
-      await conversationRef.current.setMode(newMode);
-    } else if (!newMode.userAudio) {
-      conversationRef.current.disableMic();
-    }
-  };
-
-  const handleAudioToggle = async () => {
+  // Applies a mode. Turning the mic on needs microphone access first and
+  // starts the conversation if none is active; every other change is plain.
+  const applyMode = async (newMode: ConversationMode) => {
     setNotice(null);
-    if (mode.userAudio) {
-      conversation.toggleAudio();
+    const turnsMicOn = newMode.userAudio && !micOn;
+    if (!turnsMicOn) {
+      setStartMode(newMode);
+      if (active) {
+        await conversationRef.current.setMode(newMode);
+      } else if (!newMode.userAudio) {
+        conversationRef.current.disableMic();
+      }
       return;
     }
-    await changeMode({ userAudio: false, agentAudio: isAudioMuted });
-  };
 
-  const handleMicToggle = async () => {
-    setNotice(null);
-    if (isMicEnabled) {
-      await changeMode({ userAudio: false, agentAudio: !isAudioMuted });
-      return;
-    }
     try {
-      await conversation.enableMic();
+      await conversationRef.current.setMode(newMode);
     } catch {
       setNotice(
         "Could not access the microphone. Check your browser permissions.",
       );
       return;
     }
-    setStartMode(AUDIO_BOTH_WAYS);
-    conversationRef.current.setVolume(isAudioMuted ? 0 : 1);
+    setStartMode(newMode);
     try {
-      if (!active) await start(AUDIO_BOTH_WAYS);
+      if (!active) await start(newMode);
     } catch (error) {
       console.error("[realtalk-embed] failed to start conversation", error);
       conversationRef.current.disableMic();
-      setStartMode(TEXT_ONLY);
+      setStartMode(mode);
       setNotice("Could not connect. Please try again.");
     }
   };
+
+  const handleAudioToggle = () =>
+    applyMode({ ...mode, agentAudio: !mode.agentAudio });
+
+  const handleMicToggle = () => applyMode({ ...mode, userAudio: !micOn });
+
+  const handleVoiceToggle = () =>
+    applyMode(voiceOn ? TEXT_ONLY : AUDIO_BOTH_WAYS);
 
   const widgetStatus = deriveWidgetStatus({
     starting,
@@ -227,20 +239,17 @@ function Widget({
     active,
     agentState,
     userState,
-    isAudioMuted,
-    isMicEnabled,
+    micOn,
+    audioOn,
   });
 
   if (!open) {
     return (
       <div className="container">
-        <button
-          className="launcher"
-          aria-label="Open chat"
-          onClick={() => setOpen(true)}
-        >
-          <ChatIcon />
-        </button>
+        <Launcher
+          conversationInProgress={conversationInProgress}
+          onOpen={() => setOpen(true)}
+        />
       </div>
     );
   }
@@ -251,24 +260,46 @@ function Widget({
         <Header
           displayName={config.displayName}
           status={widgetStatus}
-          isMicEnabled={isMicEnabled}
-          isAudioMuted={isAudioMuted}
-          canReset={canReset}
+          showVoice={voiceEnabled && !ended}
+          micOn={micOn}
+          audioOn={audioOn}
+          canEnd={conversationInProgress}
+          aboutOpen={showAbout}
           onToggleMic={() => void handleMicToggle()}
           onToggleAudio={() => void handleAudioToggle()}
-          onReset={() => void handleReset()}
-          onMinimize={() => setOpen(false)}
+          onEnd={() => void handleEnd()}
+          onAbout={() => setShowAbout(true)}
+          onBack={() => setShowAbout(false)}
+          onMinimize={() => {
+            setShowAbout(false);
+            setOpen(false);
+          }}
         />
 
-        <MessageList
-          messages={messages}
-          greeting={config.greeting}
-          previousChatEnded={previousChatEnded}
-          agentState={agentState}
-          notice={notice}
-        />
-
-        <Composer disabled={starting} onSend={handleSend} />
+        {showAbout ? (
+          <AboutPage onBack={() => setShowAbout(false)} />
+        ) : (
+          <>
+            <MessageList
+              messages={messages}
+              greeting={config.greeting}
+              previousChatEnded={previousChatEnded}
+              agentState={agentState}
+              notice={notice}
+            />
+            {ended ? (
+              <NewConversation onStartNew={handleStartNew} />
+            ) : (
+              <Composer
+                disabled={starting}
+                showVoice={voiceEnabled}
+                voiceOn={voiceOn}
+                onSend={handleSend}
+                onToggleVoice={() => void handleVoiceToggle()}
+              />
+            )}
+          </>
+        )}
       </div>
     </div>
   );

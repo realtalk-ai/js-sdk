@@ -1,37 +1,37 @@
 import type { WidgetStatus } from "../status.js";
-import {
-  ChevronDownIcon,
-  MicIcon,
-  MicOffIcon,
-  ResetIcon,
-  SpeakerIcon,
-  SpeakerOffIcon,
-} from "./icons.js";
+import { EndMenu } from "./EndMenu.js";
+import { ChevronDownIcon } from "./icons.js";
+import { MoreMenu } from "./MoreMenu.js";
 
 export function Header({
   displayName,
   status,
-  isMicEnabled,
-  isAudioMuted,
-  canReset,
+  showVoice,
+  micOn,
+  audioOn,
+  canEnd,
+  aboutOpen,
   onToggleMic,
   onToggleAudio,
-  onReset,
+  onEnd,
+  onAbout,
+  onBack,
   onMinimize,
 }: {
   displayName: string;
   status: WidgetStatus;
-  isMicEnabled: boolean;
-  isAudioMuted: boolean;
-  canReset: boolean;
+  showVoice: boolean;
+  micOn: boolean;
+  audioOn: boolean;
+  canEnd: boolean;
+  aboutOpen: boolean;
   onToggleMic: () => void;
   onToggleAudio: () => void;
-  onReset: () => void;
+  onEnd: () => void;
+  onAbout: () => void;
+  onBack: () => void;
   onMinimize: () => void;
 }): JSX.Element {
-  const micLabel = isMicEnabled ? "Disable microphone" : "Enable microphone";
-  const audioLabel = isAudioMuted ? "Unmute audio" : "Mute audio";
-
   return (
     <div className="header">
       <div>
@@ -42,34 +42,21 @@ export function Header({
         </div>
       </div>
       <div className="actions">
-        <button
-          className={`icon-button ${isMicEnabled ? "active" : ""}`}
-          aria-label={micLabel}
-          title={micLabel}
-          onClick={onToggleMic}
-        >
-          {isMicEnabled ? <MicIcon /> : <MicOffIcon />}
-        </button>
-        <button
-          className={`icon-button ${isAudioMuted ? "" : "active"}`}
-          aria-label={audioLabel}
-          title={audioLabel}
-          onClick={onToggleAudio}
-        >
-          {isAudioMuted ? <SpeakerOffIcon /> : <SpeakerIcon />}
-        </button>
-        <button
-          className="icon-button"
-          aria-label="Reset chat"
-          title="Reset chat"
-          disabled={!canReset}
-          onClick={onReset}
-        >
-          <ResetIcon />
-        </button>
+        {canEnd && <EndMenu onEnd={onEnd} />}
+        <MoreMenu
+          showVoice={showVoice}
+          micOn={micOn}
+          audioOn={audioOn}
+          aboutOpen={aboutOpen}
+          onToggleMic={onToggleMic}
+          onToggleAudio={onToggleAudio}
+          onAbout={onAbout}
+          onBack={onBack}
+        />
         <button
           className="icon-button"
           aria-label="Minimize chat"
+          title="Minimize chat"
           onClick={onMinimize}
         >
           <ChevronDownIcon />

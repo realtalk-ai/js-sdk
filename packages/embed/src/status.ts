@@ -18,8 +18,8 @@ export function deriveWidgetStatus(state: {
   active: boolean;
   agentState: AgentState;
   userState: UserState;
-  isAudioMuted: boolean;
-  isMicEnabled: boolean;
+  micOn: boolean;
+  audioOn: boolean;
 }): WidgetStatus {
   const {
     starting,
@@ -29,8 +29,8 @@ export function deriveWidgetStatus(state: {
     active,
     agentState,
     userState,
-    isAudioMuted,
-    isMicEnabled,
+    micOn,
+    audioOn,
   } = state;
 
   if (starting || connectionStatus === "connecting") {
@@ -57,13 +57,13 @@ export function deriveWidgetStatus(state: {
     return { tone: "online", label: "Online" };
   }
   if (agentState === "speaking") {
-    return { tone: "live", label: isAudioMuted ? "Typing" : "Speaking" };
+    return { tone: "live", label: audioOn ? "Speaking" : "Typing" };
   }
   if (agentState === "thinking") {
     return { tone: "live", label: "Thinking" };
   }
-  if (isMicEnabled && userState === "speaking") {
+  if (micOn && userState === "speaking") {
     return { tone: "live", label: "Listening" };
   }
-  return { tone: "online", label: "Online" };
+  return { tone: "live", label: "Online" };
 }
