@@ -217,6 +217,11 @@ button {
   display: flex;
   gap: 4px;
   padding: 12px;
+  visibility: hidden;
+}
+
+.thinking.visible {
+  visibility: visible;
 }
 
 .thinking span {

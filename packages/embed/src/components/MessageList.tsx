@@ -56,13 +56,16 @@ export function MessageList({
           </Fragment>
         );
       })}
-      {showThinking && (
-        <div className="thinking" aria-label="Agent is thinking">
-          <span />
-          <span />
-          <span />
-        </div>
-      )}
+      {/* Always laid out so the list does not jump when thinking starts. */}
+      <div
+        className={`thinking ${showThinking ? "visible" : ""}`}
+        aria-label={showThinking ? "Agent is thinking" : undefined}
+        aria-hidden={!showThinking}
+      >
+        <span />
+        <span />
+        <span />
+      </div>
       {notice && <div className="notice">{notice}</div>}
     </div>
   );
