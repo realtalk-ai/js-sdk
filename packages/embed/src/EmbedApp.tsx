@@ -22,11 +22,11 @@ const TEXT_ONLY: ConversationMode = { userAudio: false, agentAudio: false };
 export function EmbedApp({
   agentId,
   serverUrl,
-  voiceDisabled = false,
+  voiceEnabled = false,
 }: {
   agentId: string;
   serverUrl: string;
-  voiceDisabled?: boolean;
+  voiceEnabled?: boolean;
 }): JSX.Element {
   const server = useMemo(() => resolveServer(serverUrl), [serverUrl]);
   const minter = useMemo(
@@ -44,7 +44,7 @@ export function EmbedApp({
         agentId={agentId}
         server={server}
         minter={minter}
-        voiceDisabled={voiceDisabled}
+        voiceEnabled={voiceEnabled}
       />
     </RealTalkProvider>
   );
@@ -54,12 +54,12 @@ function Widget({
   agentId,
   server,
   minter,
-  voiceDisabled,
+  voiceEnabled,
 }: {
   agentId: string;
   server: EmbedServer;
   minter: SessionMinter;
-  voiceDisabled: boolean;
+  voiceEnabled: boolean;
 }): JSX.Element | null {
   const config = useEmbedConfig(server, agentId);
   const [open, setOpen] = useState(false);
@@ -133,7 +133,6 @@ function Widget({
 
   if (!config) return null;
 
-  const voiceEnabled = !voiceDisabled;
   const conversationOver = status === "finished" || expired;
   const hasMessages = messages.length > 0;
   const ended = conversationOver && hasMessages;

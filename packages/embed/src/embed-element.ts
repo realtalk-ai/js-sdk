@@ -29,7 +29,8 @@ export class RealtalkEmbedElement extends BaseElement {
       return;
     }
     const serverUrl = this.getAttribute("server-url") ?? DEFAULT_SERVER_URL;
-    const voiceDisabled = this.hasAttribute("disable-voice");
+    // Temporary switch for testing voice until the agent config says whether voice is enabled.
+    const voiceEnabled = this.hasAttribute("enable-voice");
 
     if (!this.mountPoint) {
       const shadowRoot = this.attachShadow({ mode: "open" });
@@ -46,7 +47,7 @@ export class RealtalkEmbedElement extends BaseElement {
     this.applyTheme();
     this.root = createRoot(this.mountPoint);
     this.root.render(
-      createElement(EmbedApp, { agentId, serverUrl, voiceDisabled }),
+      createElement(EmbedApp, { agentId, serverUrl, voiceEnabled }),
     );
   }
 

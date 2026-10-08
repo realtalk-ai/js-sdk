@@ -76,6 +76,7 @@ function widget(props: Partial<EmbedAppProps> = {}) {
     <EmbedApp
       agentId={AGENT_ID}
       serverUrl="https://api.example.com"
+      voiceEnabled
       {...props}
     />
   );
@@ -189,8 +190,11 @@ describe("EmbedApp", () => {
   });
 
   describe("voice", () => {
-    it("hides the voice menu and starts as text when voice is disabled", async () => {
-      await renderWidget({}, { voiceDisabled: true });
+    it("hides the voice controls by default", async () => {
+      render(
+        <EmbedApp agentId={AGENT_ID} serverUrl="https://api.example.com" />,
+      );
+      await screen.findByRole("button", { name: /Open chat/ });
       openPanel();
 
       expect(
