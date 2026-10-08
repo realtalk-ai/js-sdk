@@ -66,13 +66,26 @@ button {
 
 .launcher-badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 14px;
-  height: 14px;
+  top: 3px;
+  right: 3px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--rt-online);
-  border: 2px solid var(--rt-bg);
+}
+
+.launcher-badge::before {
+  --rt-ring-scale: 2;
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 50%;
+  background: var(--rt-online);
+  animation: rt-pulse-ring 1.2s ease infinite;
+  pointer-events: none;
 }
 
 .panel {
@@ -114,6 +127,7 @@ button {
 }
 
 .status-dot {
+  position: relative;
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -121,13 +135,22 @@ button {
   background: var(--rt-muted);
 }
 
-.status.online .status-dot {
+.status.online .status-dot,
+.status.live .status-dot {
   background: var(--rt-online);
 }
 
-.status.live .status-dot {
+.status.live .status-dot::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 50%;
   background: var(--rt-online);
-  animation: rt-pulse 1.4s infinite ease-in-out;
+  animation: rt-pulse-ring 1.2s ease infinite;
+  pointer-events: none;
 }
 
 .status.connecting .status-dot {
@@ -142,6 +165,11 @@ button {
 @keyframes rt-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
+}
+
+@keyframes rt-pulse-ring {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(var(--rt-ring-scale, 3)); opacity: 0; }
 }
 
 .header .actions {

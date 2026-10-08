@@ -65,5 +65,5 @@ export function deriveWidgetStatus(state: {
   if (isMicEnabled && userState === "speaking") {
     return { tone: "live", label: "Listening" };
   }
-  return { tone: "online", label: "Online" };
+  return { tone: "live", label: "Online" };
 }

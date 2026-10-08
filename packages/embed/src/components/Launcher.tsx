@@ -12,8 +12,13 @@ export function Launcher({
     : "Open chat";
 
   return (
-    <button className="launcher" aria-label={label} onClick={onOpen}>
-      <ChatIcon />
+    <button
+      className="launcher"
+      aria-label={label}
+      title={label}
+      onClick={onOpen}
+    >
+      <ChatIcon size={24} />
       {conversationInProgress && (
         <span className="launcher-badge" aria-hidden="true" />
       )}

@@ -12,9 +12,9 @@ const iconProps = {
   strokeLinejoin: "round",
 } as const;
 
-export function ChatIcon(): JSX.Element {
+export function ChatIcon({ size = 20 }: { size?: number }): JSX.Element {
   return (
-    <svg {...iconProps} width={24} height={24}>
+    <svg {...iconProps} width={size} height={size}>
       <path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12" />
     </svg>
   );
