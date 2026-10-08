@@ -202,7 +202,7 @@ describe("useConnection", () => {
     ).rejects.toThrow("Conversation already active");
   });
 
-  it("endConversation sends end_conversation and hangup, gracefully disconnects, and sets status to not_started", async () => {
+  it("endConversation sends end_conversation and hangup, gracefully disconnects, and sets status to finished", async () => {
     const opts = defaultOpts();
     const { result } = renderHook(() => useConnection(opts));
 
@@ -212,6 +212,7 @@ describe("useConnection", () => {
         conversationId: "conv-1",
       });
     });
+    opts.setMessages.mockClear();
 
     await act(async () => {
       await result.current.endConversation();
@@ -231,6 +232,50 @@ describe("useConnection", () => {
     expect(transport.removeAllListeners).toHaveBeenCalled();
     expect(transport.gracefulDisconnect).toHaveBeenCalled();
     expect(result.current.connectionStatus).toBe("disconnected");
+    expect(result.current.status).toBe("finished");
+    expect(result.current.conversationId).toBe("conv-1");
+    expect(opts.setMessages).not.toHaveBeenCalled();
+  });
+
+  it("endConversation on a paused conversation sets status to finished without a transport", async () => {
+    const opts = defaultOpts();
+    opts.getToken = vi.fn().mockResolvedValue({
+      token: "token",
+      conversationId: "conv-1",
+    });
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({ agentId: "agent-1" });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    act(() => {
+      onEventCb({ type: "close", code: 4005, reason: "Idle timeout" });
+    });
+    expect(result.current.status).toBe("paused");
+    transport.sendEvent.mockClear();
+
+    await act(async () => {
+      await result.current.endConversation();
+    });
+
+    expect(transport.sendEvent).not.toHaveBeenCalled();
+    expect(result.current.status).toBe("finished");
+    expect(result.current.conversationId).toBe("conv-1");
+  });
+
+  it("endConversation before any conversation leaves status not_started", async () => {
+    const opts = defaultOpts();
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.endConversation();
+    });
+
     expect(result.current.status).toBe("not_started");
     expect(result.current.conversationId).toBeNull();
   });

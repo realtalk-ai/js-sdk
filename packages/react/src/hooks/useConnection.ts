@@ -476,6 +476,8 @@ export function useConnection(opts: {
   );
 
   const endConversation = useCallback(async () => {
+    const wasRunning = status === "active" || status === "paused";
+    const endedId = conversationIdRef.current;
     const transport = transportRef.current;
     if (transport) {
       transport.sendEvent({ type: "end_conversation", data: {} });
@@ -487,9 +489,18 @@ export function useConnection(opts: {
     intentionalDisconnectRef.current = true;
     setError(null);
     cleanup();
-    updateConversationStatus("not_started");
+    updateConversationStatus(wasRunning ? "finished" : "not_started");
     updateConnectionStatus("disconnected");
-  }, [cleanup, updateConversationStatus, updateConnectionStatus]);
+    if (wasRunning && endedId) {
+      setConversationIdBoth(endedId);
+    }
+  }, [
+    status,
+    cleanup,
+    updateConversationStatus,
+    updateConnectionStatus,
+    setConversationIdBoth,
+  ]);
 
   const sendMessage = useCallback((text: string) => {
     if (transportRef.current) {
