@@ -3,7 +3,7 @@
 [![CI](https://github.com/realtalk-ai/js-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/realtalk-ai/js-sdk/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@realtalk-ai/embed)](https://www.npmjs.com/package/@realtalk-ai/embed)
 
-Add your [Real Talk](https://realtalk.ml/home) agent to any website as a floating chat widget by pasting two lines of HTML:
+Add your [Real Talk](https://callrealtalk.com) agent to any website as a floating chat widget by pasting two lines of HTML:
 
 ```html
 <realtalk-embed agent-id="YOUR_AGENT_ID"></realtalk-embed>
