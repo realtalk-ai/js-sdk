@@ -1,5 +1,12 @@
 # @realtalk-ai/embed
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [bec4f70]
+  - @realtalk-ai/react@0.6.0
+
 ## 0.2.0
 
 ### Minor Changes
