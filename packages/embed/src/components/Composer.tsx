@@ -4,13 +4,13 @@ import { PhoneIcon, SendIcon } from "./icons.js";
 
 export function Composer({
   disabled,
-  voiceEnabled,
+  showVoice,
   voiceOn,
   onSend,
   onToggleVoice,
 }: {
   disabled: boolean;
-  voiceEnabled: boolean;
+  showVoice: boolean;
   voiceOn: boolean;
   onSend: (text: string) => Promise<void>;
   onToggleVoice: () => void;
@@ -64,7 +64,7 @@ export function Composer({
         />
         <div className="field-actions" onClick={focusOnEmptyAreaClick}>
           <div className="field-actions-end">
-            {voiceEnabled && (
+            {showVoice && (
               <button
                 className={`icon-button voice-toggle ${voiceOn ? "active" : ""}`}
                 type="button"

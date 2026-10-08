@@ -11,8 +11,8 @@ import { PopupMenu } from "./PopupMenu.js";
 
 export function MoreMenu({
   showVoice,
-  isMicEnabled,
-  isAudioMuted,
+  micOn,
+  audioOn,
   aboutOpen,
   onToggleMic,
   onToggleAudio,
@@ -20,16 +20,14 @@ export function MoreMenu({
   onBack,
 }: {
   showVoice: boolean;
-  isMicEnabled: boolean;
-  isAudioMuted: boolean;
+  micOn: boolean;
+  audioOn: boolean;
   aboutOpen: boolean;
   onToggleMic: () => void;
   onToggleAudio: () => void;
   onAbout: () => void;
   onBack: () => void;
 }): JSX.Element {
-  const isAudioOn = !isAudioMuted;
-
   return (
     <PopupMenu label="More" icon={<DotsIcon />} placement="below">
       {(close) => (
@@ -37,26 +35,26 @@ export function MoreMenu({
           {showVoice && (
             <>
               <button
-                className={`popup-menu-item ${isMicEnabled ? "on" : ""}`}
+                className={`popup-menu-item ${micOn ? "on" : ""}`}
                 type="button"
                 role="menuitemcheckbox"
-                aria-checked={isMicEnabled}
+                aria-checked={micOn}
                 onClick={onToggleMic}
               >
-                {isMicEnabled ? <MicIcon /> : <MicOffIcon />}
+                {micOn ? <MicIcon /> : <MicOffIcon />}
                 Microphone
-                <span className="state">{isMicEnabled ? "On" : "Off"}</span>
+                <span className="state">{micOn ? "On" : "Off"}</span>
               </button>
               <button
-                className={`popup-menu-item ${isAudioOn ? "on" : ""}`}
+                className={`popup-menu-item ${audioOn ? "on" : ""}`}
                 type="button"
                 role="menuitemcheckbox"
-                aria-checked={isAudioOn}
+                aria-checked={audioOn}
                 onClick={onToggleAudio}
               >
-                {isAudioOn ? <SpeakerIcon /> : <SpeakerOffIcon />}
+                {audioOn ? <SpeakerIcon /> : <SpeakerOffIcon />}
                 Audio
-                <span className="state">{isAudioOn ? "On" : "Off"}</span>
+                <span className="state">{audioOn ? "On" : "Off"}</span>
               </button>
               <div className="popup-menu-separator" />
             </>

@@ -7,8 +7,8 @@ export function Header({
   displayName,
   status,
   showVoice,
-  isMicEnabled,
-  isAudioMuted,
+  micOn,
+  audioOn,
   canEnd,
   aboutOpen,
   onToggleMic,
@@ -21,8 +21,8 @@ export function Header({
   displayName: string;
   status: WidgetStatus;
   showVoice: boolean;
-  isMicEnabled: boolean;
-  isAudioMuted: boolean;
+  micOn: boolean;
+  audioOn: boolean;
   canEnd: boolean;
   aboutOpen: boolean;
   onToggleMic: () => void;
@@ -45,8 +45,8 @@ export function Header({
         {canEnd && <EndMenu onEnd={onEnd} />}
         <MoreMenu
           showVoice={showVoice}
-          isMicEnabled={isMicEnabled}
-          isAudioMuted={isAudioMuted}
+          micOn={micOn}
+          audioOn={audioOn}
           aboutOpen={aboutOpen}
           onToggleMic={onToggleMic}
           onToggleAudio={onToggleAudio}

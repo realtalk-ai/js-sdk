@@ -18,6 +18,10 @@ import { MessageList } from "./components/MessageList.js";
 import { NewConversation } from "./components/NewConversation.js";
 
 const TEXT_ONLY: ConversationMode = { userAudio: false, agentAudio: false };
+const AUDIO_BOTH_WAYS: ConversationMode = {
+  userAudio: true,
+  agentAudio: true,
+};
 
 export function EmbedApp({
   agentId,
@@ -86,7 +90,7 @@ function Widget({
     messages,
     agentState,
     userState,
-    isMicEnabled,
+    isMicEnabled: micOn,
   } = conversation;
 
   const firstOpenHandledRef = useRef(false);
@@ -136,8 +140,8 @@ function Widget({
   const conversationOver = status === "finished" || expired;
   const hasMessages = messages.length > 0;
   const ended = conversationOver && hasMessages;
-  const isAudioMuted = ended || !mode.agentAudio;
-  const voiceOn = isMicEnabled || !isAudioMuted;
+  const audioOn = !ended && mode.agentAudio;
+  const voiceOn = micOn || audioOn;
   const conversationInProgress = (active || paused) && !expired;
 
   const start = async (mode: ConversationMode = startMode) => {
@@ -185,61 +189,47 @@ function Widget({
     setNotice(null);
   };
 
-  const changeMode = async (newMode: ConversationMode) => {
-    setStartMode(newMode);
-    if (active) {
-      await conversationRef.current.setMode(newMode);
-    } else if (!newMode.userAudio) {
-      conversationRef.current.disableMic();
-    }
-  };
-
-  const handleAudioToggle = async () => {
+  // Applies a mode. Turning the mic on needs microphone access first and
+  // starts the conversation if none is active; every other change is plain.
+  const applyMode = async (newMode: ConversationMode) => {
     setNotice(null);
-    await changeMode({ ...mode, agentAudio: !mode.agentAudio });
-  };
+    const turnsMicOn = newMode.userAudio && !micOn;
+    if (!turnsMicOn) {
+      setStartMode(newMode);
+      if (active) {
+        await conversationRef.current.setMode(newMode);
+      } else if (!newMode.userAudio) {
+        conversationRef.current.disableMic();
+      }
+      return;
+    }
 
-  const turnMicOn = async (
-    withMic: ConversationMode,
-    fallback: ConversationMode,
-  ) => {
     try {
-      await conversation.setMode(withMic);
+      await conversationRef.current.setMode(newMode);
     } catch {
       setNotice(
         "Could not access the microphone. Check your browser permissions.",
       );
       return;
     }
-    setStartMode(withMic);
+    setStartMode(newMode);
     try {
-      if (!active) await start(withMic);
+      if (!active) await start(newMode);
     } catch (error) {
       console.error("[realtalk-embed] failed to start conversation", error);
       conversationRef.current.disableMic();
-      setStartMode(fallback);
+      setStartMode(mode);
       setNotice("Could not connect. Please try again.");
     }
   };
 
-  const handleMicToggle = async () => {
-    setNotice(null);
-    const withoutMic = { ...mode, userAudio: false };
-    if (isMicEnabled) {
-      await changeMode(withoutMic);
-      return;
-    }
-    await turnMicOn({ ...mode, userAudio: true }, withoutMic);
-  };
+  const handleAudioToggle = () =>
+    applyMode({ ...mode, agentAudio: !mode.agentAudio });
 
-  const handleVoiceToggle = async () => {
-    setNotice(null);
-    if (voiceOn) {
-      await changeMode(TEXT_ONLY);
-      return;
-    }
-    await turnMicOn({ userAudio: true, agentAudio: true }, TEXT_ONLY);
-  };
+  const handleMicToggle = () => applyMode({ ...mode, userAudio: !micOn });
+
+  const handleVoiceToggle = () =>
+    applyMode(voiceOn ? TEXT_ONLY : AUDIO_BOTH_WAYS);
 
   const widgetStatus = deriveWidgetStatus({
     starting,
@@ -249,8 +239,8 @@ function Widget({
     active,
     agentState,
     userState,
-    isAudioMuted,
-    isMicEnabled,
+    micOn,
+    audioOn,
   });
 
   if (!open) {
@@ -271,8 +261,8 @@ function Widget({
           displayName={config.displayName}
           status={widgetStatus}
           showVoice={voiceEnabled && !ended}
-          isMicEnabled={isMicEnabled}
-          isAudioMuted={isAudioMuted}
+          micOn={micOn}
+          audioOn={audioOn}
           canEnd={conversationInProgress}
           aboutOpen={showAbout}
           onToggleMic={() => void handleMicToggle()}
@@ -302,7 +292,7 @@ function Widget({
             ) : (
               <Composer
                 disabled={starting}
-                voiceEnabled={voiceEnabled}
+                showVoice={voiceEnabled}
                 voiceOn={voiceOn}
                 onSend={handleSend}
                 onToggleVoice={() => void handleVoiceToggle()}
