@@ -254,6 +254,12 @@ button {
   text-wrap: balance;
 }
 
+.about-logo {
+  width: 140px;
+  height: auto;
+  margin-bottom: 8px;
+}
+
 .about a {
   color: var(--rt-accent-ink);
 }

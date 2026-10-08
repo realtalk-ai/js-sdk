@@ -1,6 +1,9 @@
+import logo from "../assets/logo.webp";
+
 export function AboutPage({ onBack }: { onBack: () => void }): JSX.Element {
   return (
     <div className="about">
+      <img className="about-logo" src={logo} alt="Real Talk" />
       <p>
         This chat is powered by Real Talk. To learn more, visit{" "}
         <a
