@@ -1,5 +1,14 @@
 # @realtalk-ai/embed
 
+## 0.3.1
+
+### Patch Changes
+
+- 948bb90: Report the installed package version when connecting. The embed widget now identifies itself as `embed` with its own version.
+- Updated dependencies [948bb90]
+  - @realtalk-ai/core@0.6.1
+  - @realtalk-ai/react@0.6.1
+
 ## 0.3.0
 
 ### Minor Changes
