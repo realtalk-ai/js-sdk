@@ -10,6 +10,8 @@ export interface RealTalkConfig {
   getToken: (() => Promise<TokenResponse>) | null;
   /** @internal */
   context?: SdkContext;
+  sdkName?: string;
+  sdkVersion?: string;
 }
 
 const RealTalkContext = createContext<RealTalkConfig | null>(null);
@@ -20,6 +22,8 @@ export interface RealTalkProviderProps {
   getToken?: () => Promise<TokenResponse>;
   /** @internal Overrides the context reported in sdkInfo. */
   context?: SdkContext;
+  sdkName?: string;
+  sdkVersion?: string;
   children: ReactNode;
 }
 
@@ -28,6 +32,8 @@ export function RealTalkProvider({
   tokenUrl,
   getToken,
   context,
+  sdkName,
+  sdkVersion,
   children,
 }: RealTalkProviderProps): JSX.Element {
   const value = useMemo(
@@ -36,8 +42,10 @@ export function RealTalkProvider({
       tokenUrl: tokenUrl ?? null,
       getToken: getToken ?? null,
       context,
+      sdkName,
+      sdkVersion,
     }),
-    [baseUrl, tokenUrl, getToken, context],
+    [baseUrl, tokenUrl, getToken, context, sdkName, sdkVersion],
   );
 
   return (

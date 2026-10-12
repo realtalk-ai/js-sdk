@@ -16,6 +16,7 @@ import { Header } from "./components/Header.js";
 import { Launcher } from "./components/Launcher.js";
 import { MessageList } from "./components/MessageList.js";
 import { NewConversation } from "./components/NewConversation.js";
+import { SDK_NAME, SDK_VERSION } from "./version.js";
 
 const TEXT_ONLY: ConversationMode = { userAudio: false, agentAudio: false };
 const AUDIO_BOTH_WAYS: ConversationMode = {
@@ -43,6 +44,8 @@ export function EmbedApp({
       baseUrl={server.wsBaseUrl}
       getToken={minter.getToken}
       context="embed_widget"
+      sdkName={SDK_NAME}
+      sdkVersion={SDK_VERSION}
     >
       <Widget
         agentId={agentId}

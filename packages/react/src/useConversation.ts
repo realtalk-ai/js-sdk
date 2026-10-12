@@ -77,7 +77,8 @@ export interface UseConversationReturn {
 export function useConversation(
   options: UseConversationOptions = {},
 ): UseConversationReturn {
-  const { baseUrl, tokenUrl, getToken, context } = useRealTalkConfig();
+  const { baseUrl, tokenUrl, getToken, context, sdkName, sdkVersion } =
+    useRealTalkConfig();
 
   const optionsRef = useRef(options);
   optionsRef.current = options;
@@ -152,6 +153,8 @@ export function useConversation(
     tokenUrl,
     getToken,
     context,
+    sdkName,
+    sdkVersion,
     optionsRef,
     onEvent: handleMessageEvent,
     setMessages,

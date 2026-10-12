@@ -63,6 +63,8 @@ export function useConnection(opts: {
   tokenUrl: string | null;
   getToken: (() => Promise<TokenResponse>) | null;
   context?: SdkContext;
+  sdkName?: string;
+  sdkVersion?: string;
   optionsRef: MutableRefObject<UseConversationOptions>;
   onEvent: (event: ConversationEvent) => void;
   setMessages: Dispatch<SetStateAction<Message[]>>;
@@ -79,6 +81,8 @@ export function useConnection(opts: {
     tokenUrl,
     getToken,
     context,
+    sdkName,
+    sdkVersion,
     optionsRef,
     onEvent,
     setMessages,
@@ -291,8 +295,8 @@ export function useConnection(opts: {
         url: wsUrl,
         token: sessionTokenRef.current ?? "",
         sdkInfo: {
-          name: SDK_NAME,
-          version: SDK_VERSION,
+          name: sdkName ?? SDK_NAME,
+          version: sdkVersion ?? SDK_VERSION,
           context: context ?? SDK_CONTEXT,
         },
         mode: modeRef.current,
@@ -307,6 +311,8 @@ export function useConnection(opts: {
     [
       baseUrl,
       context,
+      sdkName,
+      sdkVersion,
       updateConnectionStatus,
       handleConversationEvent,
       onAudio,
