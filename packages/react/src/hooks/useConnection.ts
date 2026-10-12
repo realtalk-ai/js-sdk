@@ -9,7 +9,7 @@ import type {
   ConversationMode,
   DTMFDigit,
   Message,
-  SdkContext,
+  SdkInfo,
   SessionToken,
   ConversationEvent,
 } from "@realtalk-ai/core";
@@ -62,9 +62,7 @@ export function useConnection(opts: {
   baseUrl: string;
   tokenUrl: string | null;
   getToken: (() => Promise<TokenResponse>) | null;
-  context?: SdkContext;
-  sdkName?: string;
-  sdkVersion?: string;
+  sdkInfo?: SdkInfo;
   optionsRef: MutableRefObject<UseConversationOptions>;
   onEvent: (event: ConversationEvent) => void;
   setMessages: Dispatch<SetStateAction<Message[]>>;
@@ -80,9 +78,7 @@ export function useConnection(opts: {
     baseUrl,
     tokenUrl,
     getToken,
-    context,
-    sdkName,
-    sdkVersion,
+    sdkInfo,
     optionsRef,
     onEvent,
     setMessages,
@@ -294,10 +290,10 @@ export function useConnection(opts: {
       await transport.connect({
         url: wsUrl,
         token: sessionTokenRef.current ?? "",
-        sdkInfo: {
-          name: sdkName ?? SDK_NAME,
-          version: sdkVersion ?? SDK_VERSION,
-          context: context ?? SDK_CONTEXT,
+        sdkInfo: sdkInfo ?? {
+          name: SDK_NAME,
+          version: SDK_VERSION,
+          context: SDK_CONTEXT,
         },
         mode: modeRef.current,
       });
@@ -310,9 +306,7 @@ export function useConnection(opts: {
     },
     [
       baseUrl,
-      context,
-      sdkName,
-      sdkVersion,
+      sdkInfo,
       updateConnectionStatus,
       handleConversationEvent,
       onAudio,

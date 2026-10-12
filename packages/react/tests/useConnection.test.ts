@@ -506,8 +506,13 @@ describe("useConnection", () => {
     );
   });
 
-  it("startConversation uses the configured context override in sdkInfo", async () => {
-    const opts = { ...defaultOpts(), context: "embed_widget" as const };
+  it("startConversation reports the configured sdkInfo override", async () => {
+    const sdkInfo = {
+      name: "embed",
+      version: "9.9.9",
+      context: "embed_widget" as const,
+    };
+    const opts = { ...defaultOpts(), sdkInfo };
     const { result } = renderHook(() => useConnection(opts));
 
     await act(async () => {
@@ -518,32 +523,7 @@ describe("useConnection", () => {
     });
 
     expect(mockTransport.connect).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sdkInfo: expect.objectContaining({
-          context: "embed_widget",
-        }),
-      }),
-    );
-  });
-
-  it("startConversation uses the configured SDK name and version in sdkInfo", async () => {
-    const opts = { ...defaultOpts(), sdkName: "embed", sdkVersion: "9.9.9" };
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    expect(mockTransport.connect).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sdkInfo: expect.objectContaining({
-          name: "embed",
-          version: "9.9.9",
-        }),
-      }),
+      expect.objectContaining({ sdkInfo }),
     );
   });
 

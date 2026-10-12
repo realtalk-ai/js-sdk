@@ -24,7 +24,7 @@ export type {
 
 export { EventType } from "./types.js";
 
-export type { SdkContext } from "./transport.js";
+export type { SdkContext, SdkInfo } from "./transport.js";
 
 export {
   WebSocketTransport,

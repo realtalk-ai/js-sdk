@@ -161,10 +161,10 @@ describe("EmbedApp", () => {
   it("connects as the embed SDK with its package version", async () => {
     await renderWidget();
 
-    expect(providerProps.current).toMatchObject({
+    expect(providerProps.current.sdkInfo).toEqual({
+      name: "embed",
+      version: packageJson.version,
       context: "embed_widget",
-      sdkName: "embed",
-      sdkVersion: packageJson.version,
     });
   });
 
