@@ -1,2 +1,7 @@
-export const SDK_NAME = "embed";
-export const SDK_VERSION = __EMBED_VERSION__;
+import type { SdkInfo } from "@realtalk-ai/core";
+
+export const SDK_INFO: SdkInfo = {
+  name: "embed",
+  version: __EMBED_VERSION__,
+  context: "embed_widget",
+};
