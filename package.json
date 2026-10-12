@@ -11,6 +11,7 @@
     "embed-demo": "turbo build --filter @realtalk-ai/embed && http-server . -a 127.0.0.1 -p 4173 -c-1",
     "format": "prettier --write .",
     "prepare": "husky",
+    "version-packages": "changeset version && node scripts/sync-sdk-versions.mjs",
     "release": "pnpm install && pnpm build && changeset publish"
   },
   "lint-staged": {

@@ -10,6 +10,7 @@ import {
 import type { ComponentProps, ReactNode } from "react";
 import type { ConversationStatus, Message } from "@realtalk-ai/core";
 import { EmbedApp } from "../src/EmbedApp.js";
+import packageJson from "../package.json";
 
 type EmbedAppProps = ComponentProps<typeof EmbedApp>;
 
@@ -37,8 +38,20 @@ const conversation = {
   toggleAudio: vi.fn(),
 };
 
+const providerProps = vi.hoisted(() => ({
+  current: {} as Record<string, unknown>,
+}));
+
 vi.mock("@realtalk-ai/react", () => ({
-  RealTalkProvider: ({ children }: { children: ReactNode }) => children,
+  RealTalkProvider: ({
+    children,
+    ...props
+  }: {
+    children: ReactNode;
+  } & Record<string, unknown>) => {
+    providerProps.current = props;
+    return children;
+  },
   useConversation: () => conversation,
 }));
 
@@ -143,6 +156,16 @@ describe("EmbedApp", () => {
     cleanup();
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it("connects as the embed SDK with its package version", async () => {
+    await renderWidget();
+
+    expect(providerProps.current).toMatchObject({
+      context: "embed_widget",
+      sdkName: "embed",
+      sdkVersion: packageJson.version,
+    });
   });
 
   describe("launcher", () => {

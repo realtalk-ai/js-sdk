@@ -526,6 +526,27 @@ describe("useConnection", () => {
     );
   });
 
+  it("startConversation uses the configured SDK name and version in sdkInfo", async () => {
+    const opts = { ...defaultOpts(), sdkName: "embed", sdkVersion: "9.9.9" };
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    expect(mockTransport.connect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sdkInfo: expect.objectContaining({
+          name: "embed",
+          version: "9.9.9",
+        }),
+      }),
+    );
+  });
+
   it("startConversation calls onConnectionStatusChange", async () => {
     const opts = defaultOpts();
     const onConnectionStatusChange = vi.fn();
