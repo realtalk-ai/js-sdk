@@ -34,7 +34,8 @@ export {
 
 export { normalizeMessage, sortChronological } from "./events.js";
 
-export { hasPendingSubTasks } from "./messages.js";
+export { hasPendingSubTasks, parseMessageMarkup } from "./messages.js";
+export type { MessageSegment } from "./messages.js";
 
 export { pcmToBase64, base64ToPcm } from "./audio.js";
 

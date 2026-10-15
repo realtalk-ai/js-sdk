@@ -136,6 +136,7 @@ You can also send arbitrary custom events — any object with a `type` string fi
 | `WebSocketTransport`          | WebSocket connection with status tracking, timeouts, and optional reconnection |
 | `normalizeMessage`            | Convert a backend message (snake_case) to a typed `Message` (camelCase)        |
 | `sortChronological`           | Sort messages by `createdAt` timestamp                                         |
+| `parseMessageMarkup`          | Split message text into typed segments from markup tags such as `<url>`        |
 | `pcmToBase64` / `base64ToPcm` | PCM audio encoding utilities                                                   |
 | `DefaultReconnectPolicy`      | Configurable retry-delay policy                                                |
 | `RealtalkError`               | Base error class for all SDK errors                                            |
