@@ -430,7 +430,8 @@ button {
   to { transform: rotate(360deg); }
 }
 
-.finished-note {
+.finished-note,
+.joined-note {
   align-self: center;
   font-size: 12px;
   color: var(--rt-muted);

@@ -289,6 +289,7 @@ function Widget({
               greeting={config.greeting}
               previousChatEnded={previousChatEnded}
               agentState={agentState}
+              handoff={handoff}
               notice={notice}
             />
             {ended ? (
