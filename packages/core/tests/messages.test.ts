@@ -132,6 +132,15 @@ describe("parseMessageMarkup", () => {
     ]);
   });
 
+  it.each([
+    '<url data-href="https://example.com">vår sida</url>',
+    '<url title="href=https://example.com">vår sida</url>',
+  ])("only reads a standalone href attribute in %s", (text) => {
+    expect(parseMessageMarkup(text)).toEqual([
+      { type: "text", text: "vår sida" },
+    ]);
+  });
+
   it("keeps the inner text of an unclosed url tag", () => {
     expect(
       parseMessageMarkup('Se <url href="https://example.com">vår sida'),

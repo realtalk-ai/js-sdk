@@ -18,10 +18,10 @@ const ANY_TAG_PATTERN = new RegExp(
   String.raw`<\/?[A-Za-z][\w-]*${ATTRIBUTES}\s*\/?>`,
   "g",
 );
-// The href value inside the attributes: href="https://example.com"
-const HREF_PATTERN = new RegExp(
-  String.raw`\bhref=(?<href>${ATTRIBUTE_VALUE})`,
-  "i",
+// One attribute with an optional value: ` href="/a"` or ` hidden`
+const ATTRIBUTE_PATTERN = new RegExp(
+  String.raw`\s+(?<name>[\w-]+)(?:=(?<value>${ATTRIBUTE_VALUE}))?`,
+  "g",
 );
 const SAFE_PROTOCOLS = ["http:", "https:", "mailto:", "tel:"];
 
@@ -50,11 +50,19 @@ export function parseMessageMarkup(text: string): MessageSegment[] {
 
 function parseUrlTag(attributes: string, rawLabel: string): MessageSegment {
   const label = stripMarkup(rawLabel);
-  const value = attributes.match(HREF_PATTERN)?.groups?.href ?? "";
+  const value = findAttributeValue(attributes, "href");
   const rawHref = /^["']/.test(value) ? value.slice(1, -1) : value;
   const href = toSafeHref(rawHref.replace(/&amp;/g, "&"));
   if (!href) return { type: "text", text: label };
   return { type: "url", href, label: label || rawHref };
+}
+
+function findAttributeValue(attributes: string, name: string): string {
+  for (const match of attributes.matchAll(ATTRIBUTE_PATTERN)) {
+    const attribute = match.groups!;
+    if (attribute.name.toLowerCase() === name) return attribute.value ?? "";
+  }
+  return "";
 }
 
 function stripMarkup(text: string): string {
