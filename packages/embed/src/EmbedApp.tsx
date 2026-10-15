@@ -144,6 +144,8 @@ function Widget({
   const audioOn = !ended && mode.agentAudio;
   const voiceOn = micOn || audioOn;
   const conversationInProgress = (active || paused) && !expired;
+  const handoff = conversationInProgress || ended ? conversation.handoff : null;
+  const handoffWaiting = handoff?.status === "waiting";
 
   const start = async (mode: ConversationMode = startMode) => {
     if (starting || active) return;
@@ -242,6 +244,7 @@ function Widget({
     userState,
     micOn,
     audioOn,
+    handoffWaiting,
   });
 
   if (!open) {

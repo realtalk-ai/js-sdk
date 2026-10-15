@@ -8,7 +8,12 @@ import {
   within,
 } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
-import type { ConversationStatus, Message } from "@realtalk-ai/core";
+import type {
+  AgentState,
+  ConversationStatus,
+  Handoff,
+  Message,
+} from "@realtalk-ai/core";
 import { EmbedApp } from "../src/EmbedApp.js";
 import packageJson from "../package.json";
 
@@ -17,14 +22,25 @@ type EmbedAppProps = ComponentProps<typeof EmbedApp>;
 const AGENT_ID = "agent-1";
 const IDLE_PAUSE_SECONDS = 30;
 const IDLE_END_SECONDS = 300;
+const WAITING_HANDOFF: Handoff = {
+  status: "waiting",
+  humanAgentName: null,
+  claimedAt: null,
+};
+const CLAIMED_HANDOFF: Handoff = {
+  status: "active",
+  humanAgentName: "Filip",
+  claimedAt: "2024-01-01T00:01:00Z",
+};
 
 const conversation = {
   status: "not_started" as ConversationStatus,
   connectionStatus: "disconnected" as const,
   messages: [] as Message[],
-  agentState: "idle" as const,
+  agentState: "idle" as AgentState,
   userState: "idle" as const,
   mode: { userAudio: false, agentAudio: false },
+  handoff: null as Handoff | null,
   isMicEnabled: false,
   isAudioMuted: false,
   startConversation: vi.fn(),
@@ -149,6 +165,7 @@ describe("EmbedApp", () => {
       isMicEnabled: false,
       isAudioMuted: false,
       mode: { userAudio: false, agentAudio: false },
+      handoff: null,
     });
   });
 
@@ -584,6 +601,42 @@ describe("EmbedApp", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "Minimize chat" }));
       expect(launcherLabel()).toBe("Open chat");
+    });
+  });
+
+  describe("handoff", () => {
+    it("types out the handoff message before showing the waiting state", async () => {
+      const { update } = await renderWidget({
+        status: "active",
+        agentState: "speaking",
+        handoff: WAITING_HANDOFF,
+      });
+      openPanel();
+      expect(screen.getByText("Typing")).toBeTruthy();
+
+      update({ agentState: "idle" });
+      expect(screen.getByText("Waiting for human agent")).toBeTruthy();
+    });
+
+    it("goes back to Online once a human agent has claimed the chat", async () => {
+      const { update } = await renderWidget({
+        status: "active",
+        handoff: WAITING_HANDOFF,
+      });
+      openPanel();
+      expect(screen.getByText("Waiting for human agent")).toBeTruthy();
+
+      update({ handoff: CLAIMED_HANDOFF });
+      expect(screen.getByText("Online")).toBeTruthy();
+      expect(screen.queryByText("Waiting for human agent")).toBeNull();
+    });
+
+    it("still asks for a message while a waiting chat is paused", async () => {
+      await renderWidget({ status: "paused", handoff: WAITING_HANDOFF });
+      openPanel();
+
+      expect(screen.getByText("Still here")).toBeTruthy();
+      expect(screen.queryByText("Waiting for human agent")).toBeNull();
     });
   });
 });

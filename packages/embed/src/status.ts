@@ -20,6 +20,7 @@ export function deriveWidgetStatus(state: {
   userState: UserState;
   micOn: boolean;
   audioOn: boolean;
+  handoffWaiting: boolean;
 }): WidgetStatus {
   const {
     starting,
@@ -31,6 +32,7 @@ export function deriveWidgetStatus(state: {
     userState,
     micOn,
     audioOn,
+    handoffWaiting,
   } = state;
 
   if (starting || connectionStatus === "connecting") {
@@ -58,6 +60,9 @@ export function deriveWidgetStatus(state: {
   }
   if (agentState === "speaking") {
     return { tone: "live", label: audioOn ? "Speaking" : "Typing" };
+  }
+  if (handoffWaiting) {
+    return { tone: "waiting", label: "Waiting for human agent" };
   }
   if (agentState === "thinking") {
     return { tone: "live", label: "Thinking" };

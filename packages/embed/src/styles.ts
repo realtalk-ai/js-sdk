@@ -160,7 +160,8 @@ button {
   animation: rt-pulse 1.4s infinite ease-in-out;
 }
 
-.status.paused .status-dot {
+.status.paused .status-dot,
+.status.waiting .status-dot {
   background: var(--rt-warn);
 }
 
