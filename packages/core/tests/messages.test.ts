@@ -159,12 +159,15 @@ describe("parseMessageMarkup", () => {
     ]);
   });
 
-  it.each(["Se <", "Se <ur", "Se </UR", 'Se <url href="https://x'])(
-    "drops a partial url tag at the end of %s",
-    (text) => {
-      expect(parseMessageMarkup(text)).toEqual([{ type: "text", text: "Se " }]);
-    },
-  );
+  it.each([
+    "Se <",
+    "Se <ur",
+    "Se </UR",
+    "Se </url ",
+    'Se <url href="https://x',
+  ])("drops a partial url tag at the end of %s", (text) => {
+    expect(parseMessageMarkup(text)).toEqual([{ type: "text", text: "Se " }]);
+  });
 
   it("keeps a partial tag at the end that is not a url tag", () => {
     expect(parseMessageMarkup("Se <b")).toEqual([

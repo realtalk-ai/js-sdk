@@ -75,7 +75,9 @@ function stripPartialUrlTagAtEnd(text: string): string {
   const tail = text.slice(start).toLowerCase();
   if (start === -1 || tail.includes(">")) return text;
   const isPartialUrlTag =
-    "<url".startsWith(tail) || "</url".startsWith(tail) || /^<url\s/.test(tail);
+    "<url".startsWith(tail) ||
+    "</url".startsWith(tail) ||
+    /^<\/?url\s/.test(tail);
   return isPartialUrlTag ? text.slice(0, start) : text;
 }
 
