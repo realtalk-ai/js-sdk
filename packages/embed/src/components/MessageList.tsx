@@ -4,7 +4,8 @@ import {
   type AgentState,
   type Message,
 } from "@realtalk-ai/core";
-import { formatMessageText, hasVisibleContent } from "../messages.js";
+import { hasVisibleContent } from "../messages.js";
+import { MessageText } from "./MessageText.js";
 import { SubTasksBadge } from "./SubTasksBadge.js";
 
 // Sub tasks are hidden but could be enabled to show progress on long running
@@ -49,7 +50,7 @@ export function MessageList({
           <Fragment key={message.id}>
             {hasText && (
               <div className={`message ${message.role}`}>
-                {formatMessageText(message.text)}
+                <MessageText message={message} />
               </div>
             )}
             {showSubTasks && <SubTasksBadge subTasks={subTasks} />}

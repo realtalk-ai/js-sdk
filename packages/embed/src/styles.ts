@@ -280,6 +280,11 @@ button {
   word-wrap: break-word;
 }
 
+.message a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .message.user {
   align-self: flex-end;
   background: var(--rt-accent);
