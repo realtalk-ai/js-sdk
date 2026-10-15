@@ -15,6 +15,14 @@ export interface ConversationMode {
   agentAudio: boolean;
 }
 
+export type HandoffStatus = "waiting" | "active" | "closed";
+
+export interface Handoff {
+  status: HandoffStatus;
+  humanAgentName: string | null;
+  claimedAt: string | null;
+}
+
 export interface ToolCall {
   id: string;
   function: {
@@ -157,6 +165,7 @@ export const EventType = {
   Clear: "clear",
   ConversationFinished: "conversation_finished",
   ConversationMode: "conversation_mode",
+  HandoffStatus: "handoff_status",
   Close: "close",
   Error: "error",
 } as const;
@@ -185,6 +194,14 @@ export type ConversationEvent =
   | {
       type: "conversation_mode";
       data: { user_audio: boolean; agent_audio: boolean };
+    }
+  | {
+      type: "handoff_status";
+      data: {
+        status: HandoffStatus;
+        human_agent_name: string | null;
+        claimed_at: string | null;
+      };
     }
   | { type: "close"; code: number; reason: string }
   | { type: "error"; message?: string };

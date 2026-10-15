@@ -114,6 +114,7 @@ const conversation = useConversation(options);
 | `isMicMuted`       | `boolean`                   | Microphone mute state                                                   |
 | `isMicEnabled`     | `boolean`                   | Whether a microphone is currently attached                              |
 | `isAudioMuted`     | `boolean`                   | Audio output mute state                                                 |
+| `handoff`          | `Handoff \| null`           | The handoff to a human agent, or `null` until the server reports one    |
 
 ### Methods
 
