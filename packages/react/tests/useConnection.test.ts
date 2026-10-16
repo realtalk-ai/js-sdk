@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import type { ConversationEvent, ConversationMode } from "@realtalk-ai/core";
+import type {
+  ConversationEvent,
+  ConversationMode,
+  Handoff,
+} from "@realtalk-ai/core";
 import {
   DEFAULT_CONVERSATION_MODE,
   useConnection,
@@ -9,9 +13,27 @@ import {
 const TEXT_ONLY = { userAudio: false, agentAudio: false };
 const TEXT_WITH_AGENT_AUDIO = { userAudio: false, agentAudio: true };
 const AUDIO_BOTH_WAYS = { userAudio: true, agentAudio: true };
+const WAITING_HANDOFF: Handoff = {
+  status: "waiting",
+  humanAgentName: null,
+  claimedAt: null,
+};
+const CLAIMED_HANDOFF: Handoff = {
+  status: "active",
+  humanAgentName: "Filip",
+  claimedAt: "2026-10-15T12:31:24.123Z",
+};
 
 function onTheWire(mode: ConversationMode) {
   return { user_audio: mode.userAudio, agent_audio: mode.agentAudio };
+}
+
+function handoffOnTheWire(handoff: Handoff) {
+  return {
+    status: handoff.status,
+    human_agent_name: handoff.humanAgentName,
+    claimed_at: handoff.claimedAt,
+  };
 }
 
 const mockTransport = {
@@ -63,6 +85,24 @@ function defaultOpts() {
     onCleanup: vi.fn(),
     onModeRefused: vi.fn(),
   };
+}
+
+async function startedConnection(mode?: ConversationMode) {
+  const opts = defaultOpts();
+  const rendered = renderHook(() => useConnection(opts));
+  await act(async () => {
+    await rendered.result.current.startConversation({
+      agentId: "agent-1",
+      conversationId: "conv-1",
+      mode,
+    });
+  });
+  const { WebSocketTransport } = await import("@realtalk-ai/core");
+  const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+  const emit = transport.onEvent.mock.calls[0][0] as (
+    event: ConversationEvent,
+  ) => void;
+  return { ...rendered, opts, transport, emit };
 }
 
 describe("useConnection", () => {
@@ -904,24 +944,6 @@ describe("useConnection", () => {
     expect(vi.mocked(WebSocketTransport).mock.results).toHaveLength(2);
   });
   describe("conversation mode", () => {
-    async function startedConnection(mode?: ConversationMode) {
-      const opts = defaultOpts();
-      const rendered = renderHook(() => useConnection(opts));
-      await act(async () => {
-        await rendered.result.current.startConversation({
-          agentId: "agent-1",
-          conversationId: "conv-1",
-          mode,
-        });
-      });
-      const { WebSocketTransport } = await import("@realtalk-ai/core");
-      const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-      const emit = transport.onEvent.mock.calls[0][0] as (
-        event: ConversationEvent,
-      ) => void;
-      return { ...rendered, opts, transport, emit };
-    }
-
     it("connects in the requested mode", async () => {
       const { result, transport } = await startedConnection(
         TEXT_WITH_AGENT_AUDIO,
@@ -998,6 +1020,47 @@ describe("useConnection", () => {
       act(() => result.current.requestMode(AUDIO_BOTH_WAYS));
 
       expect(mockTransport.sendEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("handoff", () => {
+    it("starts without a handoff and adopts the one the server sends", async () => {
+      const { result, emit } = await startedConnection();
+
+      expect(result.current.handoff).toBeNull();
+
+      act(() =>
+        emit({
+          type: "handoff_status",
+          data: handoffOnTheWire(CLAIMED_HANDOFF),
+        }),
+      );
+
+      expect(result.current.handoff).toEqual(CLAIMED_HANDOFF);
+    });
+
+    it("keeps the handoff when the conversation finishes and clears it when the next one starts", async () => {
+      const { result, emit } = await startedConnection();
+
+      act(() =>
+        emit({
+          type: "handoff_status",
+          data: handoffOnTheWire(WAITING_HANDOFF),
+        }),
+      );
+      act(() => emit({ type: "conversation_finished" }));
+
+      expect(result.current.status).toBe("finished");
+      expect(result.current.handoff).toEqual(WAITING_HANDOFF);
+
+      await act(async () => {
+        await result.current.startConversation({
+          agentId: "agent-1",
+          conversationId: "conv-2",
+        });
+      });
+
+      expect(result.current.handoff).toBeNull();
     });
   });
 });

@@ -293,6 +293,38 @@ describe("useConversation", () => {
     expect(result.current.userState).toBe("idle");
   });
 
+  it("handoff_status events update handoff", async () => {
+    const { result } = renderHook(() => useConversation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    act(() =>
+      onEventCb({
+        type: "handoff_status",
+        data: {
+          status: "active",
+          human_agent_name: "Filip",
+          claimed_at: "2026-10-15T12:31:24.123Z",
+        },
+      }),
+    );
+
+    expect(result.current.handoff).toEqual({
+      status: "active",
+      humanAgentName: "Filip",
+      claimedAt: "2026-10-15T12:31:24.123Z",
+    });
+  });
+
   it("onMessage callback is invoked for message events", async () => {
     const onMessage = vi.fn();
 

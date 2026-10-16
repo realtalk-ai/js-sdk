@@ -229,5 +229,15 @@ describe("convertEventForSDK", () => {
 
     const finishedEvent = { type: "conversation_finished" };
     expect(convertEventForSDK(finishedEvent)).toEqual(finishedEvent);
+
+    const handoffEvent = {
+      type: "handoff_status",
+      data: {
+        status: "active",
+        human_agent_name: "Filip",
+        claimed_at: "2026-10-15T12:31:24.123Z",
+      },
+    };
+    expect(convertEventForSDK(handoffEvent)).toEqual(handoffEvent);
   });
 });

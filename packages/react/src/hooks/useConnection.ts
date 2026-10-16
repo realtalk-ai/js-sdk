@@ -8,6 +8,7 @@ import type {
   ConversationError,
   ConversationMode,
   DTMFDigit,
+  Handoff,
   Message,
   SdkInfo,
   SessionToken,
@@ -46,6 +47,7 @@ export interface UseConnectionReturn {
   conversationId: string | null;
   error: ConversationError | null;
   mode: ConversationMode;
+  handoff: Handoff | null;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
@@ -94,6 +96,7 @@ export function useConnection(opts: {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<ConversationError | null>(null);
   const [mode, setMode] = useState<ConversationMode>(DEFAULT_CONVERSATION_MODE);
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
 
   const modeRef = useRef<ConversationMode>(DEFAULT_CONVERSATION_MODE);
   const requestedModeRef = useRef<ConversationMode | null>(null);
@@ -191,6 +194,14 @@ export function useConnection(opts: {
             optionsRef.current.onError?.(conversationError);
             onModeRefused(requestedMode, modeRef.current);
           }
+          break;
+        }
+        case EventType.HandoffStatus: {
+          setHandoff({
+            status: event.data.status,
+            humanAgentName: event.data.human_agent_name,
+            claimedAt: event.data.claimed_at,
+          });
           break;
         }
         case EventType.ConversationFinished: {
@@ -434,6 +445,7 @@ export function useConnection(opts: {
       requestedModeRef.current = null;
       setModeBoth(sessionOptions.mode ?? DEFAULT_CONVERSATION_MODE);
       setMessages([]);
+      setHandoff(null);
 
       const tokenConversationId = await resolveToken(sessionOptions);
 
@@ -553,6 +565,7 @@ export function useConnection(opts: {
     conversationId,
     error,
     mode,
+    handoff,
     startConversation,
     endConversation,
     sendMessage,

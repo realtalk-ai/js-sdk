@@ -160,7 +160,8 @@ button {
   animation: rt-pulse 1.4s infinite ease-in-out;
 }
 
-.status.paused .status-dot {
+.status.paused .status-dot,
+.status.waiting .status-dot {
   background: var(--rt-warn);
 }
 
@@ -429,7 +430,8 @@ button {
   to { transform: rotate(360deg); }
 }
 
-.finished-note {
+.finished-note,
+.joined-note {
   align-self: center;
   font-size: 12px;
   color: var(--rt-muted);

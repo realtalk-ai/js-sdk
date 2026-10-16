@@ -2,6 +2,8 @@ export type {
   ConnectionStatus,
   ConversationStatus,
   ConversationMode,
+  Handoff,
+  HandoffStatus,
   DTMFDigit,
   ToolCall,
   ToolResult,

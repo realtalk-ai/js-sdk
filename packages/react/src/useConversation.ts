@@ -8,6 +8,7 @@ import type {
   ConversationMode,
   ConversationError,
   DTMFDigit,
+  Handoff,
   Message,
   ConversationEvent,
   UserState,
@@ -58,6 +59,7 @@ export interface UseConversationReturn {
   isAudioMuted: boolean;
   volume: number;
   mode: ConversationMode;
+  handoff: Handoff | null;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
@@ -139,6 +141,7 @@ export function useConversation(
     conversationId,
     error,
     mode,
+    handoff,
     startConversation: connectionStart,
     endConversation,
     sendMessage,
@@ -277,6 +280,7 @@ export function useConversation(
     isAudioMuted,
     volume,
     mode,
+    handoff,
     startConversation,
     endConversation,
     sendMessage,
