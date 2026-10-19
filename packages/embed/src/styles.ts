@@ -291,6 +291,77 @@ button {
   align-self: flex-start;
   background: var(--rt-agent-bg);
   color: var(--rt-fg);
+  min-width: 0;
+}
+
+.markdown {
+  white-space: normal;
+}
+
+.markdown > * {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.markdown > * + * {
+  margin-top: 8px;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 20px;
+}
+
+.markdown li + li {
+  margin-top: 2px;
+}
+
+.markdown a {
+  color: var(--rt-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.markdown strong {
+  font-weight: 600;
+}
+
+.markdown blockquote {
+  padding-left: 10px;
+  border-left: 2px solid var(--rt-muted);
+}
+
+/* Tables only scroll with block display. */
+.markdown table {
+  display: block;
+  border-collapse: collapse;
+}
+
+.markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown th,
+.markdown td {
+  padding: 4px 8px;
+  border: 1px solid var(--rt-muted);
+  text-align: left;
+}
+
+.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .thinking {
