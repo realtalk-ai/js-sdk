@@ -44,5 +44,11 @@
     "type": "git",
     "url": "git+https://github.com/realtalk-ai/js-sdk.git",
     "directory": "packages/react"
+  },
+  "dependencies": {
+    "react-markdown": "~10.1.0",
+    "remark-breaks": "~4.0.0",
+    "remark-gfm": "~4.0.1",
+    "remend": "~1.4.0"
   }
 }
