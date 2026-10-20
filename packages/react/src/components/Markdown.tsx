@@ -1,3 +1,4 @@
+import { memo } from "react";
 import ReactMarkdown, {
   defaultUrlTransform,
   type Components,
@@ -29,7 +30,10 @@ const COMPONENTS: Components = {
   img: ({ node, ...props }) => (props.src ? <img {...props} /> : null),
 };
 
-export function Markdown({ children, className }: MarkdownProps): JSX.Element {
+export const Markdown = memo(function Markdown({
+  children,
+  className,
+}: MarkdownProps): JSX.Element {
   return (
     <div className={className ? `rt-markdown ${className}` : "rt-markdown"}>
       <ReactMarkdown
@@ -41,4 +45,4 @@ export function Markdown({ children, className }: MarkdownProps): JSX.Element {
       </ReactMarkdown>
     </div>
   );
-}
+});

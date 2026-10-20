@@ -1,6 +1,12 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import remend from "remend";
+import { describe, expect, it, vi } from "vitest";
 import { Markdown } from "../src/components/Markdown.js";
+
+vi.mock("remend", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remend")>();
+  return { default: vi.fn(actual.default) };
+});
 
 describe("Markdown", () => {
   it("renders markdown links as links that open in a new tab", () => {
@@ -95,5 +101,16 @@ describe("Markdown", () => {
     expect((custom.firstChild as HTMLElement).className).toBe(
       "rt-markdown chat",
     );
+  });
+
+  it("skips rendering again when the props have not changed", () => {
+    vi.mocked(remend).mockClear();
+    const { rerender } = render(<Markdown>{"Hej!"}</Markdown>);
+
+    rerender(<Markdown>{"Hej!"}</Markdown>);
+    expect(remend).toHaveBeenCalledTimes(1);
+
+    rerender(<Markdown>{"Hej igen!"}</Markdown>);
+    expect(remend).toHaveBeenCalledTimes(2);
   });
 });
