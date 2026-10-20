@@ -1,5 +1,16 @@
 # @realtalk-ai/embed
 
+## 0.4.0
+
+### Minor Changes
+
+- 893ff4e: Render agent messages as markdown, with links that open in a new tab. Visitor messages stay plain text.
+
+### Patch Changes
+
+- Updated dependencies [893ff4e]
+  - @realtalk-ai/react@0.7.0
+
 ## 0.3.1
 
 ### Patch Changes

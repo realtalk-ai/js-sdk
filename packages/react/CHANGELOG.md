@@ -1,5 +1,11 @@
 # @realtalk-ai/react
 
+## 0.7.0
+
+### Minor Changes
+
+- 893ff4e: Add a `Markdown` component that renders agent messages as markdown, including messages that are still streaming.
+
 ## 0.6.1
 
 ### Patch Changes
