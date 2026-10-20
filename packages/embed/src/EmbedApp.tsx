@@ -90,6 +90,7 @@ function Widget({
     connectionStatus,
     messages,
     annotations,
+    timeline,
     agentState,
     userState,
     isMicEnabled: micOn,
@@ -286,6 +287,7 @@ function Widget({
           <>
             <MessageList
               messages={messages}
+              timeline={timeline}
               greeting={config.greeting}
               previousChatEnded={previousChatEnded}
               agentState={agentState}

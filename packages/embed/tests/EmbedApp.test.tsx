@@ -8,11 +8,13 @@ import {
   within,
 } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
-import type {
-  AgentState,
-  AnnotationItem,
-  ConversationStatus,
-  Message,
+import {
+  buildTimeline,
+  type AgentState,
+  type AnnotationItem,
+  type ConversationStatus,
+  type Message,
+  type TimelineItem,
 } from "@realtalk-ai/core";
 import { EmbedApp } from "../src/EmbedApp.js";
 import packageJson from "../package.json";
@@ -38,6 +40,9 @@ const conversation = {
   connectionStatus: "disconnected" as const,
   messages: [] as Message[],
   annotations: [] as AnnotationItem[],
+  get timeline(): TimelineItem[] {
+    return buildTimeline(this.messages, this.annotations);
+  },
   agentState: "idle" as AgentState,
   userState: "idle" as const,
   mode: { userAudio: false, agentAudio: false },
@@ -75,8 +80,12 @@ vi.mock("@realtalk-ai/react", async (importOriginal) => {
   };
 });
 
-function message(id: string, text: string): Message {
-  return { id, role: "agent", text, createdAt: "2024-01-01T00:00:00Z" };
+function message(
+  id: string,
+  text: string,
+  createdAt = "2024-01-01T00:00:00Z",
+): Message {
+  return { id, role: "agent", text, createdAt };
 }
 
 function jsonResponse(body: unknown): Response {
@@ -664,17 +673,55 @@ describe("EmbedApp", () => {
       expect(screen.getByText("Waiting for human agent")).toBeTruthy();
     });
 
-    it("goes back to Online once a human agent has joined the chat", async () => {
+    it("goes back to Online and says who joined once a human agent has joined the chat", async () => {
       const { update } = await renderWidget({
         status: "active",
+        messages: [message("m1", "Hello")],
         annotations: [HANDOFF_REQUESTED],
       });
       openPanel();
       expect(screen.getByText("Waiting for human agent")).toBeTruthy();
+      expect(screen.queryByText(/has joined the chat/)).toBeNull();
 
       update({ annotations: [HANDOFF_REQUESTED, HUMAN_AGENT_JOINED] });
       expect(screen.getByText("Online")).toBeTruthy();
       expect(screen.queryByText("Waiting for human agent")).toBeNull();
+      expect(screen.getByText("Filip has joined the chat")).toBeTruthy();
+    });
+
+    it("places the request note between the messages from before and after the request", async () => {
+      await renderWidget({
+        status: "active",
+        messages: [
+          message("m1", "Before"),
+          message("m2", "After", "2024-01-01T00:00:30Z"),
+        ],
+        annotations: [HANDOFF_REQUESTED],
+      });
+      openPanel();
+
+      const requestedNote = screen.getByText(
+        "A human agent has been requested",
+      );
+      expect(
+        screen.getByText("Before").closest(".message")?.nextElementSibling,
+      ).toBe(requestedNote);
+      expect(requestedNote.nextElementSibling).toBe(
+        screen.getByText("After").closest(".message"),
+      );
+    });
+
+    it("keeps the request note above the joined note once a human agent joins", async () => {
+      await renderWidget({
+        status: "active",
+        messages: [message("m1", "Hello")],
+        annotations: [HANDOFF_REQUESTED, HUMAN_AGENT_JOINED],
+      });
+      openPanel();
+
+      expect(
+        screen.getByText("A human agent has been requested").nextElementSibling,
+      ).toBe(screen.getByText("Filip has joined the chat"));
     });
 
     it("still asks for a message while a waiting chat is paused", async () => {
@@ -686,6 +733,68 @@ describe("EmbedApp", () => {
 
       expect(screen.getByText("Still here")).toBeTruthy();
       expect(screen.queryByText("Waiting for human agent")).toBeNull();
+    });
+
+    it("says a human agent joined when there is no first name", async () => {
+      await renderWidget({
+        status: "active",
+        messages: [message("m1", "Hello")],
+        annotations: [
+          {
+            ...HUMAN_AGENT_JOINED,
+            annotation: { kind: "human_agent_joined", humanAgentName: null },
+          },
+        ],
+      });
+      openPanel();
+
+      expect(
+        screen.getByText("A human agent has joined the chat"),
+      ).toBeTruthy();
+    });
+
+    it("places the joined note between the messages from before and after the join", async () => {
+      const beforeJoin = message("m1", "Before", "2024-01-01T00:00:30Z");
+      const { update } = await renderWidget({
+        status: "active",
+        messages: [beforeJoin],
+        annotations: [HUMAN_AGENT_JOINED],
+      });
+      openPanel();
+      expect(
+        screen.getByText("Before").closest(".message")?.nextElementSibling,
+      ).toBe(screen.getByText("Filip has joined the chat"));
+
+      update({
+        messages: [beforeJoin, message("m2", "After", "2024-01-01T00:01:30Z")],
+      });
+      const joinedNote = screen.getByText("Filip has joined the chat");
+      expect(
+        screen.getByText("Before").closest(".message")?.nextElementSibling,
+      ).toBe(joinedNote);
+      expect(joinedNote.nextElementSibling).toBe(
+        screen.getByText("After").closest(".message"),
+      );
+    });
+
+    it("keeps the joined note when the chat ends and drops it on Start new", async () => {
+      const { update } = await renderWidget({
+        status: "finished",
+        messages: [message("m1", "Bye")],
+        annotations: [HUMAN_AGENT_JOINED],
+      });
+      openPanel();
+      expect(screen.getByText("Conversation ended")).toBeTruthy();
+      expect(screen.getByText("Filip has joined the chat")).toBeTruthy();
+
+      conversation.clearMessages.mockImplementationOnce(() => {
+        conversation.annotations = [];
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Start new conversation" }),
+      );
+      update({ messages: [] });
+      expect(screen.queryByText("Filip has joined the chat")).toBeNull();
     });
   });
 });
