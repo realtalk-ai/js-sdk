@@ -1,0 +1,22 @@
+packages/react/tests/markdown.test.tsx
+  s_a7252505f0ea42::t_b819134732be12 2-3,6-10,105-114
+  s_a7252505f0ea42::t_3eccfa8116daa4 115
+packages/react/src/components/Markdown.tsx
+  s_a7252505f0ea42::t_3f74ef676e9dc2 1,33-36,48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b708699c10d3f7ae41f8651041c6bbfbd32843a4",
+  "prompts": {},
+  "sessions": {
+    "s_a7252505f0ea42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2278ba0-8e07-4d5e-83e0-dbae7fcb8918",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "viktor-enzell <viktor.enzell@gmail.com>"
+    }
+  }
+}
