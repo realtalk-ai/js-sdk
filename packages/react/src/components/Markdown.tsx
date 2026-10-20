@@ -19,7 +19,7 @@ const COMPONENTS: Components = {
 
 export function Markdown({ children, className }: MarkdownProps): JSX.Element {
   return (
-    <div className={className}>
+    <div className={className ? `rt-markdown ${className}` : "rt-markdown"}>
       <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={COMPONENTS}>
         {remend(children, { linkMode: "text-only" })}
       </ReactMarkdown>

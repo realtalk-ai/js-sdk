@@ -294,72 +294,72 @@ button {
   min-width: 0;
 }
 
-.markdown {
+.rt-markdown {
   white-space: normal;
 }
 
-.markdown > * {
+.rt-markdown > * {
   max-width: 100%;
   overflow-x: auto;
   margin: 0;
 }
 
-.markdown > * + * {
+.rt-markdown > * + * {
   margin-top: 8px;
 }
 
-.markdown ul,
-.markdown ol {
+.rt-markdown ul,
+.rt-markdown ol {
   padding-left: 20px;
 }
 
-.markdown li + li {
+.rt-markdown li + li {
   margin-top: 2px;
 }
 
-.markdown a {
+.rt-markdown a {
   color: var(--rt-accent-ink);
   text-decoration: underline;
   text-underline-offset: 2px;
   overflow-wrap: anywhere;
 }
 
-.markdown strong {
+.rt-markdown strong {
   font-weight: 600;
 }
 
-.markdown blockquote {
+.rt-markdown blockquote {
   padding-left: 10px;
   border-left: 2px solid var(--rt-muted);
 }
 
 /* Tables only scroll with block display. */
-.markdown table {
+.rt-markdown table {
   display: block;
   border-collapse: collapse;
 }
 
-.markdown img {
+.rt-markdown img {
   max-width: 100%;
   height: auto;
 }
 
-.markdown th,
-.markdown td {
+.rt-markdown th,
+.rt-markdown td {
   padding: 4px 8px;
   border: 1px solid var(--rt-muted);
   text-align: left;
 }
 
-.markdown code {
+.rt-markdown code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
 }
 
-.markdown h1,
-.markdown h2,
-.markdown h3,
-.markdown h4 {
+.rt-markdown h1,
+.rt-markdown h2,
+.rt-markdown h3,
+.rt-markdown h4 {
   font-size: 14px;
   font-weight: 600;
 }

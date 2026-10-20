@@ -51,7 +51,7 @@ export function MessageList({
             {hasText && (
               <div className={`message ${message.role}`}>
                 {message.role === "agent" ? (
-                  <Markdown className="markdown">{message.text}</Markdown>
+                  <Markdown>{message.text}</Markdown>
                 ) : (
                   formatMessageText(message.text)
                 )}

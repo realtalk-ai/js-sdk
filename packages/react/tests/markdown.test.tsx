@@ -48,4 +48,16 @@ describe("Markdown", () => {
 
     expect(container.querySelectorAll("p br")).toHaveLength(1);
   });
+
+  it("always adds the rt-markdown class before the given className", () => {
+    const { container: plain } = render(<Markdown>{"Hej!"}</Markdown>);
+    const { container: custom } = render(
+      <Markdown className="chat">{"Hej!"}</Markdown>,
+    );
+
+    expect((plain.firstChild as HTMLElement).className).toBe("rt-markdown");
+    expect((custom.firstChild as HTMLElement).className).toBe(
+      "rt-markdown chat",
+    );
+  });
 });

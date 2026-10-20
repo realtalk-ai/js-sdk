@@ -260,9 +260,7 @@ const Messages = ({ messages }: { messages: Message[] }) => (
   <div>
     {messages.map((msg) =>
       msg.role === "agent" ? (
-        <Markdown key={msg.id} className="markdown">
-          {msg.text}
-        </Markdown>
+        <Markdown key={msg.id}>{msg.text}</Markdown>
       ) : (
         <p key={msg.id}>{msg.text}</p>
       ),
@@ -274,7 +272,7 @@ const Messages = ({ messages }: { messages: Message[] }) => (
 - Unfinished markdown, like bold text or a link still being written, is closed so partial replies render cleanly. A link shows only its text until its URL is complete.
 - GitHub flavored markdown is supported, so tables, strikethrough and bare URLs work. Single line breaks are kept.
 - Links open in a new tab. Raw HTML in the text is shown as text, not rendered.
-- No styles are included. The output is plain HTML elements inside a `div` with the given `className`, for you to style.
+- No styles are included. The output is plain HTML inside a `div` with the class `rt-markdown`, plus any `className` you pass.
 
 ## API overview
 
