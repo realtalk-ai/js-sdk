@@ -26,8 +26,6 @@ const COMPONENTS: Components = {
     ) : (
       <a {...props} target="_blank" rel="noreferrer" />
     ),
-  // An image whose URL is still being written, or was blocked as unsafe, has
-  // an empty src and would show as a broken image.
   img: ({ node, ...props }) => (props.src ? <img {...props} /> : null),
 };
 
