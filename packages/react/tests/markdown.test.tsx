@@ -15,6 +15,42 @@ describe("Markdown", () => {
     expect(link.getAttribute("target")).toBe("_blank");
   });
 
+  it.each([
+    ["https://example.com", "_blank"],
+    ["http://example.com", "_blank"],
+    ["mailto:hej@example.com", "_blank"],
+    ["tel:+46701234567", null],
+    ["TEL:+46701234567", null],
+    ["sms:+46701234567", null],
+  ])("keeps a %s link with target %s", (url, target) => {
+    const { container } = render(<Markdown>{`[länk](${url})`}</Markdown>);
+
+    const link = container.querySelector("a");
+    expect(link?.getAttribute("href")).toBe(url);
+    expect(link?.getAttribute("target")).toBe(target);
+  });
+
+  it.each([
+    "javascript:alert(1)",
+    "JavaScript:alert(1)",
+    "vbscript:msgbox(1)",
+    "data:text/html;base64,PHNjcmlwdD4=",
+    "file:///etc/passwd",
+  ])("drops the URL of a %s link", (url) => {
+    const { container } = render(<Markdown>{`[länk](<${url}>)`}</Markdown>);
+
+    expect(container.querySelector("a")?.getAttribute("href") ?? "").toBe("");
+    expect(container.textContent).toBe("länk");
+  });
+
+  it("drops a tel URL used as an image source", () => {
+    const { container } = render(
+      <Markdown>{"![karta](tel:+46701234567)"}</Markdown>,
+    );
+
+    expect(container.querySelector("img")).toBeNull();
+  });
+
   it("renders lists and bold text", () => {
     const { container } = render(<Markdown>{"- **boka**\n- avboka"}</Markdown>);
 
