@@ -1,2 +1,5 @@
 packages:
   - "packages/*"
+
+# Skip package versions published less than 3 days ago (in minutes).
+minimumReleaseAge: 4320

@@ -28,3 +28,6 @@ export { AudioPlayer } from "./audio/player.js";
 export type { AudioPlayerCallbacks } from "./audio/player.js";
 
 export { AudioRecorder } from "./audio/recorder.js";
+
+export { Markdown } from "./components/Markdown.js";
+export type { MarkdownProps } from "./components/Markdown.js";

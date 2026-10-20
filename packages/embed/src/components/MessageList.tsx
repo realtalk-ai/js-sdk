@@ -4,6 +4,7 @@ import {
   type AgentState,
   type Message,
 } from "@realtalk-ai/core";
+import { Markdown } from "@realtalk-ai/react";
 import { formatMessageText, hasVisibleContent } from "../messages.js";
 import { SubTasksBadge } from "./SubTasksBadge.js";
 
@@ -49,7 +50,11 @@ export function MessageList({
           <Fragment key={message.id}>
             {hasText && (
               <div className={`message ${message.role}`}>
-                {formatMessageText(message.text)}
+                {message.role === "agent" ? (
+                  <Markdown>{message.text}</Markdown>
+                ) : (
+                  formatMessageText(message.text)
+                )}
               </div>
             )}
             {showSubTasks && <SubTasksBadge subTasks={subTasks} />}

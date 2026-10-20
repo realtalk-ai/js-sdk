@@ -42,18 +42,22 @@ const providerProps = vi.hoisted(() => ({
   current: {} as Record<string, unknown>,
 }));
 
-vi.mock("@realtalk-ai/react", () => ({
-  RealTalkProvider: ({
-    children,
-    ...props
-  }: {
-    children: ReactNode;
-  } & Record<string, unknown>) => {
-    providerProps.current = props;
-    return children;
-  },
-  useConversation: () => conversation,
-}));
+vi.mock("@realtalk-ai/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@realtalk-ai/react")>();
+  return {
+    Markdown: actual.Markdown,
+    RealTalkProvider: ({
+      children,
+      ...props
+    }: {
+      children: ReactNode;
+    } & Record<string, unknown>) => {
+      providerProps.current = props;
+      return children;
+    },
+    useConversation: () => conversation,
+  };
+});
 
 function message(id: string, text: string): Message {
   return { id, role: "agent", text, createdAt: "2024-01-01T00:00:00Z" };
@@ -439,6 +443,39 @@ describe("EmbedApp", () => {
 
       expect(screen.queryByRole("button", { name: "Back to chat" })).toBeNull();
       expect(screen.getByText("Hi there!")).toBeTruthy();
+    });
+  });
+
+  describe("messages", () => {
+    it("renders agent messages as markdown", async () => {
+      await renderWidget({
+        status: "active",
+        messages: [
+          message("m1", "Läs mer på [vår sida](https://example.com/om)."),
+        ],
+      });
+      openPanel();
+
+      const link = screen.getByRole("link", { name: "vår sida" });
+      expect(link.getAttribute("href")).toBe("https://example.com/om");
+    });
+
+    it("shows user messages as plain text", async () => {
+      await renderWidget({
+        status: "active",
+        messages: [
+          {
+            ...message("m1", "Se [vår sida](https://example.com/om)"),
+            role: "user",
+          },
+        ],
+      });
+      openPanel();
+
+      expect(
+        screen.getByText("Se [vår sida](https://example.com/om)"),
+      ).toBeTruthy();
+      expect(screen.queryByRole("link", { name: "vår sida" })).toBeNull();
     });
   });
 

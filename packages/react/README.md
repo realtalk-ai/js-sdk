@@ -248,6 +248,32 @@ await startConversation({
 sendMessage("Hello!");
 ```
 
+## Markdown
+
+Agent replies often contain markdown. `Markdown` renders a message's text as HTML, including replies that are still streaming in:
+
+```tsx
+import type { Message } from "@realtalk-ai/core";
+import { Markdown } from "@realtalk-ai/react";
+
+const Messages = ({ messages }: { messages: Message[] }) => (
+  <div>
+    {messages.map((msg) =>
+      msg.role === "agent" ? (
+        <Markdown key={msg.id}>{msg.text}</Markdown>
+      ) : (
+        <p key={msg.id}>{msg.text}</p>
+      ),
+    )}
+  </div>
+);
+```
+
+- Unfinished markdown, like bold text or a link still being written, is closed so partial replies render cleanly. A link shows only its text until its URL is complete.
+- GitHub flavored markdown is supported, so tables, strikethrough and bare URLs work. Single line breaks are kept.
+- Links open in a new tab. `tel:` and `sms:` links also work and open in the same tab. Raw HTML in the text is shown as text, not rendered.
+- No styles are included. The output is plain HTML inside a `div` with the class `rt-markdown`, plus any `className` you pass.
+
 ## API overview
 
 | Export              | Description                                                  |
@@ -260,6 +286,7 @@ sendMessage("Hello!");
 | `useRealTalkConfig` | Access provider configuration                                |
 | `AudioPlayer`       | PCM audio playback with queue management                     |
 | `AudioRecorder`     | Microphone capture with resampling to 16 kHz                 |
+| `Markdown`          | Renders a message's markdown, including while it streams     |
 
 ## Types
 

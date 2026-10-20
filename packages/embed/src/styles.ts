@@ -291,6 +291,77 @@ button {
   align-self: flex-start;
   background: var(--rt-agent-bg);
   color: var(--rt-fg);
+  min-width: 0;
+}
+
+.rt-markdown {
+  white-space: normal;
+}
+
+.rt-markdown > * {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.rt-markdown > * + * {
+  margin-top: 8px;
+}
+
+.rt-markdown ul,
+.rt-markdown ol {
+  padding-left: 20px;
+}
+
+.rt-markdown li + li {
+  margin-top: 2px;
+}
+
+.rt-markdown a {
+  color: var(--rt-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.rt-markdown strong {
+  font-weight: 600;
+}
+
+.rt-markdown blockquote {
+  padding-left: 10px;
+  border-left: 2px solid var(--rt-muted);
+}
+
+/* Tables only scroll with block display. */
+.rt-markdown table {
+  display: block;
+  border-collapse: collapse;
+}
+
+.rt-markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+.rt-markdown th,
+.rt-markdown td {
+  padding: 4px 8px;
+  border: 1px solid var(--rt-muted);
+  text-align: left;
+}
+
+.rt-markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+.rt-markdown h1,
+.rt-markdown h2,
+.rt-markdown h3,
+.rt-markdown h4 {
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .thinking {

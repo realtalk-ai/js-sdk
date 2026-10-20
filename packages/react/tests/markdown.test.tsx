@@ -1,0 +1,116 @@
+import { render } from "@testing-library/react";
+import remend from "remend";
+import { describe, expect, it, vi } from "vitest";
+import { Markdown } from "../src/components/Markdown.js";
+
+vi.mock("remend", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remend")>();
+  return { default: vi.fn(actual.default) };
+});
+
+describe("Markdown", () => {
+  it("renders markdown links as links that open in a new tab", () => {
+    const { getByRole } = render(
+      <Markdown>
+        {"Läs mer på [vår sida](https://example.com/a?b=1&c=2)."}
+      </Markdown>,
+    );
+
+    const link = getByRole("link", { name: "vår sida" });
+    expect(link.getAttribute("href")).toBe("https://example.com/a?b=1&c=2");
+    expect(link.getAttribute("target")).toBe("_blank");
+  });
+
+  it.each([
+    ["https://example.com", "_blank"],
+    ["http://example.com", "_blank"],
+    ["mailto:hej@example.com", "_blank"],
+    ["tel:+46701234567", null],
+    ["TEL:+46701234567", null],
+    ["sms:+46701234567", null],
+  ])("keeps a %s link with target %s", (url, target) => {
+    const { container } = render(<Markdown>{`[länk](${url})`}</Markdown>);
+
+    const link = container.querySelector("a");
+    expect(link?.getAttribute("href")).toBe(url);
+    expect(link?.getAttribute("target")).toBe(target);
+  });
+
+  it.each([
+    "javascript:alert(1)",
+    "JavaScript:alert(1)",
+    "vbscript:msgbox(1)",
+    "data:text/html;base64,PHNjcmlwdD4=",
+    "file:///etc/passwd",
+  ])("drops the URL of a %s link", (url) => {
+    const { container } = render(<Markdown>{`[länk](<${url}>)`}</Markdown>);
+
+    expect(container.querySelector("a")?.getAttribute("href") ?? "").toBe("");
+    expect(container.textContent).toBe("länk");
+  });
+
+  it("drops a tel URL used as an image source", () => {
+    const { container } = render(
+      <Markdown>{"![karta](tel:+46701234567)"}</Markdown>,
+    );
+
+    expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("renders lists and bold text", () => {
+    const { container } = render(<Markdown>{"- **boka**\n- avboka"}</Markdown>);
+
+    const items = container.querySelectorAll("li");
+    expect([...items].map((item) => item.textContent)).toEqual([
+      "boka",
+      "avboka",
+    ]);
+    expect(container.querySelector("li strong")?.textContent).toBe("boka");
+  });
+
+  it("renders the label of a link that is still being written", () => {
+    const { container } = render(
+      <Markdown>{"Se [priser](https://example.com/p"}</Markdown>,
+    );
+
+    expect(container.textContent).toBe("Se priser");
+    expect(container.textContent).not.toContain("https://");
+  });
+
+  it("leaves out an image whose URL is still being written", () => {
+    const { container } = render(
+      <Markdown>{"Se ![karta](https://example.com/k"}</Markdown>,
+    );
+
+    expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("keeps single line breaks", () => {
+    const { container } = render(<Markdown>{"Hej!\nVälkommen."}</Markdown>);
+
+    expect(container.querySelectorAll("p br")).toHaveLength(1);
+  });
+
+  it("always adds the rt-markdown class before the given className", () => {
+    const { container: plain } = render(<Markdown>{"Hej!"}</Markdown>);
+    const { container: custom } = render(
+      <Markdown className="chat">{"Hej!"}</Markdown>,
+    );
+
+    expect((plain.firstChild as HTMLElement).className).toBe("rt-markdown");
+    expect((custom.firstChild as HTMLElement).className).toBe(
+      "rt-markdown chat",
+    );
+  });
+
+  it("skips rendering again when the props have not changed", () => {
+    vi.mocked(remend).mockClear();
+    const { rerender } = render(<Markdown>{"Hej!"}</Markdown>);
+
+    rerender(<Markdown>{"Hej!"}</Markdown>);
+    expect(remend).toHaveBeenCalledTimes(1);
+
+    rerender(<Markdown>{"Hej igen!"}</Markdown>);
+    expect(remend).toHaveBeenCalledTimes(2);
+  });
+});
