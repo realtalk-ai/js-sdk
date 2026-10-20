@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from "react";
 import type {
   AgentState,
+  AnnotationItem,
   AudioSource,
   ClientEvent,
   ConnectionStatus,
@@ -50,6 +51,7 @@ export interface UseConversationReturn {
   status: ConversationStatus;
   conversationId: string | null;
   messages: Message[];
+  annotations: AnnotationItem[];
   error: ConversationError | null;
   agentState: AgentState;
   userState: UserState;
@@ -127,11 +129,17 @@ export function useConversation(
 
   const {
     messages,
+    annotations,
     userState,
     thinkingMessageId,
     setMessages,
+    setAnnotations,
     handleMessageEvent,
   } = useMessages(optionsRef);
+
+  const clearAnnotations = useCallback(() => {
+    setAnnotations([]);
+  }, [setAnnotations]);
 
   const {
     connectionStatus,
@@ -155,6 +163,7 @@ export function useConversation(
     optionsRef,
     onEvent: handleMessageEvent,
     setMessages,
+    onReset: clearAnnotations,
     onAudio: handleAudio,
     onClear: handleClear,
     onCleanup: handleAudioCleanup,
@@ -223,7 +232,8 @@ export function useConversation(
 
   const clearMessages = useCallback(() => {
     setMessages([]);
-  }, [setMessages]);
+    setAnnotations([]);
+  }, [setMessages, setAnnotations]);
 
   const startConversation = useCallback(
     async (sessionOptions: UseConversationSessionOptions): Promise<string> => {
@@ -269,6 +279,7 @@ export function useConversation(
     status,
     conversationId,
     messages,
+    annotations,
     error,
     agentState,
     userState,

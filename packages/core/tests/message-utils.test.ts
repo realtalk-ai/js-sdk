@@ -173,6 +173,7 @@ describe("convertEventForSDK", () => {
   const backendMsg: BackendMessage = {
     id: "msg-1",
     sender: "Agent",
+    role: "assistant",
     text: "Hello",
     timestamp: "2025-01-01T00:00:00Z",
   };
@@ -218,6 +219,125 @@ describe("convertEventForSDK", () => {
     if (event.type !== "message_updated") throw new Error("wrong type");
     expect(event.data.text).toBe("Updated");
     expect(event.data.role).toBe("agent");
+  });
+
+  const handoffRequested: BackendMessage = {
+    ...backendMsg,
+    id: "annotation-1",
+    sender: "User",
+    role: "annotation",
+    text: "",
+    timestamp: "2025-01-01T00:00:01Z",
+    metadata: { kind: "handoff_requested" },
+  };
+
+  const humanAgentJoined: BackendMessage = {
+    ...handoffRequested,
+    id: "annotation-2",
+    timestamp: "2025-01-01T00:00:02Z",
+    metadata: { kind: "human_agent_joined", human_agent_name: "Filip" },
+  };
+
+  const unknownKind: BackendMessage = {
+    ...handoffRequested,
+    id: "annotation-3",
+    timestamp: "2025-01-01T00:00:03Z",
+    metadata: { kind: "not_a_real_kind" },
+  };
+
+  it("moves annotation rows out of existing_messages and sorts them by createdAt", () => {
+    const event = convertEventForSDK({
+      type: "existing_messages",
+      data: [humanAgentJoined, backendMsg, handoffRequested],
+    });
+
+    if (event.type !== "existing_messages") throw new Error("wrong type");
+    expect(event.data.map((msg) => msg.id)).toEqual(["msg-1"]);
+    expect(event.annotations).toEqual([
+      {
+        id: "annotation-1",
+        createdAt: "2025-01-01T00:00:01Z",
+        annotation: { kind: "handoff_requested" },
+      },
+      {
+        id: "annotation-2",
+        createdAt: "2025-01-01T00:00:02Z",
+        annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+      },
+    ]);
+  });
+
+  it("drops annotation rows of an unknown kind from existing_messages", () => {
+    const event = convertEventForSDK({
+      type: "existing_messages",
+      data: [backendMsg, handoffRequested, unknownKind],
+    });
+
+    if (event.type !== "existing_messages") throw new Error("wrong type");
+    expect(event.data.map((msg) => msg.id)).toEqual(["msg-1"]);
+    expect(event.annotations.map((item) => item.id)).toEqual(["annotation-1"]);
+  });
+
+  it("keeps a user row with a metadata kind in existing_messages", () => {
+    const event = convertEventForSDK({
+      type: "existing_messages",
+      data: [
+        {
+          ...backendMsg,
+          sender: "User",
+          role: "user",
+          metadata: { kind: "handoff_requested" },
+        },
+      ],
+    });
+
+    if (event.type !== "existing_messages") throw new Error("wrong type");
+    expect(event.data.map((msg) => msg.id)).toEqual(["msg-1"]);
+    expect(event.annotations).toEqual([]);
+  });
+
+  it("normalizes annotation_created", () => {
+    const event = convertEventForSDK({
+      type: "annotation_created",
+      data: humanAgentJoined,
+    });
+
+    expect(event).toEqual({
+      type: "annotation_created",
+      data: {
+        id: "annotation-2",
+        createdAt: "2025-01-01T00:00:02Z",
+        annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+      },
+    });
+  });
+
+  it("gives a human agent without a first name a null humanAgentName", () => {
+    const event = convertEventForSDK({
+      type: "annotation_created",
+      data: {
+        ...humanAgentJoined,
+        metadata: { kind: "human_agent_joined", human_agent_name: null },
+      },
+    });
+
+    expect(event).toEqual({
+      type: "annotation_created",
+      data: {
+        id: "annotation-2",
+        createdAt: "2025-01-01T00:00:02Z",
+        annotation: { kind: "human_agent_joined", humanAgentName: null },
+      },
+    });
+  });
+
+  it("turns annotation_created of an unknown kind into null data", () => {
+    const event = convertEventForSDK({
+      type: "annotation_created",
+      data: unknownKind,
+    });
+
+    expect(event).toEqual({ type: "annotation_created", data: null });
   });
 
   it("passes through non-message events unchanged", () => {

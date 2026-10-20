@@ -398,6 +398,7 @@ describe("WebSocketTransport", () => {
           data: {
             id: "msg-1",
             sender: "Agent",
+            role: "assistant",
             text: "Hello",
             timestamp: "2025-01-01T00:00:00Z",
           },

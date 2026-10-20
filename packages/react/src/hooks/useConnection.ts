@@ -66,6 +66,7 @@ export function useConnection(opts: {
   optionsRef: MutableRefObject<UseConversationOptions>;
   onEvent: (event: ConversationEvent) => void;
   setMessages: Dispatch<SetStateAction<Message[]>>;
+  onReset?: () => void;
   onAudio: (pcm: Int16Array, traceId: string, source: AudioSource) => void;
   onClear: () => void;
   onCleanup: () => void;
@@ -82,6 +83,7 @@ export function useConnection(opts: {
     optionsRef,
     onEvent,
     setMessages,
+    onReset,
     onAudio,
     onClear,
     onCleanup,
@@ -162,6 +164,7 @@ export function useConnection(opts: {
         case EventType.ExistingMessages:
         case EventType.MessageCreated:
         case EventType.MessageUpdated:
+        case EventType.AnnotationCreated:
         case EventType.Vad:
           onEvent(event);
           break;
@@ -434,6 +437,7 @@ export function useConnection(opts: {
       requestedModeRef.current = null;
       setModeBoth(sessionOptions.mode ?? DEFAULT_CONVERSATION_MODE);
       setMessages([]);
+      onReset?.();
 
       const tokenConversationId = await resolveToken(sessionOptions);
 
@@ -472,6 +476,7 @@ export function useConnection(opts: {
       setModeBoth,
       optionsRef,
       setMessages,
+      onReset,
     ],
   );
 

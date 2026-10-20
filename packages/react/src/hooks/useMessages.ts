@@ -1,7 +1,12 @@
 import { useState, useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { Message, ConversationEvent, UserState } from "@realtalk-ai/core";
-import { EventType } from "@realtalk-ai/core";
+import type {
+  AnnotationItem,
+  Message,
+  ConversationEvent,
+  UserState,
+} from "@realtalk-ai/core";
+import { EventType, sortChronological } from "@realtalk-ai/core";
 
 export interface UseMessagesCallbacks {
   onMessage?: (message: Message) => void;
@@ -9,9 +14,11 @@ export interface UseMessagesCallbacks {
 
 export interface UseMessagesReturn {
   messages: Message[];
+  annotations: AnnotationItem[];
   userState: UserState;
   thinkingMessageId: string | null;
   setMessages: Dispatch<SetStateAction<Message[]>>;
+  setAnnotations: Dispatch<SetStateAction<AnnotationItem[]>>;
   handleMessageEvent: (event: ConversationEvent) => void;
 }
 
@@ -19,6 +26,7 @@ export function useMessages(callbacksRef: {
   readonly current: UseMessagesCallbacks;
 }): UseMessagesReturn {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [annotations, setAnnotations] = useState<AnnotationItem[]>([]);
   const [userState, setUserState] = useState<UserState>("idle");
   const [thinkingMessageId, setThinkingMessageId] = useState<string | null>(
     null,
@@ -29,6 +37,7 @@ export function useMessages(callbacksRef: {
       switch (event.type) {
         case EventType.ExistingMessages: {
           setMessages(event.data);
+          setAnnotations(event.annotations);
           break;
         }
         case EventType.MessageCreated:
@@ -57,6 +66,21 @@ export function useMessages(callbacksRef: {
           callbacksRef.current.onMessage?.(msg);
           break;
         }
+        case EventType.AnnotationCreated: {
+          const item = event.data;
+          if (!item) break;
+
+          setAnnotations((prev) => {
+            const idx = prev.findIndex((a) => a.id === item.id);
+            if (idx !== -1) {
+              const updated = [...prev];
+              updated[idx] = item;
+              return sortChronological(updated);
+            }
+            return sortChronological([...prev, item]);
+          });
+          break;
+        }
         case EventType.Vad: {
           setUserState(event.data.state === "speech" ? "speaking" : "idle");
           break;
@@ -68,9 +92,11 @@ export function useMessages(callbacksRef: {
 
   return {
     messages,
+    annotations,
     userState,
     thinkingMessageId,
     setMessages,
+    setAnnotations,
     handleMessageEvent,
   };
 }
