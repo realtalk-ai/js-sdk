@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import type { MutableRefObject, Dispatch, SetStateAction } from "react";
+import type { MutableRefObject } from "react";
 import type {
   AudioSource,
   ClientEvent,
@@ -8,7 +8,6 @@ import type {
   ConversationError,
   ConversationMode,
   DTMFDigit,
-  Message,
   SdkInfo,
   SessionToken,
   ConversationEvent,
@@ -65,7 +64,7 @@ export function useConnection(opts: {
   sdkInfo?: SdkInfo;
   optionsRef: MutableRefObject<UseConversationOptions>;
   onEvent: (event: ConversationEvent) => void;
-  setMessages: Dispatch<SetStateAction<Message[]>>;
+  onConversationStart: () => void;
   onAudio: (pcm: Int16Array, traceId: string, source: AudioSource) => void;
   onClear: () => void;
   onCleanup: () => void;
@@ -81,7 +80,7 @@ export function useConnection(opts: {
     sdkInfo,
     optionsRef,
     onEvent,
-    setMessages,
+    onConversationStart,
     onAudio,
     onClear,
     onCleanup,
@@ -162,6 +161,7 @@ export function useConnection(opts: {
         case EventType.ExistingMessages:
         case EventType.MessageCreated:
         case EventType.MessageUpdated:
+        case EventType.AnnotationCreated:
         case EventType.Vad:
           onEvent(event);
           break;
@@ -433,7 +433,7 @@ export function useConnection(opts: {
       sessionOptionsRef.current = resolvedOptions;
       requestedModeRef.current = null;
       setModeBoth(sessionOptions.mode ?? DEFAULT_CONVERSATION_MODE);
-      setMessages([]);
+      onConversationStart();
 
       const tokenConversationId = await resolveToken(sessionOptions);
 
@@ -471,7 +471,7 @@ export function useConnection(opts: {
       setConversationIdBoth,
       setModeBoth,
       optionsRef,
-      setMessages,
+      onConversationStart,
     ],
   );
 

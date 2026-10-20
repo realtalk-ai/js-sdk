@@ -18,7 +18,7 @@ React hooks for web apps. Provides `useConversation` for managing voice and text
 
 ### [`@realtalk-ai/react-native`](./packages/react-native)
 
-React Native hooks for iOS and Android apps. Same `useConversation` API as the React SDK (`enableMic`, `disableMic`, and `startMuted` are React-only for now), and it implements hardware-level echo cancellation and noise suppression on both platforms. Includes an Expo config plugin for zero-config setup.
+React Native hooks for iOS and Android apps. Same `useConversation` API as the React SDK (`enableMic`, `disableMic`, `startMuted`, `annotations`, and `timeline` are React-only for now), and it implements hardware-level echo cancellation and noise suppression on both platforms. Includes an Expo config plugin for zero-config setup.
 
 ### [`@realtalk-ai/embed`](./packages/embed)
 

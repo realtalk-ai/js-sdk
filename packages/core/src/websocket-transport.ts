@@ -368,7 +368,10 @@ export class WebSocketTransport implements AudioTransport {
         logger.warn("unknown_event_type", { type: message.type });
       }
 
-      this.emitter.emit("event", convertEventForSDK(message));
+      const event = convertEventForSDK(message);
+      if (event) {
+        this.emitter.emit("event", event);
+      }
     } catch {
       const rawData = typeof data === "string" ? data : undefined;
       logger.error("message_parse_failed", { rawData });

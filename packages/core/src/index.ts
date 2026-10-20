@@ -11,6 +11,9 @@ export type {
   SubTask,
   SubTaskStatus,
   Message,
+  Annotation,
+  AnnotationItem,
+  TimelineItem,
   SessionToken,
   TokenResponse,
   VadState,
@@ -32,7 +35,13 @@ export {
   PAUSED_CLOSE_CODES,
 } from "./websocket-transport.js";
 
-export { normalizeMessage, sortChronological } from "./events.js";
+export {
+  normalizeMessage,
+  normalizeAnnotationMessage,
+  splitBackendMessages,
+  buildTimeline,
+  sortChronological,
+} from "./events.js";
 
 export { hasPendingSubTasks } from "./messages.js";
 

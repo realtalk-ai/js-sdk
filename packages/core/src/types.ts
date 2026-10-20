@@ -95,10 +95,13 @@ export interface Message {
 export interface BackendMessage {
   id: string;
   sender: "Agent" | "User";
+  role?: "user" | "assistant" | "annotation";
   text: string;
   timestamp: string;
   metadata?: {
     type?: string;
+    kind?: string;
+    human_agent_name?: string | null;
     interrupted?: boolean;
     intent?: string;
     rag_documents_used?: string[];
@@ -125,6 +128,20 @@ export interface BackendMessage {
   has_been_answered?: boolean;
   should_be_answered?: boolean;
 }
+
+export type Annotation =
+  | { kind: "handoff_requested" }
+  | { kind: "human_agent_joined"; humanAgentName: string | null };
+
+export interface AnnotationItem {
+  id: string;
+  createdAt: string;
+  annotation: Annotation;
+}
+
+export type TimelineItem =
+  | { type: "message"; message: Message }
+  | { type: "annotation"; annotation: AnnotationItem };
 
 export interface SessionToken {
   token: string;
@@ -153,6 +170,7 @@ export const EventType = {
   ExistingMessages: "existing_messages",
   MessageCreated: "message_created",
   MessageUpdated: "message_updated",
+  AnnotationCreated: "annotation_created",
   Vad: "vad",
   Clear: "clear",
   ConversationFinished: "conversation_finished",
@@ -176,9 +194,14 @@ export type ClientEvent =
   | { type: string; [key: string]: unknown };
 
 export type ConversationEvent =
-  | { type: "existing_messages"; data: Message[] }
+  | {
+      type: "existing_messages";
+      data: Message[];
+      annotations: AnnotationItem[];
+    }
   | { type: "message_created"; data: Message }
   | { type: "message_updated"; data: Message }
+  | { type: "annotation_created"; data: AnnotationItem }
   | { type: "vad"; data: { state: VadState } }
   | { type: "clear" }
   | { type: "conversation_finished" }

@@ -77,6 +77,8 @@ describe("useConversation", () => {
     expect(result.current.status).toBe("not_started");
     expect(result.current.conversationId).toBeNull();
     expect(result.current.messages).toEqual([]);
+    expect(result.current.annotations).toEqual([]);
+    expect(result.current.timeline).toEqual([]);
     expect(result.current.error).toBeNull();
     expect(result.current.agentState).toBe("idle");
     expect(result.current.userState).toBe("idle");
@@ -530,6 +532,174 @@ describe("useConversation", () => {
 
     expect(result.current.messages).toHaveLength(0);
   });
+
+  it("clearMessages empties the annotations", async () => {
+    const { result } = renderHook(() => useConversation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    act(() =>
+      onEventCb({
+        type: "annotation_created",
+        data: {
+          id: "annotation-1",
+          createdAt: "2024-01-01T00:00:00Z",
+          annotation: { kind: "handoff_requested" },
+        },
+      }),
+    );
+
+    expect(result.current.annotations).toHaveLength(1);
+
+    act(() => result.current.clearMessages());
+
+    expect(result.current.annotations).toHaveLength(0);
+  });
+
+  it("endConversation keeps the annotations and a new startConversation empties them", async () => {
+    const { result } = renderHook(() => useConversation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    act(() =>
+      onEventCb({
+        type: "existing_messages",
+        data: [],
+        annotations: [
+          {
+            id: "annotation-1",
+            createdAt: "2024-01-01T00:00:00Z",
+            annotation: { kind: "handoff_requested" },
+          },
+        ],
+      }),
+    );
+
+    await act(async () => {
+      await result.current.endConversation();
+    });
+
+    expect(result.current.annotations).toHaveLength(1);
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-2",
+      });
+    });
+
+    expect(result.current.annotations).toHaveLength(0);
+  });
+
+  it("a startConversation rejected while active keeps the annotations", async () => {
+    const { result } = renderHook(() => useConversation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    act(() =>
+      onEventCb({
+        type: "annotation_created",
+        data: {
+          id: "annotation-1",
+          createdAt: "2024-01-01T00:00:00Z",
+          annotation: { kind: "handoff_requested" },
+        },
+      }),
+    );
+
+    await act(async () => {
+      await expect(
+        result.current.startConversation({
+          agentId: "agent-1",
+          conversationId: "conv-1",
+        }),
+      ).rejects.toThrow("Conversation already active");
+    });
+
+    expect(result.current.annotations).toHaveLength(1);
+  });
+
+  it("timeline puts each annotation before the first message created after it", async () => {
+    const { result } = renderHook(() => useConversation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    const question = {
+      id: "msg-1",
+      role: "user",
+      text: "Can I talk to a person?",
+      createdAt: "2024-01-01T00:00:00Z",
+    };
+    const answer = {
+      id: "msg-2",
+      role: "agent",
+      text: "A human agent will be with you shortly.",
+      createdAt: "2024-01-01T00:00:02Z",
+    };
+    const requested = {
+      id: "annotation-1",
+      createdAt: "2024-01-01T00:00:01Z",
+      annotation: { kind: "handoff_requested" },
+    };
+    const joined = {
+      id: "annotation-2",
+      createdAt: "2024-01-01T00:00:03Z",
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    };
+
+    act(() =>
+      onEventCb({
+        type: "existing_messages",
+        data: [question, answer],
+        annotations: [requested],
+      }),
+    );
+    act(() => onEventCb({ type: "annotation_created", data: joined }));
+
+    expect(result.current.timeline).toEqual([
+      { type: "message", message: question },
+      { type: "annotation", annotation: requested },
+      { type: "message", message: answer },
+      { type: "annotation", annotation: joined },
+    ]);
+  });
+
   describe("setMode", () => {
     async function startedConversation() {
       const rendered = renderHook(() => useConversation(), { wrapper });
