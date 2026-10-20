@@ -2,10 +2,16 @@ import { Fragment, useEffect, useRef } from "react";
 import {
   hasPendingSubTasks,
   type AgentState,
+  type AnnotationItem,
   type Message,
 } from "@realtalk-ai/core";
 import { Markdown } from "@realtalk-ai/react";
-import { formatMessageText, hasVisibleContent } from "../messages.js";
+import {
+  AFTER_LAST_MESSAGE,
+  formatMessageText,
+  hasVisibleContent,
+  indexOfFirstMessageAfter,
+} from "../messages.js";
 import { SubTasksBadge } from "./SubTasksBadge.js";
 
 // Sub tasks are hidden but could be enabled to show progress on long running
@@ -14,22 +20,45 @@ const SHOW_SUB_TASKS = false;
 
 export function MessageList({
   messages,
+  annotations,
   greeting,
   previousChatEnded,
   agentState,
   notice,
 }: {
   messages: Message[];
+  annotations: AnnotationItem[];
   greeting: string;
   previousChatEnded: boolean;
   agentState: AgentState;
   notice: string | null;
 }): JSX.Element {
+  const visibleMessages = messages.filter(hasVisibleContent);
+  const joinedNotes = annotations.flatMap(({ id, createdAt, annotation }) =>
+    annotation.kind === "human_agent_joined"
+      ? [
+          {
+            index: indexOfFirstMessageAfter(visibleMessages, createdAt),
+            element: (
+              <div key={id} className="joined-note">
+                {annotation.humanAgentName ?? "A human agent"} has joined the
+                chat
+              </div>
+            ),
+          },
+        ]
+      : [],
+  );
+  const joinedNotesAt = (index: number) =>
+    joinedNotes
+      .filter((note) => note.index === index)
+      .map((note) => note.element);
+
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const list = listRef.current;
     if (list) list.scrollTop = list.scrollHeight;
-  }, [messages, agentState]);
+  }, [messages, agentState, joinedNotes.length]);
 
   const showingPendingSubTasks = SHOW_SUB_TASKS && hasPendingSubTasks(messages);
   const showThinking = agentState === "thinking" && !showingPendingSubTasks;
@@ -42,12 +71,13 @@ export function MessageList({
         </div>
       )}
       {messages.length === 0 && <div className="message agent">{greeting}</div>}
-      {messages.filter(hasVisibleContent).map((message) => {
+      {visibleMessages.map((message, index) => {
         const hasText = Boolean(message.text?.trim());
         const subTasks = message.metadata?.subTasks ?? [];
         const showSubTasks = SHOW_SUB_TASKS && subTasks.length > 0;
         return (
           <Fragment key={message.id}>
+            {joinedNotesAt(index)}
             {hasText && (
               <div className={`message ${message.role}`}>
                 {message.role === "agent" ? (
@@ -61,6 +91,7 @@ export function MessageList({
           </Fragment>
         );
       })}
+      {joinedNotesAt(AFTER_LAST_MESSAGE)}
       {/* Always laid out so the list does not jump when thinking starts. */}
       <div
         className={`thinking ${showThinking ? "visible" : ""}`}

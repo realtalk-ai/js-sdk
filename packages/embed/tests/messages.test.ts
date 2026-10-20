@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import type { Message, SubTask, SubTaskStatus } from "@realtalk-ai/core";
-import { formatMessageText, hasVisibleContent } from "../src/messages.js";
+import {
+  AFTER_LAST_MESSAGE,
+  formatMessageText,
+  hasVisibleContent,
+  indexOfFirstMessageAfter,
+} from "../src/messages.js";
 
 function message(overrides: Partial<Message>): Message {
   return {
@@ -44,5 +49,30 @@ describe("hasVisibleContent", () => {
       metadata: { subTasks: [subTask("t1", "look_up", "pending")] },
     });
     expect(hasVisibleContent(withSubTasks)).toBe(true);
+  });
+});
+
+describe("indexOfFirstMessageAfter", () => {
+  const time = "2026-01-01T00:01:00Z";
+
+  it("skips a message sent exactly at the time", () => {
+    const messages = [
+      message({ id: "m1", createdAt: "2026-01-01T00:00:30Z" }),
+      message({ id: "m2", createdAt: time }),
+      message({ id: "m3", createdAt: "2026-01-01T00:01:30Z" }),
+    ];
+    expect(indexOfFirstMessageAfter(messages, time)).toBe(2);
+  });
+
+  it("is AFTER_LAST_MESSAGE when no message comes after the time", () => {
+    const messages = [message({ createdAt: "2026-01-01T00:00:30Z" })];
+    expect(indexOfFirstMessageAfter(messages, time)).toBe(AFTER_LAST_MESSAGE);
+  });
+
+  it("is AFTER_LAST_MESSAGE when the time cannot be parsed", () => {
+    const messages = [message({ createdAt: "2026-01-01T00:01:30Z" })];
+    expect(indexOfFirstMessageAfter(messages, "not a time")).toBe(
+      AFTER_LAST_MESSAGE,
+    );
   });
 });

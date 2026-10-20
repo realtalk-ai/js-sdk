@@ -285,6 +285,7 @@ function Widget({
           <>
             <MessageList
               messages={messages}
+              annotations={annotations}
               greeting={config.greeting}
               previousChatEnded={previousChatEnded}
               agentState={agentState}

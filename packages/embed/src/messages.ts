@@ -13,3 +13,16 @@ export function hasVisibleContent(message: Message): boolean {
   const hasSubTasks = (message.metadata?.subTasks?.length ?? 0) > 0;
   return hasText || hasSubTasks;
 }
+
+// What findIndex returns when no message comes after the time.
+export const AFTER_LAST_MESSAGE = -1;
+
+export function indexOfFirstMessageAfter(
+  messages: Message[],
+  time: string,
+): number {
+  const after = new Date(time).getTime();
+  return messages.findIndex(
+    (message) => new Date(message.createdAt).getTime() > after,
+  );
+}
