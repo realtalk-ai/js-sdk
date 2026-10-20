@@ -89,6 +89,7 @@ function Widget({
     status,
     connectionStatus,
     messages,
+    annotations,
     agentState,
     userState,
     isMicEnabled: micOn,
@@ -242,6 +243,7 @@ function Widget({
     userState,
     micOn,
     audioOn,
+    annotations,
   });
 
   if (!open) {

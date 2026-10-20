@@ -1,5 +1,6 @@
 import type {
   AgentState,
+  AnnotationItem,
   ConnectionStatus,
   UserState,
 } from "@realtalk-ai/core";
@@ -20,6 +21,7 @@ export function deriveWidgetStatus(state: {
   userState: UserState;
   micOn: boolean;
   audioOn: boolean;
+  annotations: AnnotationItem[];
 }): WidgetStatus {
   const {
     starting,
@@ -31,6 +33,7 @@ export function deriveWidgetStatus(state: {
     userState,
     micOn,
     audioOn,
+    annotations,
   } = state;
 
   if (starting || connectionStatus === "connecting") {
@@ -59,6 +62,9 @@ export function deriveWidgetStatus(state: {
   if (agentState === "speaking") {
     return { tone: "live", label: audioOn ? "Speaking" : "Typing" };
   }
+  if (isWaitingForHumanAgent(annotations)) {
+    return { tone: "waiting", label: "Waiting for human agent" };
+  }
   if (agentState === "thinking") {
     return { tone: "live", label: "Thinking" };
   }
@@ -66,4 +72,15 @@ export function deriveWidgetStatus(state: {
     return { tone: "live", label: "Listening" };
   }
   return { tone: "live", label: "Online" };
+}
+
+function isWaitingForHumanAgent(annotations: AnnotationItem[]): boolean {
+  const latestHandoffAnnotation = [...annotations]
+    .reverse()
+    .find(
+      ({ annotation }) =>
+        annotation.kind === "handoff_requested" ||
+        annotation.kind === "human_agent_joined",
+    );
+  return latestHandoffAnnotation?.annotation.kind === "handoff_requested";
 }
