@@ -1,0 +1,23 @@
+packages/embed/src/components/MessageList.tsx
+  s_d88bea787be3a1::t_22a09bcdb0ce39 9,89
+packages/embed/src/messages.ts
+  s_d88bea787be3a1::t_3095b499a6cbf9 17-19
+packages/embed/tests/messages.test.ts
+  s_d88bea787be3a1::t_6ad5f4c8a5838e 4,67,69,72,74-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c3def4f15fb8e8e90a9a57dbc04149e2509b127",
+  "prompts": {},
+  "sessions": {
+    "s_d88bea787be3a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9d65bad-76f0-4210-b171-7ab1ec5755d4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}

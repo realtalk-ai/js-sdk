@@ -1,0 +1,19 @@
+packages/embed/src/components/MessageList.tsx
+  s_043a192a27a859::t_bfe2e503e8e2a3 8-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "867cccede40601392c03e55477401bb2b1f0790d",
+  "prompts": {},
+  "sessions": {
+    "s_043a192a27a859": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ca972fae-3e90-4f95-9cad-fe3a0e4e2803",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}

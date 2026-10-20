@@ -1,0 +1,71 @@
+packages/react/tests/useMessages.test.ts
+  s_d88bea787be3a1::t_651ef4eb2c8e66 184-209,211-212,219-221,223-235,237-239,241-263
+  s_d88bea787be3a1::t_25263b13539906 17-25
+  s_d88bea787be3a1::t_ce76d141f00270 210,213-218,222,236,240
+packages/core/src/events.ts
+  s_d88bea787be3a1::t_2588e021e74a28 181
+  s_d88bea787be3a1::t_32217072c9a3aa 2-4,16
+  s_d88bea787be3a1::t_652846a9cf1585 231-244
+  s_d88bea787be3a1::t_0fd2a7294eb0fc 156-159,163-180,182-193
+  s_d88bea787be3a1::t_1ad5f5f065ee21 194
+packages/react/src/hooks/useMessages.ts
+  s_d88bea787be3a1::t_3b3d864e618e1b 3-8,17,21,29
+  s_d88bea787be3a1::t_80ae620a7dc141 68-86
+  s_d88bea787be3a1::t_2d82034857abb1 98,102
+packages/react/src/hooks/useConnection.ts
+  s_d88bea787be3a1::t_58e9a3d1da9000 165-166
+packages/react/package.json
+  s_d88bea787be3a1::t_f50b9780897402 26
+packages/core/README.md
+  s_d88bea787be3a1::t_e1ed1e1b035ea5 142-143
+  s_ae3a5a5d379577::t_12c641bfbcb720 106-120
+packages/core/tests/message-utils.test.ts
+  s_d88bea787be3a1::t_e4211c4098c2fa 2
+  s_d88bea787be3a1::t_89964d7c4d9d24 223-298
+packages/react/src/useConversation.ts
+  s_d88bea787be3a1::t_5d1af8508b7049 54
+  s_d88bea787be3a1::t_1aac25e5f3fb83 255
+  s_d88bea787be3a1::t_9ba7f35f156040 278
+  s_d88bea787be3a1::t_a3ff3a7b499ed4 230-231
+  s_d88bea787be3a1::t_38abf039b7c215 264
+  s_d88bea787be3a1::t_16e1e1d48df6ea 4
+  s_d88bea787be3a1::t_cc49c5cf5f6722 132,136
+packages/core/src/index.ts
+  s_d88bea787be3a1::t_6836ce4069522e 14-15
+  s_d88bea787be3a1::t_13f8022122ff1d 37-41
+packages/react/tests/useConversation.test.tsx
+  s_d88bea787be3a1::t_8feaac786a96ac 80
+  s_d88bea787be3a1::t_6eb21a005fc38f 534-609
+packages/core/src/types.ts
+  s_d88bea787be3a1::t_4b0a1462360c67 129-144
+  s_d88bea787be3a1::t_fc8611632205d9 172-173
+  s_d88bea787be3a1::t_2a6a4ca8d08679 200-201
+README.md
+  s_d88bea787be3a1::t_349c003820b60c 21
+packages/react/README.md
+  s_d88bea787be3a1::t_55c3a61d678906 110,135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "89c268fa2a9ce04ccf6d8318cab86204517760ec",
+  "prompts": {},
+  "sessions": {
+    "s_ae3a5a5d379577": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-ab50340059554cf67",
+        "model": "unknown"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    },
+    "s_d88bea787be3a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9d65bad-76f0-4210-b171-7ab1ec5755d4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
