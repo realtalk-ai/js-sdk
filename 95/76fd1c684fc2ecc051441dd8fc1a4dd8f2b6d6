@@ -1,0 +1,47 @@
+packages/core/src/types.ts
+  s_831d201402acf5::t_faa985ed832ce1 98
+  s_831d201402acf5::t_41d0a35fed61fd 193-197
+  s_831d201402acf5::t_c3ac29a458b4aa 103-104
+packages/core/src/index.ts
+  s_831d201402acf5::t_21ab57f275e94e 39-40
+packages/core/tests/message-utils.test.ts
+  s_831d201402acf5::t_b5f0e1beccb347 245
+  s_831d201402acf5::t_583e848a77a28b 281,283-291,294-296
+  s_831d201402acf5::t_41d0a35fed61fd 2,224-225,227,229,231,234-235,238,241-242,248,250-251,254-273,275-278
+  s_831d201402acf5::t_51c753581c8659 176
+  s_831d201402acf5::t_ad87cb96e67ddb 228
+packages/react/src/hooks/useMessages.ts
+  s_831d201402acf5::t_795a4f085a05bf 40
+packages/react/tests/useConversation.test.tsx
+  s_831d201402acf5::t_41d0a35fed61fd 583-585
+packages/core/tests/websocket-transport.test.ts
+  s_831d201402acf5::t_751d02f3d4bf12 401
+packages/core/src/events.ts
+  s_831d201402acf5::t_22c0d84d3fbd2e 195
+  s_831d201402acf5::t_bcc8ee7aecdd9c 165,167,173,180-181,183,187,196-211
+  s_831d201402acf5::t_f1187fb677b847 252
+  s_831d201402acf5::t_a27e96ad2f6a92 233-238
+  s_831d201402acf5::t_1e7f6c23285e2e 194
+  s_831d201402acf5::t_8e4369f4a18000 212-213
+packages/core/README.md
+  s_831d201402acf5::t_41d0a35fed61fd 106-118,141-142
+  s_831d201402acf5::t_127d0d9a727b09 119
+packages/react/tests/useMessages.test.ts
+  s_831d201402acf5::t_41d0a35fed61fd 55,186,191-193,204-206,224-226,254-256
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9576fd1c684fc2ecc051441dd8fc1a4dd8f2b6d6",
+  "prompts": {},
+  "sessions": {
+    "s_831d201402acf5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96f35752-2e93-4f3d-a027-0ad002b221c4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
