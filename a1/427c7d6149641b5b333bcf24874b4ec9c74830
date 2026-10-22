@@ -1,0 +1,92 @@
+packages/embed/src/components/MessageList.tsx
+  s_d88bea787be3a1::t_8ab99479bb5298 5,9,11-14,23,30,36-56,61,74,80
+  s_d88bea787be3a1::t_22a09bcdb0ce39 10,94
+packages/embed/src/EmbedApp.tsx
+  s_d88bea787be3a1::t_a8d68fd87dd730 288
+  s_d88bea787be3a1::t_7fce6295b74a24 92
+packages/embed/src/styles.ts
+  s_d88bea787be3a1::t_9fdfcc7141752b 504-505
+packages/embed/tests/EmbedApp.test.tsx
+  s_d88bea787be3a1::t_c245eb546d3c45 662,665,670,675
+  s_d88bea787be3a1::t_9abed284781c86 78-83
+  s_d88bea787be3a1::t_d15c7c66e40cff 688-714,718-722,729-740,744-749
+  s_d88bea787be3a1::t_69e1e99e652145 741-743
+packages/embed/tests/messages.test.ts
+  s_d88bea787be3a1::t_0a726ca167e0aa 3,5-8
+  s_d88bea787be3a1::t_2012addb47b586 54-66,68,70-71,73,77-78
+  s_d88bea787be3a1::t_6ad5f4c8a5838e 4,67,69,72,74-76
+packages/embed/src/messages.ts
+  s_d88bea787be3a1::t_d26ed05ad1aa50 16,20-28
+  s_d88bea787be3a1::t_3095b499a6cbf9 17-19
+.changeset/embed-annotations.md
+  s_d88bea787be3a1::t_3c154f4c775149 1-5
+  s_d88bea787be3a1::t_1878f8a200631a 6
+  s_831d201402acf5::t_2968abba50baa3 7
+packages/react/tests/useConversation.test.tsx
+  s_d88bea787be3a1::t_b58fa70ff7cc83 636-638,641-643
+  s_d88bea787be3a1::t_ad2af1adb1b240 611-635,639-640,644-647
+  s_831d201402acf5::t_41d0a35fed61fd 583-585
+packages/react/src/useConversation.ts
+  s_d88bea787be3a1::t_cb2474f8a8a122 166
+  s_d88bea787be3a1::t_efabfccf1c2a35 140-143
+  s_d88bea787be3a1::t_6e824abc145c3b 268
+packages/react/src/hooks/useConnection.ts
+  s_d88bea787be3a1::t_aa9c1f8b82f515 69
+  s_d88bea787be3a1::t_51829adaa0a422 479
+  s_d88bea787be3a1::t_41d2725b07c276 86
+  s_d88bea787be3a1::t_850cf6f90c1513 440
+packages/core/src/types.ts
+  s_831d201402acf5::t_41d0a35fed61fd 193-197
+  s_831d201402acf5::t_c3ac29a458b4aa 103-104
+  s_831d201402acf5::t_6aac114553c230 98
+packages/core/src/index.ts
+  s_831d201402acf5::t_21ab57f275e94e 39-40
+packages/core/tests/message-utils.test.ts
+  s_831d201402acf5::t_b5f0e1beccb347 245
+  s_831d201402acf5::t_583e848a77a28b 281,283-291,294-296
+  s_831d201402acf5::t_41d0a35fed61fd 2,224-225,227,229,231,234-235,238,241-242,248,250-251,254-273,275-278
+  s_831d201402acf5::t_51c753581c8659 176
+  s_831d201402acf5::t_ad87cb96e67ddb 228
+  s_831d201402acf5::t_d98b93a920c93f 315-333
+packages/react/src/hooks/useMessages.ts
+  s_831d201402acf5::t_795a4f085a05bf 40
+packages/core/tests/websocket-transport.test.ts
+  s_831d201402acf5::t_751d02f3d4bf12 401
+packages/core/src/events.ts
+  s_831d201402acf5::t_22c0d84d3fbd2e 195
+  s_831d201402acf5::t_bcc8ee7aecdd9c 165,167,173,181,183,187,196
+  s_831d201402acf5::t_f1187fb677b847 249
+  s_831d201402acf5::t_a27e96ad2f6a92 230-235
+  s_831d201402acf5::t_1e7f6c23285e2e 194
+  s_831d201402acf5::t_8e4369f4a18000 210
+  s_831d201402acf5::t_c9f3d9c36e1973 180,182,192,197-209
+packages/core/README.md
+  s_831d201402acf5::t_41d0a35fed61fd 106-118,141-142
+  s_831d201402acf5::t_127d0d9a727b09 119
+packages/react/tests/useMessages.test.ts
+  s_831d201402acf5::t_41d0a35fed61fd 55,186,191-193,204-206,224-226,254-256
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a1427c7d6149641b5b333bcf24874b4ec9c74830",
+  "prompts": {},
+  "sessions": {
+    "s_831d201402acf5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96f35752-2e93-4f3d-a027-0ad002b221c4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    },
+    "s_d88bea787be3a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9d65bad-76f0-4210-b171-7ab1ec5755d4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}

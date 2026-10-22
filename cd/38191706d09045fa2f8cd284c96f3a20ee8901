@@ -1,0 +1,76 @@
+packages/react/tests/useMessages.test.ts
+  s_d88bea787be3a1::t_651ef4eb2c8e66 185,187-190,194-203,207-212,214-215,222-223,227-239,241-243,245-253,257-268
+  s_d88bea787be3a1::t_25263b13539906 17-25
+  s_d88bea787be3a1::t_ce76d141f00270 213,216-221,240,244
+packages/core/src/events.ts
+  s_d88bea787be3a1::t_32217072c9a3aa 2-3,15
+  s_d88bea787be3a1::t_652846a9cf1585 246-248,250
+  s_d88bea787be3a1::t_0fd2a7294eb0fc 155-158,162-164,166,168-172,174-179,184-186,188-191
+  s_d88bea787be3a1::t_1ad5f5f065ee21 210
+packages/react/src/hooks/useMessages.ts
+  s_d88bea787be3a1::t_3b3d864e618e1b 3-8,17,21,29
+  s_d88bea787be3a1::t_80ae620a7dc141 69-83
+  s_d88bea787be3a1::t_2d82034857abb1 95,99
+packages/react/src/hooks/useConnection.ts
+  s_d88bea787be3a1::t_58e9a3d1da9000 167
+packages/react/package.json
+  s_d88bea787be3a1::t_f50b9780897402 26
+packages/core/README.md
+  s_d88bea787be3a1::t_e1ed1e1b035ea5 143
+packages/core/tests/message-utils.test.ts
+  s_d88bea787be3a1::t_89964d7c4d9d24 226,230,232-233,236-237,239-240,243-244,246-247,249,252-253,284-285,290-292,297-298,300,303-304,313-314,316-317,322-328,330-342
+packages/react/src/useConversation.ts
+  s_d88bea787be3a1::t_5d1af8508b7049 54
+  s_d88bea787be3a1::t_9ba7f35f156040 282
+  s_d88bea787be3a1::t_a3ff3a7b499ed4 235-236
+  s_d88bea787be3a1::t_16e1e1d48df6ea 4
+  s_d88bea787be3a1::t_cc49c5cf5f6722 132,136
+packages/core/src/index.ts
+  s_d88bea787be3a1::t_6836ce4069522e 14-15
+  s_d88bea787be3a1::t_13f8022122ff1d 37-38,41-42
+packages/react/tests/useConversation.test.tsx
+  s_d88bea787be3a1::t_8feaac786a96ac 80
+  s_d88bea787be3a1::t_6eb21a005fc38f 534-582,586-610
+packages/core/src/types.ts
+  s_d88bea787be3a1::t_4b0a1462360c67 132-141
+  s_d88bea787be3a1::t_fc8611632205d9 169
+  s_d88bea787be3a1::t_2a6a4ca8d08679 200
+README.md
+  s_d88bea787be3a1::t_349c003820b60c 21
+packages/react/README.md
+  s_d88bea787be3a1::t_55c3a61d678906 110,135
+packages/embed/src/EmbedApp.tsx
+  s_d88bea787be3a1::t_6877b3c90a97f8 246
+packages/embed/tests/EmbedApp.test.tsx
+  s_d88bea787be3a1::t_6877b3c90a97f8 11-16,25-34,40-41,168,643-680
+  s_d88bea787be3a1::t_6c07063fa127cb 681
+packages/embed/src/styles.ts
+  s_d88bea787be3a1::t_6877b3c90a97f8 163-164
+packages/embed/src/status.ts
+  s_d88bea787be3a1::t_6877b3c90a97f8 3,24,36,65-67,76-85
+  s_d88bea787be3a1::t_d266bcfe5b0582 86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cd38191706d09045fa2f8cd284c96f3a20ee8901",
+  "prompts": {},
+  "sessions": {
+    "s_ae3a5a5d379577": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-ab50340059554cf67",
+        "model": "unknown"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    },
+    "s_d88bea787be3a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9d65bad-76f0-4210-b171-7ab1ec5755d4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
