@@ -1,0 +1,19 @@
+packages/core/tests/message-utils.test.ts
+  s_831d201402acf5::t_d98b93a920c93f 315-333
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8a0a43d4bb20b45cda59d3bb03dee751434b2770",
+  "prompts": {},
+  "sessions": {
+    "s_831d201402acf5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96f35752-2e93-4f3d-a027-0ad002b221c4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
