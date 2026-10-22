@@ -1,0 +1,27 @@
+packages/react/tests/useMessages.test.ts
+  s_2afb914ce161db::t_5d9d361cbd250d 278-333
+packages/react/README.md
+  s_2afb914ce161db::t_5b6c49c8ec1926 191
+  s_2afb914ce161db::t_1fa14b7ac6ef79 178
+  s_2afb914ce161db::t_83c88a1289708b 190
+packages/react/src/hooks/useMessages.ts
+  s_2afb914ce161db::t_dfffacd62e62c6 13,83
+packages/react/src/useConversation.ts
+  s_2afb914ce161db::t_a98528c94ffe45 38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ffd5359cef3dfd04ccc8340d08261655672a931",
+  "prompts": {},
+  "sessions": {
+    "s_2afb914ce161db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ac15c5b-8a9e-4f3c-8789-27f6e35047a0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
