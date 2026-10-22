@@ -313,4 +313,46 @@ describe("useMessages", () => {
 
     expect(result.current.annotations).toEqual([requested, joined]);
   });
+
+  it("annotation_created event calls onAnnotation with the annotation", () => {
+    const onAnnotation = vi.fn();
+    const { result } = setup({ onAnnotation });
+
+    const joined = makeAnnotation({
+      id: "annotation-2",
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    });
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "annotation_created",
+        data: joined,
+      }),
+    );
+
+    expect(onAnnotation).toHaveBeenCalledTimes(1);
+    expect(onAnnotation).toHaveBeenCalledWith(joined);
+  });
+
+  it("existing_messages event does not call onAnnotation", () => {
+    const onAnnotation = vi.fn();
+    const { result } = setup({ onAnnotation });
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "existing_messages",
+        data: [],
+        annotations: [
+          makeAnnotation({ id: "annotation-1" }),
+          makeAnnotation({
+            id: "annotation-2",
+            annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+          }),
+        ],
+      }),
+    );
+
+    expect(result.current.annotations).toHaveLength(2);
+    expect(onAnnotation).not.toHaveBeenCalled();
+  });
 });

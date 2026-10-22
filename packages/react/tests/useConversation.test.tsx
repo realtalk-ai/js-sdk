@@ -327,6 +327,35 @@ describe("useConversation", () => {
     expect(onMessage).toHaveBeenCalled();
   });
 
+  it("onAnnotation callback is invoked for annotation events", async () => {
+    const onAnnotation = vi.fn();
+
+    const { result } = renderHook(() => useConversation({ onAnnotation }), {
+      wrapper,
+    });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    const joined = {
+      id: "annotation-1",
+      createdAt: "2024-01-01T00:00:00Z",
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    };
+
+    act(() => onEventCb({ type: "annotation_created", data: joined }));
+    expect(onAnnotation).toHaveBeenCalledTimes(1);
+    expect(onAnnotation).toHaveBeenCalledWith(joined);
+  });
+
   it("onEvent callback fires for all transport events", async () => {
     const onEvent = vi.fn();
 

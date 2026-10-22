@@ -180,6 +180,7 @@ The server may pause an idle conversation by closing the connection; `status` th
 ```ts
 useConversation({
   onMessage: (message) => {},
+  onAnnotation: (item) => {},
   onError: (error) => {},
   onStatusChange: (status) => {},
   onConnectionStatusChange: (connectionStatus) => {},
@@ -190,6 +191,8 @@ useConversation({
 ```
 
 With `startMuted: true`, playback starts at volume 0 but still runs silently in real time so the conversation keeps its natural pacing; unmuting with `toggleAudio` or `setVolume` makes the rest of the current reply audible.
+
+The `onMessage` and `onAnnotation` callbacks fire only for live events, not for the history the server sends on connect. `onMessage` can fire several times for one message as it updates, and `onAnnotation` fires for each annotation the server sends, such as a human agent joining. Annotations of a kind this SDK version doesn't know are dropped, so they never reach `onAnnotation`. Key on `id` to act once per message or annotation.
 
 The `onEvent` callback receives server events like `message_created`, `message_updated`, `vad`, and others. Use `sendEvent` to send custom events to the server. See the [core package events reference](../core/README.md#events) for the full list of event types and their payloads.
 

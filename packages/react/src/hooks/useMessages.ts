@@ -10,6 +10,7 @@ import { EventType, sortChronological } from "@realtalk-ai/core";
 
 export interface UseMessagesCallbacks {
   onMessage?: (message: Message) => void;
+  onAnnotation?: (item: AnnotationItem) => void;
 }
 
 export interface UseMessagesReturn {
@@ -77,6 +78,7 @@ export function useMessages(callbacksRef: {
         case EventType.AnnotationCreated: {
           const item = event.data;
           setAnnotations((prev) => sortChronological(upsertById(prev, item)));
+          callbacksRef.current.onAnnotation?.(item);
           break;
         }
         case EventType.Vad: {
