@@ -1,0 +1,56 @@
+packages/react/src/useConversation.ts
+  s_9a7c4b926a2e62::t_511f530d3d336f 87
+  s_9a7c4b926a2e62::t_2b0ecd422b8425 16,85-86,91,97-98,100-103,108
+packages/react/src/index.ts
+  s_9a7c4b926a2e62::t_6eeaa05907b18b 8
+packages/react/README.md
+  s_9a7c4b926a2e62::t_68361e939f0c3b 176
+  s_9a7c4b926a2e62::t_9c0a9c3679ad10 289
+packages/react/tests/useConversation.test.tsx
+  s_9a7c4b926a2e62::t_b9d7710a01d9ca 840-861,864-869,871-904,906-908,910-911,913-914,916-917,920,922-923,927-929,932,934-935,937-940,942-943,946-947,949-950,953-966,968-969,972-976
+  s_9a7c4b926a2e62::t_b4e9142c70f643 837-839
+  s_9a7c4b926a2e62::t_c91ff9058e051d 862-863
+  s_9a7c4b926a2e62::t_8014d171ca067b 870
+  s_9a7c4b926a2e62::t_946c656f4043ae 905
+  s_9a7c4b926a2e62::t_83d74a4b1d031f 909
+  s_9a7c4b926a2e62::t_ef4ef3a40ec475 912
+  s_9a7c4b926a2e62::t_de2804ade414f9 915
+  s_9a7c4b926a2e62::t_6039b298b0d621 918-919
+  s_9a7c4b926a2e62::t_b7d0e4caa8da91 921
+  s_9a7c4b926a2e62::t_c4ef828d6dcc90 924-926
+  s_9a7c4b926a2e62::t_a0125cddb1cfdf 930-931
+  s_9a7c4b926a2e62::t_a98eaf5ba0c784 933
+  s_9a7c4b926a2e62::t_10ff47f5d5876b 936
+  s_9a7c4b926a2e62::t_c1b0ecffa2f4e7 941
+  s_9a7c4b926a2e62::t_4fc717c634e261 944-945
+  s_9a7c4b926a2e62::t_4061a1c102ffa1 948
+  s_9a7c4b926a2e62::t_be2e4563bee765 951-952
+  s_9a7c4b926a2e62::t_169c06b505ca19 967
+  s_9a7c4b926a2e62::t_ada6b3b8faa1c6 970-971
+  s_9a7c4b926a2e62::t_0e9d85c8437aa6 977
+  s_30dc16d03f2700::t_404bff46aef8ad 4-8,10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6e4994ae8cafc0954094f98b0da6e08b50817c32",
+  "prompts": {},
+  "sessions": {
+    "s_30dc16d03f2700": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-ae4cfed207e43cb66",
+        "model": "unknown"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    },
+    "s_9a7c4b926a2e62": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "564c0f69-cd66-4d66-b9a4-bb4cc178f023",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
