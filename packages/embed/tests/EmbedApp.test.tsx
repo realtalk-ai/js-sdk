@@ -67,7 +67,7 @@ function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), { status: 200 });
 }
 
-function mockFetch() {
+function mockFetch({ voiceEnabled = true } = {}) {
   vi.stubGlobal(
     "fetch",
     vi.fn((url: string) => {
@@ -78,6 +78,7 @@ function mockFetch() {
             greeting: "Hi there!",
             idle_pause_seconds: IDLE_PAUSE_SECONDS,
             idle_end_seconds: IDLE_END_SECONDS,
+            voice_enabled: voiceEnabled,
           }),
         );
       }
@@ -93,7 +94,6 @@ function widget(props: Partial<EmbedAppProps> = {}) {
     <EmbedApp
       agentId={AGENT_ID}
       serverUrl="https://api.example.com"
-      voiceEnabled
       {...props}
     />
   );
@@ -217,11 +217,9 @@ describe("EmbedApp", () => {
   });
 
   describe("voice", () => {
-    it("hides the voice controls by default", async () => {
-      render(
-        <EmbedApp agentId={AGENT_ID} serverUrl="https://api.example.com" />,
-      );
-      await screen.findByRole("button", { name: /Open chat/ });
+    it("hides the voice controls when the agent has voice disabled", async () => {
+      mockFetch({ voiceEnabled: false });
+      await renderWidget();
       openPanel();
 
       expect(
@@ -239,6 +237,17 @@ describe("EmbedApp", () => {
           mode: { userAudio: false, agentAudio: false },
         }),
       );
+    });
+
+    it("hides the voice controls when the snippet disables voice", async () => {
+      await renderWidget({}, { voiceDisabled: true });
+      openPanel();
+
+      expect(
+        screen.queryByRole("button", { name: "Enable voice mode" }),
+      ).toBeNull();
+      openHeaderMenu();
+      expect(screen.queryByRole("menuitemcheckbox")).toBeNull();
     });
 
     it("turns the mic on without touching the agent audio", async () => {

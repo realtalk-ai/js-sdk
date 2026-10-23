@@ -27,11 +27,11 @@ const AUDIO_BOTH_WAYS: ConversationMode = {
 export function EmbedApp({
   agentId,
   serverUrl,
-  voiceEnabled = false,
+  voiceDisabled = false,
 }: {
   agentId: string;
   serverUrl: string;
-  voiceEnabled?: boolean;
+  voiceDisabled?: boolean;
 }): JSX.Element {
   const server = useMemo(() => resolveServer(serverUrl), [serverUrl]);
   const minter = useMemo(
@@ -49,7 +49,7 @@ export function EmbedApp({
         agentId={agentId}
         server={server}
         minter={minter}
-        voiceEnabled={voiceEnabled}
+        voiceDisabled={voiceDisabled}
       />
     </RealTalkProvider>
   );
@@ -59,12 +59,12 @@ function Widget({
   agentId,
   server,
   minter,
-  voiceEnabled,
+  voiceDisabled,
 }: {
   agentId: string;
   server: EmbedServer;
   minter: SessionMinter;
-  voiceEnabled: boolean;
+  voiceDisabled: boolean;
 }): JSX.Element | null {
   const config = useEmbedConfig(server, agentId);
   const [open, setOpen] = useState(false);
@@ -138,6 +138,7 @@ function Widget({
 
   if (!config) return null;
 
+  const showVoice = config.voiceEnabled && !voiceDisabled;
   const conversationOver = status === "finished" || expired;
   const hasMessages = messages.length > 0;
   const ended = conversationOver && hasMessages;
@@ -261,7 +262,7 @@ function Widget({
         <Header
           displayName={config.displayName}
           status={widgetStatus}
-          showVoice={voiceEnabled && !ended}
+          showVoice={showVoice && !ended}
           micOn={micOn}
           audioOn={audioOn}
           canEnd={conversationInProgress}
@@ -293,7 +294,7 @@ function Widget({
             ) : (
               <Composer
                 disabled={starting}
-                showVoice={voiceEnabled}
+                showVoice={showVoice}
                 voiceOn={voiceOn}
                 onSend={handleSend}
                 onToggleVoice={() => void handleVoiceToggle()}

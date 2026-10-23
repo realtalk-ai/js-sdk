@@ -48,6 +48,7 @@ describe("fetchEmbedConfig", () => {
           greeting: "Hi!",
           idle_pause_seconds: 120,
           idle_end_seconds: 600,
+          voice_enabled: true,
         }),
       ),
     );
@@ -57,6 +58,7 @@ describe("fetchEmbedConfig", () => {
       greeting: "Hi!",
       idlePauseSeconds: 120,
       idleEndSeconds: 600,
+      voiceEnabled: true,
     });
     expect(fetch).toHaveBeenCalledWith(
       "https://api.example.com/api/v1/embed-configs/agent-1/",
