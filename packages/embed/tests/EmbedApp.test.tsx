@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  type MockInstance,
+} from "vitest";
 import {
   render,
   screen,
@@ -16,7 +24,9 @@ import {
   type Message,
   type TimelineItem,
 } from "@realtalk-ai/core";
+import type { UseConversationOptions } from "@realtalk-ai/react";
 import { EmbedApp } from "../src/EmbedApp.js";
+import type { Sounds } from "../src/sounds.js";
 import packageJson from "../package.json";
 
 type EmbedAppProps = ComponentProps<typeof EmbedApp>;
@@ -63,6 +73,10 @@ const providerProps = vi.hoisted(() => ({
   current: {} as Record<string, unknown>,
 }));
 
+const conversationOptions = vi.hoisted(() => ({
+  current: {} as UseConversationOptions,
+}));
+
 vi.mock("@realtalk-ai/react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@realtalk-ai/react")>();
   return {
@@ -76,9 +90,28 @@ vi.mock("@realtalk-ai/react", async (importOriginal) => {
       providerProps.current = props;
       return children;
     },
-    useConversation: () => conversation,
+    useConversation: (options: UseConversationOptions) => {
+      conversationOptions.current = options;
+      return conversation;
+    },
   };
 });
+
+const soundPlayer = vi.hoisted(() => ({
+  unlock: vi.fn(),
+  play: vi.fn(() => Promise.resolve()),
+  close: vi.fn(),
+}));
+
+const sounds = vi.hoisted(
+  (): Sounds => ({ message: null, humanAgentJoined: null }),
+);
+
+vi.mock("../src/sound-player.js", () => ({
+  createSoundPlayer: () => soundPlayer,
+}));
+
+vi.mock("../src/sounds.js", () => ({ SOUNDS: sounds }));
 
 function message(
   id: string,
@@ -163,6 +196,14 @@ function launcherLabel(): string | null {
   return screen
     .getByRole("button", { name: /Open chat/ })
     .getAttribute("aria-label");
+}
+
+function receiveMessage(message: Message) {
+  conversationOptions.current.onMessage?.(message);
+}
+
+function receiveAnnotation(item: AnnotationItem) {
+  conversationOptions.current.onAnnotation?.(item);
 }
 
 describe("EmbedApp", () => {
@@ -795,6 +836,204 @@ describe("EmbedApp", () => {
       );
       update({ messages: [] });
       expect(screen.queryByText("Filip has joined the chat")).toBeNull();
+    });
+  });
+
+  describe("sounds", () => {
+    const MESSAGE_SOUND = new Uint8Array([1]);
+    const JOIN_SOUND = new Uint8Array([2]);
+    let visibilityState: MockInstance<() => DocumentVisibilityState>;
+    let hasFocus: MockInstance<() => boolean>;
+
+    beforeEach(() => {
+      Object.assign(sounds, {
+        message: MESSAGE_SOUND,
+        humanAgentJoined: JOIN_SOUND,
+      });
+      visibilityState = vi
+        .spyOn(document, "visibilityState", "get")
+        .mockReturnValue("visible");
+      hasFocus = vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    });
+
+    afterEach(() => {
+      visibilityState.mockRestore();
+      hasFocus.mockRestore();
+    });
+
+    it("plays no message sound while the visitor watches the open widget", async () => {
+      await renderWidget({ status: "active" });
+      openPanel();
+
+      receiveMessage(message("m1", "Hello"));
+      expect(soundPlayer.play).not.toHaveBeenCalled();
+    });
+
+    it("plays the message sound for an agent message while the widget is minimized", async () => {
+      await renderWidget({ status: "active" });
+      openPanel();
+      fireEvent.click(screen.getByRole("button", { name: "Minimize chat" }));
+
+      receiveMessage(message("m1", "Hello"));
+      expect(soundPlayer.play).toHaveBeenCalledWith(MESSAGE_SOUND);
+    });
+
+    it("plays the message sound for an agent message while the tab is hidden", async () => {
+      await renderWidget({ status: "active" });
+      openPanel();
+      visibilityState.mockReturnValue("hidden");
+
+      receiveMessage(message("m1", "Hello"));
+      expect(soundPlayer.play).toHaveBeenCalledWith(MESSAGE_SOUND);
+    });
+
+    it("plays the message sound for an agent message while the window has no focus", async () => {
+      await renderWidget({ status: "active" });
+      openPanel();
+      hasFocus.mockReturnValue(false);
+
+      receiveMessage(message("m1", "Hello"));
+      expect(soundPlayer.play).toHaveBeenCalledWith(MESSAGE_SOUND);
+    });
+
+    it("plays the message sound once while the same agent message updates", async () => {
+      await renderWidget({ status: "active" });
+
+      receiveMessage(message("m1", "Hel"));
+      receiveMessage(message("m1", "Hello"));
+      receiveMessage(message("m1", "Hello there"));
+      expect(soundPlayer.play).toHaveBeenCalledTimes(1);
+    });
+
+    it("plays the message sound only the first time a message shows text, not when it updates after the visitor minimizes", async () => {
+      await renderWidget({ status: "active" });
+      openPanel();
+
+      receiveMessage(message("m1", "Hel"));
+      fireEvent.click(screen.getByRole("button", { name: "Minimize chat" }));
+      receiveMessage(message("m1", "Hello"));
+      expect(soundPlayer.play).not.toHaveBeenCalled();
+
+      receiveMessage(message("m2", "Anything else?"));
+      expect(soundPlayer.play).toHaveBeenCalledTimes(1);
+    });
+
+    it("plays no message sound when a message from history updates after the visitor minimizes", async () => {
+      await renderWidget({
+        status: "active",
+        messages: [message("m1", "Hello")],
+      });
+      openPanel();
+      fireEvent.click(screen.getByRole("button", { name: "Minimize chat" }));
+
+      receiveMessage({ ...message("m1", "Hello"), hasBeenAnswered: true });
+      expect(soundPlayer.play).not.toHaveBeenCalled();
+
+      receiveMessage(message("m2", "Anything else?"));
+      expect(soundPlayer.play).toHaveBeenCalledTimes(1);
+    });
+
+    it("plays no message sound for the visitor's own message or an agent message without text", async () => {
+      await renderWidget({ status: "active" });
+
+      receiveMessage({ ...message("m1", "Hello"), role: "user" });
+      receiveMessage(message("m2", "  "));
+      expect(soundPlayer.play).not.toHaveBeenCalled();
+    });
+
+    it("plays the message sound when an agent message first shows text, not for its hidden sub-tasks", async () => {
+      await renderWidget({ status: "active" });
+      const metadata = {
+        subTasks: [
+          {
+            id: "t1",
+            name: "look_up",
+            type: "tool",
+            context: {},
+            status: "pending" as const,
+          },
+        ],
+      };
+
+      receiveMessage({ ...message("m1", ""), metadata });
+      expect(soundPlayer.play).not.toHaveBeenCalled();
+
+      receiveMessage({ ...message("m1", "Found it"), metadata });
+      expect(soundPlayer.play).toHaveBeenCalledWith(MESSAGE_SOUND);
+    });
+
+    it("plays the join sound once when a human agent joins, even while the visitor watches", async () => {
+      await renderWidget({ status: "active" });
+      openPanel();
+
+      receiveAnnotation(HANDOFF_REQUESTED);
+      expect(soundPlayer.play).not.toHaveBeenCalled();
+
+      receiveAnnotation(HUMAN_AGENT_JOINED);
+      receiveAnnotation(HUMAN_AGENT_JOINED);
+      expect(soundPlayer.play).toHaveBeenCalledTimes(1);
+      expect(soundPlayer.play).toHaveBeenCalledWith(JOIN_SOUND);
+    });
+
+    it("plays nothing while agent audio is on", async () => {
+      await renderWidget({
+        status: "active",
+        mode: { userAudio: false, agentAudio: true },
+      });
+
+      receiveMessage(message("m1", "Hello"));
+      receiveAnnotation(HUMAN_AGENT_JOINED);
+      expect(soundPlayer.play).not.toHaveBeenCalled();
+    });
+
+    it("plays only the join sound when the message sound is turned off", async () => {
+      sounds.message = null;
+      await renderWidget({ status: "active" });
+
+      receiveMessage(message("m1", "Hello"));
+      receiveAnnotation(HUMAN_AGENT_JOINED);
+      expect(soundPlayer.play).toHaveBeenCalledTimes(1);
+      expect(soundPlayer.play).toHaveBeenCalledWith(JOIN_SOUND);
+    });
+
+    it("never unlocks or plays the sounds when the snippet disables them", async () => {
+      await renderWidget({ status: "active" }, { soundsDisabled: true });
+      openPanel();
+      const textarea = screen.getByPlaceholderText("Type a message…");
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      await vi.waitFor(() =>
+        expect(conversation.sendMessage).toHaveBeenCalledWith("Hello"),
+      );
+      hasFocus.mockReturnValue(false);
+
+      receiveMessage(message("m1", "Hi"));
+      receiveAnnotation(HUMAN_AGENT_JOINED);
+      expect(soundPlayer.unlock).not.toHaveBeenCalled();
+      expect(soundPlayer.play).not.toHaveBeenCalled();
+    });
+
+    it("unlocks the sounds when the visitor opens the chat and sends a message", async () => {
+      await renderWidget();
+      expect(soundPlayer.unlock).not.toHaveBeenCalled();
+
+      openPanel();
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(1);
+
+      const textarea = screen.getByPlaceholderText("Type a message…");
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(2);
+      await vi.waitFor(() =>
+        expect(conversation.sendMessage).toHaveBeenCalledWith("Hello"),
+      );
+    });
+
+    it("closes the player when the widget goes away", async () => {
+      const { unmount } = await renderWidget();
+
+      unmount();
+      expect(soundPlayer.close).toHaveBeenCalledTimes(1);
     });
   });
 });

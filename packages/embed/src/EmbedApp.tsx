@@ -9,6 +9,7 @@ import {
 } from "./session.js";
 import { useEmbedConfig } from "./hooks/useEmbedConfig.js";
 import { useConversationExpiry } from "./hooks/useConversationExpiry.js";
+import { useSounds, type WidgetSounds } from "./hooks/useSounds.js";
 import { deriveWidgetStatus } from "./status.js";
 import { AboutPage } from "./components/AboutPage.js";
 import { Composer } from "./components/Composer.js";
@@ -28,10 +29,12 @@ export function EmbedApp({
   agentId,
   serverUrl,
   voiceDisabled = false,
+  soundsDisabled = false,
 }: {
   agentId: string;
   serverUrl: string;
   voiceDisabled?: boolean;
+  soundsDisabled?: boolean;
 }): JSX.Element {
   const server = useMemo(() => resolveServer(serverUrl), [serverUrl]);
   const minter = useMemo(
@@ -50,6 +53,7 @@ export function EmbedApp({
         server={server}
         minter={minter}
         voiceDisabled={voiceDisabled}
+        soundsDisabled={soundsDisabled}
       />
     </RealTalkProvider>
   );
@@ -60,11 +64,13 @@ function Widget({
   server,
   minter,
   voiceDisabled,
+  soundsDisabled,
 }: {
   agentId: string;
   server: EmbedServer;
   minter: SessionMinter;
   voiceDisabled: boolean;
+  soundsDisabled: boolean;
 }): JSX.Element | null {
   const config = useEmbedConfig(server, agentId);
   const [open, setOpen] = useState(false);
@@ -75,12 +81,16 @@ function Widget({
   const [notice, setNotice] = useState<string | null>(null);
 
   const [startMode, setStartMode] = useState<ConversationMode>(TEXT_ONLY);
+  // Set further down, because the sounds need the conversation's messages.
+  const soundsRef = useRef<WidgetSounds | null>(null);
 
   const conversation = useConversation({
     onModeRefused: (_requestedMode, currentMode) => {
       setStartMode(currentMode);
       setNotice("Voice is not available right now. Please try again later.");
     },
+    onMessage: (message) => soundsRef.current?.onMessage(message),
+    onAnnotation: (item) => soundsRef.current?.onAnnotation(item),
   });
   const conversationRef = useRef(conversation);
   conversationRef.current = conversation;
@@ -132,6 +142,8 @@ function Widget({
   const active = status === "active";
   const paused = status === "paused";
   const mode = active ? conversation.mode : startMode;
+  const sounds = useSounds(open, mode.agentAudio, messages, soundsDisabled);
+  soundsRef.current = sounds;
 
   useConversationExpiry(paused, config, () => {
     minter.reset();
@@ -165,6 +177,7 @@ function Widget({
   };
 
   const handleSend = async (text: string) => {
+    sounds.unlock();
     setNotice(null);
     try {
       if (!active) await start();
@@ -253,7 +266,10 @@ function Widget({
       <div className="container">
         <Launcher
           conversationInProgress={conversationInProgress}
-          onOpen={() => setOpen(true)}
+          onOpen={() => {
+            sounds.unlock();
+            setOpen(true);
+          }}
         />
       </div>
     );

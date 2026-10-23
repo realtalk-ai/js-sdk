@@ -8,8 +8,11 @@ export function formatMessageText(text: string): string {
     .trim();
 }
 
+export function hasText(message: Message): boolean {
+  return Boolean(message.text?.trim());
+}
+
 export function hasVisibleContent(message: Message): boolean {
-  const hasText = Boolean(message.text?.trim());
   const hasSubTasks = (message.metadata?.subTasks?.length ?? 0) > 0;
-  return hasText || hasSubTasks;
+  return hasText(message) || hasSubTasks;
 }
