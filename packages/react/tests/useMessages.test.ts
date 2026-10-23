@@ -14,6 +14,15 @@ function makeMessage(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function makeAnnotation(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "annotation-1",
+    createdAt: "2024-01-01T00:00:00Z",
+    annotation: { kind: "handoff_requested" },
+    ...overrides,
+  };
+}
+
 function setup(callbacks: UseMessagesCallbacks = {}) {
   const callbacksRef = { current: callbacks };
   return renderHook(() => useMessages(callbacksRef));
@@ -43,6 +52,7 @@ describe("useMessages", () => {
           createdAt: "2024-01-01T00:00:02Z",
         }),
       ],
+      annotations: [],
     };
 
     act(() => result.current.handleMessageEvent(event));
@@ -171,5 +181,120 @@ describe("useMessages", () => {
     );
 
     expect(result.current.userState).toBe("idle");
+  });
+
+  it("existing_messages event replaces the annotations", () => {
+    const { result } = setup();
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "existing_messages",
+        data: [],
+        annotations: [makeAnnotation({ id: "annotation-1" })],
+      }),
+    );
+
+    const joined = makeAnnotation({
+      id: "annotation-2",
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    });
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "existing_messages",
+        data: [],
+        annotations: [joined],
+      }),
+    );
+
+    expect(result.current.annotations).toEqual([joined]);
+  });
+
+  it("annotation_created event adds an annotation once per id", () => {
+    const { result } = setup();
+
+    const requested = makeAnnotation({ id: "annotation-1" });
+    const joined = makeAnnotation({
+      id: "annotation-2",
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    });
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "existing_messages",
+        data: [],
+        annotations: [requested],
+      }),
+    );
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "annotation_created",
+        data: joined,
+      }),
+    );
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "annotation_created",
+        data: joined,
+      }),
+    );
+
+    expect(result.current.annotations).toEqual([requested, joined]);
+  });
+
+  it("annotation_created event keeps the annotations sorted by createdAt", () => {
+    const { result } = setup();
+
+    const requested = makeAnnotation({
+      id: "annotation-1",
+      createdAt: "2024-01-01T00:00:01Z",
+    });
+    const joined = makeAnnotation({
+      id: "annotation-2",
+      createdAt: "2024-01-01T00:00:02Z",
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    });
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "existing_messages",
+        data: [],
+        annotations: [joined],
+      }),
+    );
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "annotation_created",
+        data: requested,
+      }),
+    );
+
+    expect(result.current.annotations).toEqual([requested, joined]);
+  });
+
+  it("annotation_created event without data leaves the annotations alone", () => {
+    const { result } = setup();
+
+    const existing = [makeAnnotation()];
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "existing_messages",
+        data: [],
+        annotations: existing,
+      }),
+    );
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "annotation_created",
+        data: null,
+      }),
+    );
+
+    expect(result.current.annotations).toBe(existing);
   });
 });

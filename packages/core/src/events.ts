@@ -1,4 +1,6 @@
 import type {
+  Annotation,
+  AnnotationItem,
   BackendMessage,
   ClientEvent,
   Message,
@@ -10,6 +12,7 @@ import type {
   UserMessageLatencies,
   AssistantMessageLatencies,
 } from "./types.js";
+import { logger } from "./logger.js";
 
 // --- EventEmitter ---
 
@@ -149,10 +152,61 @@ export const normalizeMessage = (raw: BackendMessage): Message => ({
   shouldBeAnswered: raw.should_be_answered,
 });
 
-export const sortChronological = (msgs: Message[]): Message[] =>
-  [...msgs].sort(
+export const sortChronological = <T extends { createdAt: string }>(
+  items: T[],
+): T[] =>
+  [...items].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
+
+// --- Annotation normalization ---
+
+function normalizeAnnotation(
+  metadata: BackendMessage["metadata"],
+): Annotation | null {
+  switch (metadata?.kind) {
+    case "handoff_requested":
+      return { kind: "handoff_requested" };
+    case "human_agent_joined":
+      return {
+        kind: "human_agent_joined",
+        humanAgentName: metadata.human_agent_name ?? null,
+      };
+    default:
+      return null;
+  }
+}
+
+export const normalizeAnnotationMessage = (
+  raw: BackendMessage,
+): AnnotationItem | null => {
+  const annotation = normalizeAnnotation(raw.metadata);
+  if (!annotation) {
+    logger.info("unknown_annotation_kind_skipped", {
+      id: raw.id,
+      kind: raw.metadata?.kind,
+    });
+    return null;
+  }
+  return { id: raw.id, createdAt: raw.timestamp, annotation };
+};
+
+const isAnnotationRow = (row: BackendMessage): boolean =>
+  row.role === "annotation";
+
+export const splitBackendMessages = (
+  raw: BackendMessage[],
+): { messages: Message[]; annotations: AnnotationItem[] } => ({
+  messages: sortChronological(
+    raw.filter((row) => !isAnnotationRow(row)).map(normalizeMessage),
+  ),
+  annotations: sortChronological(
+    raw
+      .filter(isAnnotationRow)
+      .map(normalizeAnnotationMessage)
+      .filter((item): item is AnnotationItem => item !== null),
+  ),
+});
 
 // --- Event conversion ---
 
@@ -173,13 +227,12 @@ export function convertEventForSDK(
   raw: Record<string, unknown>,
 ): ConversationEvent {
   switch (raw.type) {
-    case "existing_messages":
-      return {
-        type: "existing_messages",
-        data: sortChronological(
-          (raw.data as BackendMessage[]).map(normalizeMessage),
-        ),
-      };
+    case "existing_messages": {
+      const { messages, annotations } = splitBackendMessages(
+        raw.data as BackendMessage[],
+      );
+      return { type: "existing_messages", data: messages, annotations };
+    }
     case "message_created":
       return {
         type: "message_created",
@@ -189,6 +242,11 @@ export function convertEventForSDK(
       return {
         type: "message_updated",
         data: normalizeMessage(raw.data as BackendMessage),
+      };
+    case "annotation_created":
+      return {
+        type: "annotation_created",
+        data: normalizeAnnotationMessage(raw.data as BackendMessage),
       };
     default:
       return raw as ConversationEvent;

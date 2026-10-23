@@ -107,6 +107,7 @@ const conversation = useConversation(options);
 | `status`           | `ConversationStatus`        | `"not_started"` \| `"active"` \| `"paused"` \| `"finished"`             |
 | `conversationId`   | `string \| null`            | Current conversation ID                                                 |
 | `messages`         | `Message[]`                 | Conversation messages                                                   |
+| `annotations`      | `AnnotationItem[]`          | Conversation annotations, such as a human agent joining                 |
 | `error`            | `ConversationError \| null` | Current error                                                           |
 | `agentState`       | `AgentState`                | `"idle"` \| `"thinking"` \| `"speaking"`                                |
 | `userState`        | `UserState`                 | `"idle"` \| `"speaking"`                                                |
@@ -131,7 +132,7 @@ const conversation = useConversation(options);
 | `disableMic()`               | Stop streaming and release the microphone                                                    |
 | `mode`                       | The conversation mode the server has confirmed                                               |
 | `setMode(mode, deviceId?)`   | Change the conversation mode on the open connection; `userAudio` also enables the microphone |
-| `clearMessages()`            | Clear the local message array                                                                |
+| `clearMessages()`            | Clear the local messages and annotations                                                     |
 
 ### Session options
 
