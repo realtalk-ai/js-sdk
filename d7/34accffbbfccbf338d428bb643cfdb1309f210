@@ -1,0 +1,47 @@
+packages/embed/src/EmbedApp.tsx
+  s_2afb914ce161db::t_7eb9dea879e54f 260-263
+  s_2afb914ce161db::t_9803feba814e01 138
+  s_2afb914ce161db::t_5929f82003ebe5 86-87
+  s_2afb914ce161db::t_2fc68c791c0c3b 171
+  s_2afb914ce161db::t_d7bda5961b3532 85
+  s_2afb914ce161db::t_c3b929b042163e 12
+packages/embed/tests/EmbedApp.test.tsx
+  s_2afb914ce161db::t_0ffe72d6c80a55 25,27
+  s_2afb914ce161db::t_ac200eb469c2e6 2-9
+  s_2afb914ce161db::t_3a4bdd59586334 71-74,88-91,95-111
+  s_2afb914ce161db::t_713c570b0115b6 794-865,887-942
+  s_2afb914ce161db::t_72ddc47b550500 866-886
+  s_2afb914ce161db::t_4d659e705b2ff5 198-204
+  s_461003f4cc8dd6::t_adcee5e309abe9 1,112,205,943
+packages/embed/src/hooks/useSounds.ts
+  s_2afb914ce161db::t_594bb423181561 43
+  s_2afb914ce161db::t_8b65960e500a0d 38-39
+  s_2afb914ce161db::t_6e2418b3b1a4cb 1-37,41-42,44-52
+  s_2afb914ce161db::t_3d8d9a38c8a6ec 40
+packages/embed/src/sounds.ts
+  s_2afb914ce161db::t_35d7184f602992 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d734accffbbfccbf338d428bb643cfdb1309f210",
+  "prompts": {},
+  "sessions": {
+    "s_2afb914ce161db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ac15c5b-8a9e-4f3c-8789-27f6e35047a0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    },
+    "s_461003f4cc8dd6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "843b7dbb-b332-4bd6-8d64-4c8e92053446",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
