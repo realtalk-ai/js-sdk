@@ -12,6 +12,7 @@ export interface EmbedConfig {
   greeting: string;
   idlePauseSeconds: number;
   idleEndSeconds: number;
+  voiceEnabled: boolean;
 }
 
 export interface SessionMinter {
@@ -76,12 +77,14 @@ export async function fetchEmbedConfig(
     greeting: string;
     idle_pause_seconds: number;
     idle_end_seconds: number;
+    voice_enabled: boolean;
   };
   return {
     displayName: data.display_name,
     greeting: data.greeting,
     idlePauseSeconds: data.idle_pause_seconds,
     idleEndSeconds: data.idle_end_seconds,
+    voiceEnabled: data.voice_enabled,
   };
 }
 
