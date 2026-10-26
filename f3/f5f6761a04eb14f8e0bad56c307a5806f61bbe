@@ -1,0 +1,21 @@
+packages/react/src/hooks/useMessages.ts
+  s_3629249bbeb591::t_89fc0e0b71c218 54
+packages/react/tests/useMessages.test.ts
+  s_3629249bbeb591::t_926057d31e81e0 213-234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f3f5f6761a04eb14f8e0bad56c307a5806f61bbe",
+  "prompts": {},
+  "sessions": {
+    "s_3629249bbeb591": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fcae73a7-b0bc-4e22-ada2-94ee8500ee31",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
