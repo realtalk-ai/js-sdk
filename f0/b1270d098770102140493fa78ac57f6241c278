@@ -1,0 +1,19 @@
+packages/embed/tests/EmbedApp.test.tsx
+  s_61367423cd2bfa::t_80a1d7dd6d2504 1,25-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f0b1270d098770102140493fa78ac57f6241c278",
+  "prompts": {},
+  "sessions": {
+    "s_61367423cd2bfa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9188d8b-c047-4045-b6e7-1e1372031002",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
