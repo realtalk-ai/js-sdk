@@ -1,0 +1,26 @@
+packages/embed/tests/EmbedApp.test.tsx
+  s_bdfad111019e5d::t_da3d9d75daab22 100-101
+packages/embed/src/sounds.ts
+  s_bdfad111019e5d::t_9f35ab1f06c6f4 1-2
+  s_bdfad111019e5d::t_eaabd266c0f74d 11,13
+packages/embed/src/EmbedApp.tsx
+  s_bdfad111019e5d::t_f181ef6044cb45 84-85,92-93
+  s_bdfad111019e5d::t_9716a6e75d8310 146
+  s_bdfad111019e5d::t_17c44cc6877c21 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f057a3e74a172cee7a5a87a9312c04e2660878a1",
+  "prompts": {},
+  "sessions": {
+    "s_bdfad111019e5d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3d311a05-80a4-4558-9c7f-0b386e1c1b37",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
