@@ -1,0 +1,19 @@
+packages/embed/src/sound-player.ts
+  s_bdfad111019e5d::t_cdf8e89fde8221 1-2,5,7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "957a86a473af3d30b83e7b140b04e913c69fe54b",
+  "prompts": {},
+  "sessions": {
+    "s_bdfad111019e5d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3d311a05-80a4-4558-9c7f-0b386e1c1b37",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
