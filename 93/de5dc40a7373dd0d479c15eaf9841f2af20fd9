@@ -1,0 +1,73 @@
+packages/embed/src/hooks/useSounds.ts
+  s_2afb914ce161db::t_d0d57cc7ac4ce8 46-48
+  s_2afb914ce161db::t_651c0496498d97 23-26,28
+  s_bdfad111019e5d::t_ae4afef1ba41c2 27,36,40-42,44,49
+  s_bdfad111019e5d::t_010579f3d03398 3
+  s_bdfad111019e5d::t_22c0f45fc95a92 18-21
+packages/embed/tests/EmbedApp.test.tsx
+  s_2afb914ce161db::t_174e8f291baecc 887-897
+  s_2afb914ce161db::t_3891a307d1ac4d 883-885
+  s_bdfad111019e5d::t_16944b58799410 964-980
+  s_bdfad111019e5d::t_6913881a964aec 808-809,814-817,829,837,843,846,852,855,861,864,873,886,901,909,927,930,940,954,961
+packages/embed/tests/messages.test.ts
+  s_bdfad111019e5d::t_74e7bfbc21f560 3-7
+  s_bdfad111019e5d::t_ba7374ed259c9c 37-53
+packages/embed/src/EmbedApp.tsx
+  s_bdfad111019e5d::t_90ea80d44ed080 145
+  s_bdfad111019e5d::t_a9660d2947e878 67,73
+  s_bdfad111019e5d::t_e870303b427aa7 32,37
+  s_bdfad111019e5d::t_f75ab823c163e0 56
+  s_bdfad111019e5d::t_f181ef6044cb45 84-85,92-93
+  s_bdfad111019e5d::t_9716a6e75d8310 146
+  s_bdfad111019e5d::t_17c44cc6877c21 12
+packages/embed/src/embed-element.ts
+  s_bdfad111019e5d::t_a4c25321d529c0 33
+  s_bdfad111019e5d::t_da35db5b8c22b4 50-55
+packages/embed/src/messages.ts
+  s_bdfad111019e5d::t_91f3aa705f608d 11-14,17
+packages/embed/README.md
+  s_bdfad111019e5d::t_46dfb5c36cd8af 32
+  s_bdfad111019e5d::t_86c2b40aa3561d 25-31
+  s_bdfad111019e5d::t_bbbb3cacf44e86 50
+packages/embed/src/components/MessageList.tsx
+  s_bdfad111019e5d::t_2d9832449645ab 57
+  s_bdfad111019e5d::t_0731e87e4c96fd 9
+packages/embed/src/assets.d.ts
+  s_bdfad111019e5d::t_6c11cd7a071650 6
+packages/embed/src/sounds.ts
+  s_bdfad111019e5d::t_9f35ab1f06c6f4 1-2
+  s_bdfad111019e5d::t_eaabd266c0f74d 10
+  s_bdfad111019e5d::t_76ac6a484c4138 14-15
+packages/embed/tests/sound-player.test.ts
+  s_bdfad111019e5d::t_465b95f7668025 5
+  s_bdfad111019e5d::t_4009599d263dad 19
+  s_bdfad111019e5d::t_4bfa0186cbc248 71
+.changeset/message-sounds.md
+  s_bdfad111019e5d::t_058b971bb317a5 6
+packages/embed/src/sound-player.ts
+  s_bdfad111019e5d::t_cdf8e89fde8221 1-2,5,7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "93de5dc40a7373dd0d479c15eaf9841f2af20fd9",
+  "prompts": {},
+  "sessions": {
+    "s_2afb914ce161db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ac15c5b-8a9e-4f3c-8789-27f6e35047a0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    },
+    "s_bdfad111019e5d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3d311a05-80a4-4558-9c7f-0b386e1c1b37",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}
