@@ -1,0 +1,119 @@
+packages/react/tests/useMessages.test.ts
+  s_d88bea787be3a1::t_651ef4eb2c8e66 185,187-190,194-203,207-212,214-215,222-223,227-239,241-243,245-246
+  s_d88bea787be3a1::t_25263b13539906 17-25
+  s_d88bea787be3a1::t_ce76d141f00270 213,216-221,240,244
+  s_831d201402acf5::t_41d0a35fed61fd 55,186,191-193,204-206,224-226
+  s_831d201402acf5::t_e228ecd003c5f9 247-276
+packages/core/src/events.ts
+  s_d88bea787be3a1::t_32217072c9a3aa 2-3,15
+  s_d88bea787be3a1::t_0fd2a7294eb0fc 155-158,162-164,166,168-172,174-179,184-186,188-191
+  s_d88bea787be3a1::t_1ad5f5f065ee21 210
+  s_831d201402acf5::t_22c0d84d3fbd2e 195
+  s_831d201402acf5::t_bcc8ee7aecdd9c 165,167,173,181,183,187,196
+  s_831d201402acf5::t_a27e96ad2f6a92 230-235
+  s_831d201402acf5::t_1e7f6c23285e2e 194
+  s_831d201402acf5::t_8e4369f4a18000 210
+  s_831d201402acf5::t_c9f3d9c36e1973 180,182,192,197-209
+packages/react/src/hooks/useMessages.ts
+  s_d88bea787be3a1::t_3b3d864e618e1b 3-8,17,21,43
+  s_d88bea787be3a1::t_80ae620a7dc141 77-78,80-81
+  s_d88bea787be3a1::t_2d82034857abb1 93,97
+  s_831d201402acf5::t_795a4f085a05bf 54
+  s_831d201402acf5::t_9ba325ae20ef26 9
+packages/react/src/hooks/useConnection.ts
+  s_d88bea787be3a1::t_58e9a3d1da9000 164
+packages/react/package.json
+  s_d88bea787be3a1::t_f50b9780897402 26
+packages/core/README.md
+  s_d88bea787be3a1::t_e1ed1e1b035ea5 143
+  s_831d201402acf5::t_41d0a35fed61fd 106-110,112-118,141-142
+packages/core/tests/message-utils.test.ts
+  s_d88bea787be3a1::t_89964d7c4d9d24 226,230,232-233,236-237,239-240,243-244,246-247,249,252-253,284-285,290-292,297-298,300,303-304,313-314,316-317,322-328,330-333,335-339,341-342
+  s_831d201402acf5::t_b5f0e1beccb347 245
+  s_831d201402acf5::t_583e848a77a28b 281,283-291,294-296
+  s_831d201402acf5::t_41d0a35fed61fd 2,224-225,227,229,231,234-235,238,241-242,248,250-251,254-273,275-278
+  s_831d201402acf5::t_51c753581c8659 176
+  s_831d201402acf5::t_ad87cb96e67ddb 228
+  s_831d201402acf5::t_d98b93a920c93f 315-333
+packages/react/src/useConversation.ts
+  s_d88bea787be3a1::t_5d1af8508b7049 59
+  s_d88bea787be3a1::t_9ba7f35f156040 317
+  s_d88bea787be3a1::t_16e1e1d48df6ea 4
+  s_d88bea787be3a1::t_cc49c5cf5f6722 167,171
+  s_d88bea787be3a1::t_efabfccf1c2a35 177,184
+  s_d88bea787be3a1::t_6e824abc145c3b 303
+packages/core/src/index.ts
+  s_d88bea787be3a1::t_6836ce4069522e 14-15
+  s_d88bea787be3a1::t_13f8022122ff1d 37-38,41-42
+  s_831d201402acf5::t_21ab57f275e94e 39-40
+packages/react/tests/useConversation.test.tsx
+  s_d88bea787be3a1::t_8feaac786a96ac 84
+  s_d88bea787be3a1::t_6eb21a005fc38f 539-587,591-615
+  s_d88bea787be3a1::t_b58fa70ff7cc83 641-643,646-648
+  s_d88bea787be3a1::t_ad2af1adb1b240 616-640,644-645,649-652
+  s_831d201402acf5::t_41d0a35fed61fd 588-590
+packages/core/src/types.ts
+  s_d88bea787be3a1::t_4b0a1462360c67 132-141
+  s_d88bea787be3a1::t_fc8611632205d9 169
+  s_831d201402acf5::t_41d0a35fed61fd 193-197
+  s_831d201402acf5::t_c3ac29a458b4aa 103-104
+  s_831d201402acf5::t_6aac114553c230 98
+packages/react/README.md
+  s_d88bea787be3a1::t_55c3a61d678906 110,136
+packages/embed/src/EmbedApp.tsx
+  s_d88bea787be3a1::t_6877b3c90a97f8 247
+  s_d88bea787be3a1::t_7fce6295b74a24 92
+packages/embed/tests/EmbedApp.test.tsx
+  s_d88bea787be3a1::t_6877b3c90a97f8 11-16,26-35,41,45,177,652-666,668-669,671-674,676-679,681-692
+  s_d88bea787be3a1::t_6c07063fa127cb 755
+  s_831d201402acf5::t_885ac7820d7408 720-722,728-733
+  s_831d201402acf5::t_8565b02a3cd0d8 83-88,667,670,675,680,693-719,723-727,734-754
+  s_d88bea787be3a1::t_c245eb546d3c45 667,670,675,680
+  s_d88bea787be3a1::t_9abed284781c86 83-88
+  s_d88bea787be3a1::t_d15c7c66e40cff 693-719,723-727,734-745,749-754
+  s_d88bea787be3a1::t_69e1e99e652145 746-748
+packages/embed/src/styles.ts
+  s_d88bea787be3a1::t_6877b3c90a97f8 163-164
+  s_831d201402acf5::t_8565b02a3cd0d8 504-505
+  s_d88bea787be3a1::t_9fdfcc7141752b 504-505
+packages/embed/src/status.ts
+  s_d88bea787be3a1::t_6877b3c90a97f8 3,24,36,65-67,76-85
+  s_d88bea787be3a1::t_d266bcfe5b0582 86
+.changeset/embed-annotations.md
+  s_d88bea787be3a1::t_3c154f4c775149 1-5
+  s_d88bea787be3a1::t_1878f8a200631a 6
+packages/core/tests/websocket-transport.test.ts
+  s_831d201402acf5::t_751d02f3d4bf12 401
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f9fa6515b20fc5f59f345961edaa444adde72bd8",
+  "prompts": {},
+  "sessions": {
+    "s_831d201402acf5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96f35752-2e93-4f3d-a027-0ad002b221c4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    },
+    "s_ae3a5a5d379577": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-ab50340059554cf67",
+        "model": "unknown"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    },
+    "s_d88bea787be3a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9d65bad-76f0-4210-b171-7ab1ec5755d4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
