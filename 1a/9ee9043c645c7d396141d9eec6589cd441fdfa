@@ -1,0 +1,19 @@
+.changeset/message-sounds.md
+  s_bdfad111019e5d::t_058b971bb317a5 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1a9ee9043c645c7d396141d9eec6589cd441fdfa",
+  "prompts": {},
+  "sessions": {
+    "s_bdfad111019e5d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3d311a05-80a4-4558-9c7f-0b386e1c1b37",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
