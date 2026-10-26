@@ -1,0 +1,39 @@
+packages/embed/tests/EmbedApp.test.tsx
+  s_61367423cd2bfa::t_80a1d7dd6d2504 1,19-20,25
+  s_bdfad111019e5d::t_46b0a2b93f9fa4 27
+  s_bdfad111019e5d::t_2c638bf11bbc33 2-9,29,76-79,93-96,102-117,203-210,808-962,980-1001
+packages/embed/README.md
+  s_bdfad111019e5d::t_2c638bf11bbc33 48-49,51
+packages/embed/src/EmbedApp.tsx
+  s_bdfad111019e5d::t_2c638bf11bbc33 180,269-272
+packages/embed/src/sounds.ts
+  s_bdfad111019e5d::t_2c638bf11bbc33 3-10,12,14-22
+packages/embed/tests/sounds.test.ts
+  s_bdfad111019e5d::t_2c638bf11bbc33 1-9,10
+packages/embed/src/hooks/useSounds.ts
+  s_bdfad111019e5d::t_2c638bf11bbc33 1-2,4-20,23-29,31-38,40-42,46,48-51,53-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b3be4de563ed47dd66080f4527d3ee0503056d7f",
+  "prompts": {},
+  "sessions": {
+    "s_61367423cd2bfa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9188d8b-c047-4045-b6e7-1e1372031002",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    },
+    "s_bdfad111019e5d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3d311a05-80a4-4558-9c7f-0b386e1c1b37",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
