@@ -1,0 +1,21 @@
+README.md
+  s_61367423cd2bfa::t_6a52f2db15285b 21
+packages/react/README.md
+  s_61367423cd2bfa::t_5987365bad5ec3 195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "272b5b748186d5a70aeb2390399e4aa81751d614",
+  "prompts": {},
+  "sessions": {
+    "s_61367423cd2bfa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9188d8b-c047-4045-b6e7-1e1372031002",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
