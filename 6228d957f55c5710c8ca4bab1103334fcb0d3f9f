@@ -1,0 +1,40 @@
+packages/embed/README.md
+  s_ed3c3b7a34679e::t_8956b23b53ce0b 43
+  s_ed3c3b7a34679e::t_794885778ad491 25-31
+.changeset/agent-voice-setting.md
+  s_578013b1fd2877::t_b77cb8993a3cd7 1-5
+packages/embed/src/EmbedApp.tsx
+  s_578013b1fd2877::t_39c25a432707b8 30,34,52,62,67,141,265,297
+packages/embed/src/embed-element.ts
+  s_578013b1fd2877::t_83f2def6445547 32,49
+packages/embed/src/session.ts
+  s_578013b1fd2877::t_6d20855d633fb0 15,80,87
+packages/embed/tests/EmbedApp.test.tsx
+  s_578013b1fd2877::t_6a3f0532cd75be 70,81,220-222,242-252
+packages/embed/tests/session.test.ts
+  s_578013b1fd2877::t_b3cad95fd59669 51,61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6228d957f55c5710c8ca4bab1103334fcb0d3f9f",
+  "prompts": {},
+  "sessions": {
+    "s_578013b1fd2877": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e58a80c9-470c-4fc0-926a-4d5eb4f43715",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "viktor-enzell <viktor.enzell@gmail.com>"
+    },
+    "s_ed3c3b7a34679e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e0fee3d3-b50f-407f-97c0-e59be6d02ad3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "viktor-enzell <viktor.enzell@gmail.com>"
+    }
+  }
+}
