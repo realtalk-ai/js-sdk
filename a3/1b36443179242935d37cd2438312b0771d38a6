@@ -1,0 +1,19 @@
+.changeset/embed-annotations.md
+  s_8a0f846feab6f9::t_c08d45ae2ac004 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a31b36443179242935d37cd2438312b0771d38a6",
+  "prompts": {},
+  "sessions": {
+    "s_8a0f846feab6f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7e83beab-02fd-4385-87bf-84161b15991a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
