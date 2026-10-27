@@ -1,0 +1,23 @@
+packages/embed/src/styles.ts
+  s_8a0f846feab6f9::t_6cd2688515cc27 505
+packages/embed/src/components/MessageList.tsx
+  s_8a0f846feab6f9::t_6d83cef16a76b2 73-87
+packages/embed/tests/EmbedApp.test.tsx
+  s_8a0f846feab6f9::t_ca821ec6821ecb 692-726
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dc8f90fa9cde94e56c9d1898de54db2992feefa5",
+  "prompts": {},
+  "sessions": {
+    "s_8a0f846feab6f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7e83beab-02fd-4385-87bf-84161b15991a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
