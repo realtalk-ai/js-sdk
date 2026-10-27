@@ -1,6 +1,6 @@
 {
   "name": "@realtalk-ai/react",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "React hooks for Real Talk voice and text conversations",
   "type": "module",
   "main": "./dist/index.js",
