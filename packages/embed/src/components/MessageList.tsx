@@ -3,6 +3,7 @@ import {
   hasPendingSubTasks,
   type AgentState,
   type Message,
+  type TimelineItem,
 } from "@realtalk-ai/core";
 import { Markdown } from "@realtalk-ai/react";
 import { formatMessageText, hasVisibleContent } from "../messages.js";
@@ -14,12 +15,14 @@ const SHOW_SUB_TASKS = false;
 
 export function MessageList({
   messages,
+  timeline,
   greeting,
   previousChatEnded,
   agentState,
   notice,
 }: {
   messages: Message[];
+  timeline: TimelineItem[];
   greeting: string;
   previousChatEnded: boolean;
   agentState: AgentState;
@@ -29,7 +32,7 @@ export function MessageList({
   useEffect(() => {
     const list = listRef.current;
     if (list) list.scrollTop = list.scrollHeight;
-  }, [messages, agentState]);
+  }, [timeline, agentState]);
 
   const showingPendingSubTasks = SHOW_SUB_TASKS && hasPendingSubTasks(messages);
   const showThinking = agentState === "thinking" && !showingPendingSubTasks;
@@ -42,24 +45,48 @@ export function MessageList({
         </div>
       )}
       {messages.length === 0 && <div className="message agent">{greeting}</div>}
-      {messages.filter(hasVisibleContent).map((message) => {
-        const hasText = Boolean(message.text?.trim());
-        const subTasks = message.metadata?.subTasks ?? [];
-        const showSubTasks = SHOW_SUB_TASKS && subTasks.length > 0;
-        return (
-          <Fragment key={message.id}>
-            {hasText && (
-              <div className={`message ${message.role}`}>
-                {message.role === "agent" ? (
-                  <Markdown>{message.text}</Markdown>
-                ) : (
-                  formatMessageText(message.text)
+      {timeline.map((item) => {
+        switch (item.type) {
+          case "message": {
+            const { message } = item;
+            if (!hasVisibleContent(message)) return null;
+            const hasText = Boolean(message.text?.trim());
+            const subTasks = message.metadata?.subTasks ?? [];
+            const showSubTasks = SHOW_SUB_TASKS && subTasks.length > 0;
+            return (
+              <Fragment key={message.id}>
+                {hasText && (
+                  <div className={`message ${message.role}`}>
+                    {message.role === "agent" ? (
+                      <Markdown>{message.text}</Markdown>
+                    ) : (
+                      formatMessageText(message.text)
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-            {showSubTasks && <SubTasksBadge subTasks={subTasks} />}
-          </Fragment>
-        );
+                {showSubTasks && <SubTasksBadge subTasks={subTasks} />}
+              </Fragment>
+            );
+          }
+          case "annotation": {
+            const { id, annotation } = item.annotation;
+            switch (annotation.kind) {
+              case "handoff_requested":
+                return (
+                  <div key={id} className="requested-note">
+                    A human agent has been requested
+                  </div>
+                );
+              case "human_agent_joined":
+                return (
+                  <div key={id} className="joined-note">
+                    {annotation.humanAgentName ?? "A human agent"} has joined
+                    the chat
+                  </div>
+                );
+            }
+          }
+        }
       })}
       {/* Always laid out so the list does not jump when thinking starts. */}
       <div

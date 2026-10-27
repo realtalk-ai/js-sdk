@@ -1,6 +1,7 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import type {
   AgentState,
+  AnnotationItem,
   AudioSource,
   ClientEvent,
   ConnectionStatus,
@@ -10,8 +11,10 @@ import type {
   DTMFDigit,
   Message,
   ConversationEvent,
+  TimelineItem,
   UserState,
 } from "@realtalk-ai/core";
+import { buildTimeline } from "@realtalk-ai/core";
 import { useRealTalkConfig } from "./provider.js";
 import { useMessages } from "./hooks/useMessages.js";
 import { useConnection } from "./hooks/useConnection.js";
@@ -50,6 +53,8 @@ export interface UseConversationReturn {
   status: ConversationStatus;
   conversationId: string | null;
   messages: Message[];
+  annotations: AnnotationItem[];
+  timeline: TimelineItem[];
   error: ConversationError | null;
   agentState: AgentState;
   userState: UserState;
@@ -127,11 +132,17 @@ export function useConversation(
 
   const {
     messages,
+    annotations,
     userState,
     thinkingMessageId,
-    setMessages,
+    clearMessages,
     handleMessageEvent,
   } = useMessages(optionsRef);
+
+  const timeline = useMemo(
+    () => buildTimeline(messages, annotations),
+    [messages, annotations],
+  );
 
   const {
     connectionStatus,
@@ -154,7 +165,7 @@ export function useConversation(
     sdkInfo,
     optionsRef,
     onEvent: handleMessageEvent,
-    setMessages,
+    onConversationStart: clearMessages,
     onAudio: handleAudio,
     onClear: handleClear,
     onCleanup: handleAudioCleanup,
@@ -221,10 +232,6 @@ export function useConversation(
     [startRecorder, disableMic, requestMode],
   );
 
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-  }, [setMessages]);
-
   const startConversation = useCallback(
     async (sessionOptions: UseConversationSessionOptions): Promise<string> => {
       const player = new AudioPlayer({
@@ -269,6 +276,8 @@ export function useConversation(
     status,
     conversationId,
     messages,
+    annotations,
+    timeline,
     error,
     agentState,
     userState,

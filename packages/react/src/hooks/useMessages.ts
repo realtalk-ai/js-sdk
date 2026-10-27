@@ -1,7 +1,12 @@
 import { useState, useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { Message, ConversationEvent, UserState } from "@realtalk-ai/core";
-import { EventType } from "@realtalk-ai/core";
+import type {
+  AnnotationItem,
+  Message,
+  ConversationEvent,
+  UserState,
+} from "@realtalk-ai/core";
+import { EventType, sortChronological } from "@realtalk-ai/core";
 
 export interface UseMessagesCallbacks {
   onMessage?: (message: Message) => void;
@@ -9,16 +14,33 @@ export interface UseMessagesCallbacks {
 
 export interface UseMessagesReturn {
   messages: Message[];
+  annotations: AnnotationItem[];
   userState: UserState;
   thinkingMessageId: string | null;
   setMessages: Dispatch<SetStateAction<Message[]>>;
+  clearMessages: () => void;
   handleMessageEvent: (event: ConversationEvent) => void;
 }
+
+const upsertById = <T extends { id: string }>(
+  items: T[],
+  item: T,
+  merge: (existing: T) => T = () => item,
+): T[] => {
+  const idx = items.findIndex((existing) => existing.id === item.id);
+  if (idx !== -1) {
+    const updated = [...items];
+    updated[idx] = merge(updated[idx]);
+    return updated;
+  }
+  return [...items, item];
+};
 
 export function useMessages(callbacksRef: {
   readonly current: UseMessagesCallbacks;
 }): UseMessagesReturn {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [annotations, setAnnotations] = useState<AnnotationItem[]>([]);
   const [userState, setUserState] = useState<UserState>("idle");
   const [thinkingMessageId, setThinkingMessageId] = useState<string | null>(
     null,
@@ -29,6 +51,7 @@ export function useMessages(callbacksRef: {
       switch (event.type) {
         case EventType.ExistingMessages: {
           setMessages(event.data);
+          setAnnotations(event.annotations ?? []);
           break;
         }
         case EventType.MessageCreated:
@@ -45,16 +68,15 @@ export function useMessages(callbacksRef: {
             setThinkingMessageId((prev) => (prev === msg.id ? null : prev));
           }
 
-          setMessages((prev) => {
-            const idx = prev.findIndex((m) => m.id === msg.id);
-            if (idx !== -1) {
-              const updated = [...prev];
-              updated[idx] = { ...updated[idx], ...msg };
-              return updated;
-            }
-            return [...prev, msg];
-          });
+          setMessages((prev) =>
+            upsertById(prev, msg, (existing) => ({ ...existing, ...msg })),
+          );
           callbacksRef.current.onMessage?.(msg);
+          break;
+        }
+        case EventType.AnnotationCreated: {
+          const item = event.data;
+          setAnnotations((prev) => sortChronological(upsertById(prev, item)));
           break;
         }
         case EventType.Vad: {
@@ -66,11 +88,18 @@ export function useMessages(callbacksRef: {
     [callbacksRef],
   );
 
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    setAnnotations([]);
+  }, []);
+
   return {
     messages,
+    annotations,
     userState,
     thinkingMessageId,
     setMessages,
+    clearMessages,
     handleMessageEvent,
   };
 }

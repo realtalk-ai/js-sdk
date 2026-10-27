@@ -57,7 +57,7 @@ function defaultOpts() {
     getToken: null as (() => Promise<string>) | null,
     optionsRef: { current: {} },
     onEvent: vi.fn(),
-    setMessages: vi.fn(),
+    onConversationStart: vi.fn(),
     onAudio: vi.fn(),
     onClear: vi.fn(),
     onCleanup: vi.fn(),
@@ -212,7 +212,7 @@ describe("useConnection", () => {
         conversationId: "conv-1",
       });
     });
-    opts.setMessages.mockClear();
+    opts.onConversationStart.mockClear();
 
     await act(async () => {
       await result.current.endConversation();
@@ -234,7 +234,7 @@ describe("useConnection", () => {
     expect(result.current.connectionStatus).toBe("disconnected");
     expect(result.current.status).toBe("finished");
     expect(result.current.conversationId).toBe("conv-1");
-    expect(opts.setMessages).not.toHaveBeenCalled();
+    expect(opts.onConversationStart).not.toHaveBeenCalled();
   });
 
   it("endConversation on a paused conversation sets status to finished without a transport", async () => {

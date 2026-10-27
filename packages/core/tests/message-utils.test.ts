@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
-import type { BackendMessage } from "../src/types.js";
+import type { AnnotationItem, BackendMessage, Message } from "../src/types.js";
 import {
   normalizeMessage,
   sortChronological,
   convertEventForSDK,
+  buildTimeline,
 } from "../src/events.js";
 
 describe("normalizeMessage", () => {
@@ -173,6 +174,7 @@ describe("convertEventForSDK", () => {
   const backendMsg: BackendMessage = {
     id: "msg-1",
     sender: "Agent",
+    role: "assistant",
     text: "Hello",
     timestamp: "2025-01-01T00:00:00Z",
   };
@@ -220,6 +222,125 @@ describe("convertEventForSDK", () => {
     expect(event.data.role).toBe("agent");
   });
 
+  const handoffRequested: BackendMessage = {
+    ...backendMsg,
+    id: "annotation-1",
+    sender: "User",
+    role: "annotation",
+    text: "",
+    timestamp: "2025-01-01T00:00:01Z",
+    metadata: { kind: "handoff_requested" },
+  };
+
+  const humanAgentJoined: BackendMessage = {
+    ...handoffRequested,
+    id: "annotation-2",
+    timestamp: "2025-01-01T00:00:02Z",
+    metadata: { kind: "human_agent_joined", human_agent_name: "Filip" },
+  };
+
+  const unknownKind: BackendMessage = {
+    ...handoffRequested,
+    id: "annotation-3",
+    timestamp: "2025-01-01T00:00:03Z",
+    metadata: { kind: "not_a_real_kind" },
+  };
+
+  it("moves annotation rows out of existing_messages and sorts them by createdAt", () => {
+    const event = convertEventForSDK({
+      type: "existing_messages",
+      data: [humanAgentJoined, backendMsg, handoffRequested],
+    });
+
+    if (event.type !== "existing_messages") throw new Error("wrong type");
+    expect(event.data.map((msg) => msg.id)).toEqual(["msg-1"]);
+    expect(event.annotations).toEqual([
+      {
+        id: "annotation-1",
+        createdAt: "2025-01-01T00:00:01Z",
+        annotation: { kind: "handoff_requested" },
+      },
+      {
+        id: "annotation-2",
+        createdAt: "2025-01-01T00:00:02Z",
+        annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+      },
+    ]);
+  });
+
+  it("drops annotation rows of an unknown kind from existing_messages", () => {
+    const event = convertEventForSDK({
+      type: "existing_messages",
+      data: [backendMsg, handoffRequested, unknownKind],
+    });
+
+    if (event.type !== "existing_messages") throw new Error("wrong type");
+    expect(event.data.map((msg) => msg.id)).toEqual(["msg-1"]);
+    expect(event.annotations.map((item) => item.id)).toEqual(["annotation-1"]);
+  });
+
+  it("keeps a user row with a metadata kind in existing_messages", () => {
+    const event = convertEventForSDK({
+      type: "existing_messages",
+      data: [
+        {
+          ...backendMsg,
+          sender: "User",
+          role: "user",
+          metadata: { kind: "handoff_requested" },
+        },
+      ],
+    });
+
+    if (event.type !== "existing_messages") throw new Error("wrong type");
+    expect(event.data.map((msg) => msg.id)).toEqual(["msg-1"]);
+    expect(event.annotations).toEqual([]);
+  });
+
+  it("normalizes annotation_created", () => {
+    const event = convertEventForSDK({
+      type: "annotation_created",
+      data: humanAgentJoined,
+    });
+
+    expect(event).toEqual({
+      type: "annotation_created",
+      data: {
+        id: "annotation-2",
+        createdAt: "2025-01-01T00:00:02Z",
+        annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+      },
+    });
+  });
+
+  it("gives a human agent without a first name a null humanAgentName", () => {
+    const event = convertEventForSDK({
+      type: "annotation_created",
+      data: {
+        ...humanAgentJoined,
+        metadata: { kind: "human_agent_joined", human_agent_name: null },
+      },
+    });
+
+    expect(event).toEqual({
+      type: "annotation_created",
+      data: {
+        id: "annotation-2",
+        createdAt: "2025-01-01T00:00:02Z",
+        annotation: { kind: "human_agent_joined", humanAgentName: null },
+      },
+    });
+  });
+
+  it("drops annotation_created of an unknown kind", () => {
+    const event = convertEventForSDK({
+      type: "annotation_created",
+      data: unknownKind,
+    });
+
+    expect(event).toBeNull();
+  });
+
   it("passes through non-message events unchanged", () => {
     const vadEvent = { type: "vad", data: { state: "speech" } };
     expect(convertEventForSDK(vadEvent)).toEqual(vadEvent);
@@ -229,5 +350,146 @@ describe("convertEventForSDK", () => {
 
     const finishedEvent = { type: "conversation_finished" };
     expect(convertEventForSDK(finishedEvent)).toEqual(finishedEvent);
+  });
+});
+
+describe("buildTimeline", () => {
+  it("puts each annotation before the first message created after it", () => {
+    const question: Message = {
+      id: "msg-1",
+      role: "user",
+      text: "Can I talk to a person?",
+      createdAt: "2024-01-01T00:00:00Z",
+    };
+    const answer: Message = {
+      id: "msg-2",
+      role: "agent",
+      text: "A human agent will be with you shortly.",
+      createdAt: "2024-01-01T00:00:02Z",
+    };
+    const requested: AnnotationItem = {
+      id: "annotation-1",
+      createdAt: "2024-01-01T00:00:01Z",
+      annotation: { kind: "handoff_requested" },
+    };
+    const joined: AnnotationItem = {
+      id: "annotation-2",
+      createdAt: "2024-01-01T00:00:03Z",
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    };
+
+    expect(buildTimeline([question, answer], [requested, joined])).toEqual([
+      { type: "message", message: question },
+      { type: "annotation", annotation: requested },
+      { type: "message", message: answer },
+      { type: "annotation", annotation: joined },
+    ]);
+  });
+
+  it("places annotations passed out of time order by their time", () => {
+    const question: Message = {
+      id: "msg-1",
+      role: "user",
+      text: "Can I talk to a person?",
+      createdAt: "2024-01-01T00:00:00Z",
+    };
+    const answer: Message = {
+      id: "msg-2",
+      role: "agent",
+      text: "A human agent will be with you shortly.",
+      createdAt: "2024-01-01T00:00:02Z",
+    };
+    const requested: AnnotationItem = {
+      id: "annotation-1",
+      createdAt: "2024-01-01T00:00:01Z",
+      annotation: { kind: "handoff_requested" },
+    };
+    const joined: AnnotationItem = {
+      id: "annotation-2",
+      createdAt: "2024-01-01T00:00:03Z",
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    };
+    const annotations = [joined, requested];
+
+    expect(buildTimeline([question, answer], annotations)).toEqual([
+      { type: "message", message: question },
+      { type: "annotation", annotation: requested },
+      { type: "message", message: answer },
+      { type: "annotation", annotation: joined },
+    ]);
+    expect(annotations).toEqual([joined, requested]);
+  });
+
+  it("keeps the messages in the order they are passed in", () => {
+    const question: Message = {
+      id: "msg-2",
+      role: "user",
+      text: "Are you there?",
+      createdAt: "2024-01-01T00:00:01Z",
+    };
+    const reply: Message = {
+      id: "msg-1",
+      role: "agent",
+      text: "Hello!",
+      createdAt: "2024-01-01T00:00:00Z",
+    };
+
+    expect(buildTimeline([question, reply], [])).toEqual([
+      { type: "message", message: question },
+      { type: "message", message: reply },
+    ]);
+  });
+
+  it("puts a message created at an annotation's time before the annotation", () => {
+    const joinedAt = "2024-01-01T00:00:01Z";
+    const question: Message = {
+      id: "msg-1",
+      role: "user",
+      text: "Is anyone there?",
+      createdAt: joinedAt,
+    };
+    const greeting: Message = {
+      id: "msg-2",
+      role: "agent",
+      text: "Hi, this is Filip.",
+      createdAt: "2024-01-01T00:00:02Z",
+    };
+    const joined: AnnotationItem = {
+      id: "annotation-1",
+      createdAt: joinedAt,
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    };
+
+    expect(buildTimeline([question, greeting], [joined])).toEqual([
+      { type: "message", message: question },
+      { type: "annotation", annotation: joined },
+      { type: "message", message: greeting },
+    ]);
+  });
+
+  it("puts an annotation whose time cannot be parsed after the last message", () => {
+    const question: Message = {
+      id: "msg-1",
+      role: "user",
+      text: "Can I talk to a person?",
+      createdAt: "2024-01-01T00:00:00Z",
+    };
+    const answer: Message = {
+      id: "msg-2",
+      role: "agent",
+      text: "A human agent will be with you shortly.",
+      createdAt: "2024-01-01T00:00:01Z",
+    };
+    const joined: AnnotationItem = {
+      id: "annotation-1",
+      createdAt: "not a time",
+      annotation: { kind: "human_agent_joined", humanAgentName: "Filip" },
+    };
+
+    expect(buildTimeline([question, answer], [joined])).toEqual([
+      { type: "message", message: question },
+      { type: "message", message: answer },
+      { type: "annotation", annotation: joined },
+    ]);
   });
 });

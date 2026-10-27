@@ -105,15 +105,18 @@ Events received from the server during a conversation:
 
 | Event                   | `EventType` constant             | Data                                            | Description                                                               |
 | ----------------------- | -------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------- |
-| `existing_messages`     | `EventType.ExistingMessages`     | `Message[]`                                     | All prior messages, sent on connection                                    |
+| `existing_messages`     | `EventType.ExistingMessages`     | `Message[]` and `annotations: AnnotationItem[]` | All prior messages and annotations, sent on connection                    |
 | `message_created`       | `EventType.MessageCreated`       | `Message`                                       | New message from the agent or user                                        |
 | `message_updated`       | `EventType.MessageUpdated`       | `Message`                                       | An existing message was updated                                           |
+| `annotation_created`    | `EventType.AnnotationCreated`    | `AnnotationItem`                                | A new annotation was added to the conversation                            |
 | `vad`                   | `EventType.Vad`                  | `{ state: "speech" \| "silence" }`              | Voice activity detection state changed                                    |
 | `clear`                 | `EventType.Clear`                | —                                               | Audio buffer should be cleared                                            |
 | `conversation_finished` | `EventType.ConversationFinished` | —                                               | The conversation session has ended                                        |
 | `conversation_mode`     | `EventType.ConversationMode`     | `{ user_audio: boolean; agent_audio: boolean }` | The mode the conversation is in, sent in reply to `set_conversation_mode` |
 | `close`                 | `EventType.Close`                | `{ code: number; reason: string }`              | WebSocket connection closed                                               |
 | `error`                 | `EventType.Error`                | `{ message?: string }`                          | A protocol or backend error occurred                                      |
+
+An `AnnotationItem` is `{ id, createdAt, annotation }`, where `annotation` is `{ kind: "handoff_requested" }` or `{ kind: "human_agent_joined"; humanAgentName: string | null }`. The server sends annotations as messages marked with `role: "annotation"`, and their `metadata.kind` names the kind. `existing_messages` moves them out of `data` into `annotations`, sorted by `createdAt`. Kinds this SDK version does not know are left out of both, and an `annotation_created` of such a kind is not emitted.
 
 Two exported sets classify `close` codes: `RECONNECTABLE_CLOSE_CODES` (transient failures worth retrying with a fresh token) and `PAUSED_CLOSE_CODES` (the server paused an idle conversation, which can be resumed with the same conversation id, so don't auto-reconnect and don't treat it as an error). Codes in neither set are fatal.
 
@@ -135,7 +138,10 @@ You can also send arbitrary custom events — any object with a `type` string fi
 | ----------------------------- | ------------------------------------------------------------------------------ |
 | `WebSocketTransport`          | WebSocket connection with status tracking, timeouts, and optional reconnection |
 | `normalizeMessage`            | Convert a backend message (snake_case) to a typed `Message` (camelCase)        |
-| `sortChronological`           | Sort messages by `createdAt` timestamp                                         |
+| `normalizeAnnotationMessage`  | Convert an annotation message to `AnnotationItem` (`null` for unknown kinds)   |
+| `splitBackendMessages`        | Split backend messages into sorted `messages` and `annotations`                |
+| `buildTimeline`               | Merge messages and annotations into one `TimelineItem[]`, in time order        |
+| `sortChronological`           | Sort messages or annotations by `createdAt`                                    |
 | `pcmToBase64` / `base64ToPcm` | PCM audio encoding utilities                                                   |
 | `DefaultReconnectPolicy`      | Configurable retry-delay policy                                                |
 | `RealtalkError`               | Base error class for all SDK errors                                            |

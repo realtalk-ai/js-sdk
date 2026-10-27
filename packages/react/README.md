@@ -107,6 +107,8 @@ const conversation = useConversation(options);
 | `status`           | `ConversationStatus`        | `"not_started"` \| `"active"` \| `"paused"` \| `"finished"`             |
 | `conversationId`   | `string \| null`            | Current conversation ID                                                 |
 | `messages`         | `Message[]`                 | Conversation messages                                                   |
+| `annotations`      | `AnnotationItem[]`          | Conversation annotations, such as a human agent joining                 |
+| `timeline`         | `TimelineItem[]`            | Messages and annotations in one list, in time order                     |
 | `error`            | `ConversationError \| null` | Current error                                                           |
 | `agentState`       | `AgentState`                | `"idle"` \| `"thinking"` \| `"speaking"`                                |
 | `userState`        | `UserState`                 | `"idle"` \| `"speaking"`                                                |
@@ -131,7 +133,7 @@ const conversation = useConversation(options);
 | `disableMic()`               | Stop streaming and release the microphone                                                    |
 | `mode`                       | The conversation mode the server has confirmed                                               |
 | `setMode(mode, deviceId?)`   | Change the conversation mode on the open connection; `userAudio` also enables the microphone |
-| `clearMessages()`            | Clear the local message array                                                                |
+| `clearMessages()`            | Clear the local messages and annotations                                                     |
 
 ### Session options
 
@@ -169,6 +171,10 @@ await setMode({ userAudio: true, agentAudio: true }); // and talk to it
 
 The server may pause an idle conversation by closing the connection; `status` then becomes `"paused"` while `conversationId` is kept. This is not an error and the SDK does not auto-reconnect. Call `startConversation` again (with a token for the same conversation id) to resume, and the server replays the conversation's messages on connect.
 
+### Timeline
+
+`timeline` holds the messages and annotations in one list, each item `{ type: "message", message }` or `{ type: "annotation", annotation }`. Messages keep the order they have in `messages`, and each annotation comes before the first message created after it. `buildTimeline(messages, annotations)` from `@realtalk-ai/core` builds the same list from your own messages and annotations, for example ones loaded over REST.
+
 ### Options and callbacks
 
 ```ts
@@ -191,12 +197,12 @@ The `onEvent` callback receives server events like `message_created`, `message_u
 
 If you need finer control, the individual hooks are also exported:
 
-| Hook                | Description                                              |
-| ------------------- | -------------------------------------------------------- |
-| `useConnection`     | WebSocket transport, session lifecycle, and reconnection |
-| `useMessages`       | Message array and user/agent state tracking              |
-| `useAudioControls`  | Microphone mute and volume control                       |
-| `useRealTalkConfig` | Access provider configuration from context               |
+| Hook                | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| `useConnection`     | WebSocket transport, session lifecycle, and reconnection    |
+| `useMessages`       | Message and annotation arrays and user/agent state tracking |
+| `useAudioControls`  | Microphone mute and volume control                          |
+| `useRealTalkConfig` | Access provider configuration from context                  |
 
 ## Audio
 
@@ -281,7 +287,7 @@ const Messages = ({ messages }: { messages: Message[] }) => (
 | `RealTalkProvider`  | Context provider for shared configuration                    |
 | `useConversation`   | All-in-one hook for conversation state, audio, and messaging |
 | `useConnection`     | WebSocket connection and session lifecycle                   |
-| `useMessages`       | Message and user/agent state management                      |
+| `useMessages`       | Message, annotation and user/agent state management          |
 | `useAudioControls`  | Microphone mute and volume control                           |
 | `useRealTalkConfig` | Access provider configuration                                |
 | `AudioPlayer`       | PCM audio playback with queue management                     |

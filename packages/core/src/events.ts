@@ -1,15 +1,19 @@
 import type {
+  Annotation,
+  AnnotationItem,
   BackendMessage,
   ClientEvent,
   Message,
   MessageMetadata,
   SubTask,
+  TimelineItem,
   ToolCall,
   ToolResult,
   ConversationEvent,
   UserMessageLatencies,
   AssistantMessageLatencies,
 } from "./types.js";
+import { logger } from "./logger.js";
 
 // --- EventEmitter ---
 
@@ -149,10 +153,90 @@ export const normalizeMessage = (raw: BackendMessage): Message => ({
   shouldBeAnswered: raw.should_be_answered,
 });
 
-export const sortChronological = (msgs: Message[]): Message[] =>
-  [...msgs].sort(
+export const sortChronological = <T extends { createdAt: string }>(
+  items: T[],
+): T[] =>
+  [...items].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
+
+// --- Annotation normalization ---
+
+function normalizeAnnotation(
+  metadata: BackendMessage["metadata"],
+): Annotation | null {
+  switch (metadata?.kind) {
+    case "handoff_requested":
+      return { kind: "handoff_requested" };
+    case "human_agent_joined":
+      return {
+        kind: "human_agent_joined",
+        humanAgentName: metadata.human_agent_name ?? null,
+      };
+    default:
+      return null;
+  }
+}
+
+export const normalizeAnnotationMessage = (
+  raw: BackendMessage,
+): AnnotationItem | null => {
+  const annotation = normalizeAnnotation(raw.metadata);
+  if (!annotation) {
+    logger.info("unknown_annotation_kind_skipped", {
+      id: raw.id,
+      kind: raw.metadata?.kind,
+    });
+    return null;
+  }
+  return { id: raw.id, createdAt: raw.timestamp, annotation };
+};
+
+const isAnnotationRow = (row: BackendMessage): boolean =>
+  row.role === "annotation";
+
+export const splitBackendMessages = (
+  raw: BackendMessage[],
+): { messages: Message[]; annotations: AnnotationItem[] } => ({
+  messages: sortChronological(
+    raw.filter((row) => !isAnnotationRow(row)).map(normalizeMessage),
+  ),
+  annotations: sortChronological(
+    raw
+      .filter(isAnnotationRow)
+      .map(normalizeAnnotationMessage)
+      .filter((item): item is AnnotationItem => item !== null),
+  ),
+});
+
+// Sorts only the annotations and merges them in, so messages keep the
+// order they are passed in, such as the order they arrived in.
+export function buildTimeline(
+  messages: Message[],
+  annotations: AnnotationItem[],
+): TimelineItem[] {
+  const sortedAnnotations = sortChronological(annotations);
+  const timeline: TimelineItem[] = [];
+  let next = 0;
+  for (const message of messages) {
+    const messageTime = new Date(message.createdAt).getTime();
+    while (
+      next < sortedAnnotations.length &&
+      new Date(sortedAnnotations[next].createdAt).getTime() < messageTime
+    ) {
+      timeline.push({
+        type: "annotation",
+        annotation: sortedAnnotations[next],
+      });
+      next++;
+    }
+    timeline.push({ type: "message", message });
+  }
+  for (const annotation of sortedAnnotations.slice(next)) {
+    timeline.push({ type: "annotation", annotation });
+  }
+  return timeline;
+}
 
 // --- Event conversion ---
 
@@ -171,15 +255,14 @@ export function convertEventForTransport(
 
 export function convertEventForSDK(
   raw: Record<string, unknown>,
-): ConversationEvent {
+): ConversationEvent | null {
   switch (raw.type) {
-    case "existing_messages":
-      return {
-        type: "existing_messages",
-        data: sortChronological(
-          (raw.data as BackendMessage[]).map(normalizeMessage),
-        ),
-      };
+    case "existing_messages": {
+      const { messages, annotations } = splitBackendMessages(
+        raw.data as BackendMessage[],
+      );
+      return { type: "existing_messages", data: messages, annotations };
+    }
     case "message_created":
       return {
         type: "message_created",
@@ -190,6 +273,11 @@ export function convertEventForSDK(
         type: "message_updated",
         data: normalizeMessage(raw.data as BackendMessage),
       };
+    case "annotation_created": {
+      const item = normalizeAnnotationMessage(raw.data as BackendMessage);
+      if (!item) return null;
+      return { type: "annotation_created", data: item };
+    }
     default:
       return raw as ConversationEvent;
   }

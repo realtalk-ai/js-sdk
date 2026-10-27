@@ -398,6 +398,7 @@ describe("WebSocketTransport", () => {
           data: {
             id: "msg-1",
             sender: "Agent",
+            role: "assistant",
             text: "Hello",
             timestamp: "2025-01-01T00:00:00Z",
           },
@@ -416,6 +417,36 @@ describe("WebSocketTransport", () => {
         hasBeenAnswered: undefined,
         shouldBeAnswered: undefined,
       });
+    });
+
+    it("emits no event for an annotation_created of an unknown kind", async () => {
+      const transport = new WebSocketTransport();
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "",
+        sdkInfo: coreSdkInfo,
+      });
+      mockWs.simulateOpen();
+      await p;
+
+      const handler = vi.fn();
+      transport.onEvent(handler);
+
+      mockWs.simulateMessage(
+        JSON.stringify({
+          type: "annotation_created",
+          data: {
+            id: "annotation-1",
+            sender: "Caller",
+            role: "annotation",
+            text: "",
+            timestamp: "2025-01-01T00:00:00Z",
+            metadata: { kind: "not_a_real_kind" },
+          },
+        }),
+      );
+
+      expect(handler).not.toHaveBeenCalled();
     });
 
     it("emits error event on invalid JSON", async () => {
