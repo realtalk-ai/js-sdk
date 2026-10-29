@@ -1,0 +1,27 @@
+packages/embed/src/sounds.ts
+  s_511fb1b8725e3d::t_8dcc72d893bcc5 9-12
+packages/embed/tests/EmbedApp.test.tsx
+  s_511fb1b8725e3d::t_9197d9649d2bd0 29
+  s_511fb1b8725e3d::t_3f45451d0713d1 963
+packages/embed/src/hooks/useSounds.ts
+  s_511fb1b8725e3d::t_cd86311e2b6f73 35-36
+  s_511fb1b8725e3d::t_a6b875d26d9085 5
+  s_511fb1b8725e3d::t_31d83e222c41a8 57
+  s_511fb1b8725e3d::t_d88da1968b45a9 51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7e5d729da476861bd8f10fa05b2803d9d256db3a",
+  "prompts": {},
+  "sessions": {
+    "s_511fb1b8725e3d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "035cc173-db72-45ed-b14a-6e641968acfe",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
