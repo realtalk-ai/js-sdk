@@ -1,0 +1,44 @@
+packages/embed/src/styles.ts
+  s_d8af1621289a9d::t_236072d2fd422c 506-507,514-520,522,526,529-547,550-556,557-573
+  s_d8af1621289a9d::t_09da2fef377d63 521,527-528,548-549
+  s_d8af1621289a9d::t_ef44b23ce8eca3 523-525
+packages/embed/src/components/MessageList.tsx
+  s_d8af1621289a9d::t_35652a9736fbb2 48
+  s_d8af1621289a9d::t_a809133e089977 10
+packages/embed/tests/EmbedApp.test.tsx
+  s_d8af1621289a9d::t_e6da43a3aeb6fa 530-539,545,548
+  s_d8af1621289a9d::t_8fc4d217d0b757 540-541,543-544
+  s_d8af1621289a9d::t_3aaf49f91edb24 547
+  s_d8af1621289a9d::t_3c0e5bcdba064b 550
+  s_d8af1621289a9d::t_855989ac2dfbef 552-553,555,583-584
+  s_d8af1621289a9d::t_e83408367d5e95 542,546,549,551,554,556-582
+  s_d8af1621289a9d::t_251c5a5aebd168 189-198
+  s_d8af1621289a9d::t_5578f70c68ad91 585-609
+packages/embed/src/components/AiDisclaimer.tsx
+  s_d8af1621289a9d::t_9ba3aa1fa52be3 1-2,4-5,14-15,20-21,23-25,32-38,47,52,54-65
+  s_d8af1621289a9d::t_36fcbf18c3b067 22,26
+  s_d8af1621289a9d::t_b007bdabd8ab6d 6-13,16-19,27-31,39-42,48-51
+  s_d8af1621289a9d::t_22383eff116da2 3,53
+  s_d8af1621289a9d::t_2ce3311437f53d 43-46
+packages/embed/src/components/icons.tsx
+  s_d8af1621289a9d::t_4b27028cd9bf47 54,59-62
+  s_d8af1621289a9d::t_71a03252a51ccd 53,55-58,63,65-67
+.changeset/ai-disclaimer.md
+  s_d8af1621289a9d::t_e3bfa2023a1b33 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8168cf6ed6b821c1f3fc52f6512d16959655985f",
+  "prompts": {},
+  "sessions": {
+    "s_d8af1621289a9d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1a483bc-35d1-41cd-a875-f01f22f1b8cc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
