@@ -1,0 +1,20 @@
+packages/embed/src/hooks/useSounds.ts
+  s_511fb1b8725e3d::t_9e11a90cec93d5 26
+  s_511fb1b8725e3d::t_51e3390f32ea59 46-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0c3ed8877bd8c759815a4cf3a05d6093fccd6300",
+  "prompts": {},
+  "sessions": {
+    "s_511fb1b8725e3d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "035cc173-db72-45ed-b14a-6e641968acfe",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
