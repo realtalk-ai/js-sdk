@@ -26,7 +26,7 @@ import {
 } from "@realtalk-ai/core";
 import type { UseConversationOptions } from "@realtalk-ai/react";
 import { EmbedApp } from "../src/EmbedApp.js";
-import type { Sounds } from "../src/sounds.js";
+import { HUMAN_AGENT_JOINED_SOUND, MESSAGE_SOUND } from "../src/sounds.js";
 import packageJson from "../package.json";
 
 type EmbedAppProps = ComponentProps<typeof EmbedApp>;
@@ -103,15 +103,9 @@ const soundPlayer = vi.hoisted(() => ({
   close: vi.fn(),
 }));
 
-const sounds = vi.hoisted(
-  (): Sounds => ({ message: null, humanAgentJoined: null }),
-);
-
 vi.mock("../src/sound-player.js", () => ({
   createSoundPlayer: () => soundPlayer,
 }));
-
-vi.mock("../src/sounds.js", () => ({ SOUNDS: sounds }));
 
 function message(
   id: string,
@@ -840,16 +834,10 @@ describe("EmbedApp", () => {
   });
 
   describe("sounds", () => {
-    const MESSAGE_SOUND = new Uint8Array([1]);
-    const JOIN_SOUND = new Uint8Array([2]);
     let visibilityState: MockInstance<() => DocumentVisibilityState>;
     let hasFocus: MockInstance<() => boolean>;
 
     beforeEach(() => {
-      Object.assign(sounds, {
-        message: MESSAGE_SOUND,
-        humanAgentJoined: JOIN_SOUND,
-      });
       visibilityState = vi
         .spyOn(document, "visibilityState", "get")
         .mockReturnValue("visible");
@@ -972,7 +960,7 @@ describe("EmbedApp", () => {
       receiveAnnotation(HUMAN_AGENT_JOINED);
       receiveAnnotation(HUMAN_AGENT_JOINED);
       expect(soundPlayer.play).toHaveBeenCalledTimes(1);
-      expect(soundPlayer.play).toHaveBeenCalledWith(JOIN_SOUND);
+      expect(soundPlayer.play).toHaveBeenCalledWith(HUMAN_AGENT_JOINED_SOUND);
     });
 
     it("plays nothing while agent audio is on", async () => {
@@ -984,16 +972,6 @@ describe("EmbedApp", () => {
       receiveMessage(message("m1", "Hello"));
       receiveAnnotation(HUMAN_AGENT_JOINED);
       expect(soundPlayer.play).not.toHaveBeenCalled();
-    });
-
-    it("plays only the join sound when the message sound is turned off", async () => {
-      sounds.message = null;
-      await renderWidget({ status: "active" });
-
-      receiveMessage(message("m1", "Hello"));
-      receiveAnnotation(HUMAN_AGENT_JOINED);
-      expect(soundPlayer.play).toHaveBeenCalledTimes(1);
-      expect(soundPlayer.play).toHaveBeenCalledWith(JOIN_SOUND);
     });
 
     it("never unlocks or plays the sounds when the snippet disables them", async () => {

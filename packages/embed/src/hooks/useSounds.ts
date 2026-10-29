@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AnnotationItem, Message } from "@realtalk-ai/core";
 import { hasText } from "../messages.js";
 import { createSoundPlayer } from "../sound-player.js";
-import { SOUNDS } from "../sounds.js";
+import { HUMAN_AGENT_JOINED_SOUND, MESSAGE_SOUND } from "../sounds.js";
 
 export interface WidgetSounds {
   unlock: () => void;
@@ -32,8 +32,8 @@ export function useSounds(
 
   useEffect(() => () => player.close(), [player]);
 
-  const play = (sound: Uint8Array | null) => {
-    if (sound && !disabled && !agentAudio) void player.play(sound);
+  const play = (sound: Uint8Array) => {
+    if (!disabled && !agentAudio) void player.play(sound);
   };
 
   return {
@@ -48,13 +48,13 @@ export function useSounds(
       const shown = messages.find((m) => m.id === message.id);
       if (shown && hasText(shown)) return;
       handledMessageIds.current.add(message.id);
-      if (!visitorIsLooking(open)) play(SOUNDS.message);
+      if (!visitorIsLooking(open)) play(MESSAGE_SOUND);
     },
     onAnnotation: (item) => {
       if (item.annotation.kind !== "human_agent_joined") return;
       if (handledAnnotationIds.current.has(item.id)) return;
       handledAnnotationIds.current.add(item.id);
-      play(SOUNDS.humanAgentJoined);
+      play(HUMAN_AGENT_JOINED_SOUND);
     },
   };
 }
