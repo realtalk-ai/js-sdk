@@ -1,0 +1,23 @@
+packages/embed/tests/EmbedApp.test.tsx
+  s_d8af1621289a9d::t_5578f70c68ad91 585-609
+packages/embed/src/components/AiDisclaimer.tsx
+  s_d8af1621289a9d::t_2ce3311437f53d 43-46
+packages/embed/src/styles.ts
+  s_d8af1621289a9d::t_ef44b23ce8eca3 523-525
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8db22a9f2152ca7281dceccb1a7319925b3a5111",
+  "prompts": {},
+  "sessions": {
+    "s_d8af1621289a9d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1a483bc-35d1-41cd-a875-f01f22f1b8cc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
