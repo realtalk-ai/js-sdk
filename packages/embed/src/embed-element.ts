@@ -30,6 +30,7 @@ export class RealtalkEmbedElement extends BaseElement {
     }
     const serverUrl = this.getAttribute("server-url") ?? DEFAULT_SERVER_URL;
     const voiceDisabled = this.hasAttribute("disable-voice");
+    const soundsDisabled = this.hasAttribute("disable-sounds");
 
     if (!this.mountPoint) {
       const shadowRoot = this.attachShadow({ mode: "open" });
@@ -46,7 +47,12 @@ export class RealtalkEmbedElement extends BaseElement {
     this.applyTheme();
     this.root = createRoot(this.mountPoint);
     this.root.render(
-      createElement(EmbedApp, { agentId, serverUrl, voiceDisabled }),
+      createElement(EmbedApp, {
+        agentId,
+        serverUrl,
+        voiceDisabled,
+        soundsDisabled,
+      }),
     );
   }
 

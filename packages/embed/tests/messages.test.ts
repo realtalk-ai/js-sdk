@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import type { Message, SubTask, SubTaskStatus } from "@realtalk-ai/core";
-import { formatMessageText, hasVisibleContent } from "../src/messages.js";
+import {
+  formatMessageText,
+  hasText,
+  hasVisibleContent,
+} from "../src/messages.js";
 
 function message(overrides: Partial<Message>): Message {
   return {
@@ -27,6 +31,23 @@ describe("formatMessageText", () => {
     expect(formatMessageText("  First line \n  Second   line ")).toBe(
       "First line\nSecond line",
     );
+  });
+});
+
+describe("hasText", () => {
+  it("is false for a message with only whitespace text", () => {
+    expect(hasText(message({ text: "  \n " }))).toBe(false);
+  });
+
+  it("is true for a message with text", () => {
+    expect(hasText(message({ text: "Hello" }))).toBe(true);
+  });
+
+  it("is false for a text-less message with sub-tasks", () => {
+    const withSubTasks = message({
+      metadata: { subTasks: [subTask("t1", "look_up", "pending")] },
+    });
+    expect(hasText(withSubTasks)).toBe(false);
   });
 });
 

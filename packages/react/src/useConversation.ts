@@ -37,6 +37,7 @@ export interface UseConversationSessionOptions {
 
 export interface UseConversationOptions {
   onMessage?: (message: Message) => void;
+  onAnnotation?: (item: AnnotationItem) => void;
   onError?: (error: ConversationError) => void;
   onStatusChange?: (status: ConversationStatus) => void;
   onConnectionStatusChange?: (status: ConnectionStatus) => void;

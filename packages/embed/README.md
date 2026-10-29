@@ -22,13 +22,14 @@ If the widget doesn't render, the most common cause is that the page's origin is
 
 ## Attributes
 
-| Attribute       | Required | Description                                                                                                            |
-| --------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `agent-id`      | yes      | The agent to embed.                                                                                                    |
-| `server-url`    | no       | Alternative Real Talk server origin. Defaults to the production server and is only needed for development and testing. |
-| `accent-color`  | no       | Hex color for the launcher, buttons and the visitor's messages, e.g. `#1d4ed8`. Defaults to black.                     |
-| `rounding`      | no       | How rounded the corners are: `small`, `medium` or `large`. Defaults to `medium`.                                       |
-| `disable-voice` | no       | Hides voice mode on this site even when the agent allows it.                                                           |
+| Attribute        | Required | Description                                                                                                            |
+| ---------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `agent-id`       | yes      | The agent to embed.                                                                                                    |
+| `server-url`     | no       | Alternative Real Talk server origin. Defaults to the production server and is only needed for development and testing. |
+| `accent-color`   | no       | Hex color for the launcher, buttons and the visitor's messages, e.g. `#1d4ed8`. Defaults to black.                     |
+| `rounding`       | no       | How rounded the corners are: `small`, `medium` or `large`. Defaults to `medium`.                                       |
+| `disable-voice`  | no       | Hides voice mode on this site even when the agent allows it.                                                           |
+| `disable-sounds` | no       | Turns off the widget's sounds on this site.                                                                            |
 
 ## Conversations and tabs
 
@@ -43,6 +44,10 @@ By default the widget floats in the bottom-right corner. The `<realtalk-embed>` 
 The widget supports both text chat and voice. Every conversation starts as text, and when voice mode is turned on in the agent's Chat Widget settings the message field has a phone button that turns voice mode on and off, so the visitor speaks with the agent and hears the replies on the same connection. Turning voice on asks the visitor for microphone permission via the browser's standard prompt, so the page must be served over HTTPS (or localhost) for voice to work. To hide the voice controls on a site even though the agent allows voice, add the `disable-voice` attribute to the element.
 
 The microphone and the agent's audio can also be switched separately from the widget's menu. The two are independent, so with the microphone on and the audio off a visitor can dictate messages and read the replies as text.
+
+## Sounds
+
+The widget plays a sound when a new agent message arrives while the visitor isn't looking at the chat (the widget is minimized, or another tab, window or app is in front), and another sound when a human agent joins. No sounds play while the agent's audio is on. To turn both sounds off on a site, add the `disable-sounds` attribute to the element.
 
 ## Demo
 

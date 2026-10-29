@@ -6,7 +6,7 @@ import {
   type TimelineItem,
 } from "@realtalk-ai/core";
 import { Markdown } from "@realtalk-ai/react";
-import { formatMessageText, hasVisibleContent } from "../messages.js";
+import { formatMessageText, hasText, hasVisibleContent } from "../messages.js";
 import { SubTasksBadge } from "./SubTasksBadge.js";
 
 // Sub tasks are hidden but could be enabled to show progress on long running
@@ -50,12 +50,11 @@ export function MessageList({
           case "message": {
             const { message } = item;
             if (!hasVisibleContent(message)) return null;
-            const hasText = Boolean(message.text?.trim());
             const subTasks = message.metadata?.subTasks ?? [];
             const showSubTasks = SHOW_SUB_TASKS && subTasks.length > 0;
             return (
               <Fragment key={message.id}>
-                {hasText && (
+                {hasText(message) && (
                   <div className={`message ${message.role}`}>
                     {message.role === "agent" ? (
                       <Markdown>{message.text}</Markdown>
