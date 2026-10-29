@@ -1,6 +1,6 @@
 {
   "name": "@realtalk-ai/embed",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Embeddable <realtalk-embed> web component for Real Talk agents",
   "type": "module",
   "sideEffects": true,
