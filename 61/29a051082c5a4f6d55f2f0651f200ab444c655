@@ -1,0 +1,19 @@
+.changeset/ai-disclaimer.md
+  s_d8af1621289a9d::t_e3bfa2023a1b33 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6129a051082c5a4f6d55f2f0651f200ab444c655",
+  "prompts": {},
+  "sessions": {
+    "s_d8af1621289a9d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1a483bc-35d1-41cd-a875-f01f22f1b8cc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
