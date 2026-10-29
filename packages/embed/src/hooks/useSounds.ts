@@ -23,7 +23,7 @@ function visitorIsLooking(open: boolean): boolean {
 export function useSounds(
   open: boolean,
   agentAudio: boolean,
-  messages: Message[],
+  renderedMessages: Message[],
   disabled: boolean,
 ): WidgetSounds {
   const [player] = useState(createSoundPlayer);
@@ -43,10 +43,10 @@ export function useSounds(
     onMessage: (message) => {
       if (message.role !== "agent" || !hasText(message)) return;
       if (handledMessageIds.current.has(message.id)) return;
-      // `messages` is the list as last rendered, before this update, so a
-      // message already shown with text, such as one from history, is old.
-      const shown = messages.find((m) => m.id === message.id);
-      if (shown && hasText(shown)) return;
+      const textAlreadyShown = renderedMessages.some(
+        (m) => m.id === message.id && hasText(m),
+      );
+      if (textAlreadyShown) return;
       handledMessageIds.current.add(message.id);
       if (!visitorIsLooking(open)) play(MESSAGE_SOUND);
     },
