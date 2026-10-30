@@ -7,6 +7,7 @@ import {
 } from "@realtalk-ai/core";
 import { Markdown } from "@realtalk-ai/react";
 import { formatMessageText, hasText, hasVisibleContent } from "../messages.js";
+import { AiDisclaimer } from "./AiDisclaimer.js";
 import { SubTasksBadge } from "./SubTasksBadge.js";
 
 // Sub tasks are hidden but could be enabled to show progress on long running
@@ -44,6 +45,7 @@ export function MessageList({
           Your previous conversation ended, this is a new chat
         </div>
       )}
+      <AiDisclaimer />
       {messages.length === 0 && <div className="message agent">{greeting}</div>}
       {timeline.map((item) => {
         switch (item.type) {

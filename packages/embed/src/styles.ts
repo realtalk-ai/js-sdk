@@ -503,11 +503,75 @@ button {
 
 .finished-note,
 .requested-note,
-.joined-note {
+.joined-note,
+.ai-disclaimer {
   align-self: center;
   font-size: 12px;
   color: var(--rt-muted);
   padding: 4px 0;
+}
+
+.ai-disclaimer {
+  position: relative;
+  isolation: isolate;
+}
+
+.ai-disclaimer-term {
+  position: relative;
+  z-index: 2;
+  padding: 4px 0;
+  margin: -4px 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted 1px;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+.ai-disclaimer-term:hover,
+.ai-disclaimer-term:focus-visible {
+  color: var(--rt-fg);
+}
+
+.ai-disclaimer-tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  translate: -50%;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 220px;
+  padding: 10px 12px;
+  background: var(--rt-bg);
+  border: 1px solid var(--rt-border);
+  border-radius: var(--rt-radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  color: var(--rt-fg);
+  line-height: 1.4;
+  animation: rt-menu-in 0.12s ease-out;
+}
+
+.ai-disclaimer-tooltip.open {
+  display: block;
+}
+
+@media (hover: hover) {
+  .ai-disclaimer-term:hover ~ .ai-disclaimer-tooltip,
+  .ai-disclaimer-tooltip:hover {
+    display: block;
+  }
+}
+
+.ai-disclaimer-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 0;
+  right: 0;
+  height: 10px;
 }
 
 .notice {

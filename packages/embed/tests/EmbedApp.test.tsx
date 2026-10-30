@@ -517,6 +517,49 @@ describe("EmbedApp", () => {
   });
 
   describe("messages", () => {
+    it("starts the chat with an AI disclaimer above the greeting", async () => {
+      await renderWidget();
+      openPanel();
+
+      const disclaimer = screen.getByRole("button", {
+        name: "uses AI",
+      }).parentElement as HTMLElement;
+      expect(disclaimer.textContent).toContain("This chat uses AI.");
+      expect(disclaimer.nextElementSibling).toBe(screen.getByText("Hi there!"));
+    });
+
+    it("toggles the AI disclaimer tooltip on click and closes it on Escape, blur or a tap outside", async () => {
+      await renderWidget();
+      openPanel();
+
+      const help = screen.getByRole("button", { name: "uses AI" });
+      const tooltip = screen.getByRole("tooltip");
+      expect(help.getAttribute("aria-describedby")).toBe(tooltip.id);
+
+      fireEvent.focus(help);
+      expect(tooltip.classList).not.toContain("open");
+
+      fireEvent.click(help);
+      expect(tooltip.classList).toContain("open");
+      fireEvent.click(help);
+      expect(tooltip.classList).not.toContain("open");
+
+      fireEvent.click(help);
+      expect(tooltip.classList).toContain("open");
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(tooltip.classList).not.toContain("open");
+
+      fireEvent.click(help);
+      expect(tooltip.classList).toContain("open");
+      fireEvent.blur(help);
+      expect(tooltip.classList).not.toContain("open");
+
+      fireEvent.click(help);
+      expect(tooltip.classList).toContain("open");
+      fireEvent.pointerDown(screen.getByPlaceholderText("Type a message…"));
+      expect(tooltip.classList).not.toContain("open");
+    });
+
     it("renders agent messages as markdown", async () => {
       await renderWidget({
         status: "active",
