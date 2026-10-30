@@ -1,0 +1,26 @@
+.changeset/ai-disclaimer.md
+  s_d8af1621289a9d::t_e3bfa2023a1b33 1-5
+packages/embed/tests/EmbedApp.test.tsx
+  s_d8af1621289a9d::t_14e4a4f2eef066 535,539,541,545,548,550
+packages/embed/src/styles.ts
+  s_d8af1621289a9d::t_14e4a4f2eef066 558-559
+  s_d8af1621289a9d::t_8d9c5e6db9c842 521
+  s_d8af1621289a9d::t_40c76572e60de6 427-437,554
+  s_d8af1621289a9d::t_fc0c2b3642b021 549
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0fce7796ca1af552c8830c2c6a6c6fa55e0c72e7",
+  "prompts": {},
+  "sessions": {
+    "s_d8af1621289a9d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1a483bc-35d1-41cd-a875-f01f22f1b8cc",
+        "model": "unknown"
+      },
+      "human_author": null
+    }
+  }
+}
