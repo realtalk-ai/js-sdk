@@ -1,5 +1,11 @@
 # @realtalk-ai/embed
 
+## 0.8.0
+
+### Minor Changes
+
+- 18ed3f8: Show "This chat uses AI." at the top of the chat in the embed widget, with a tooltip on "uses AI" that explains it.
+
 ## 0.7.0
 
 ### Minor Changes
