@@ -1,0 +1,19 @@
+packages/embed/src/styles.ts
+  s_d8af1621289a9d::t_8d9c5e6db9c842 516
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a2ac4c01a13fe1c5412b5b30d9a352c4a0c1394",
+  "prompts": {},
+  "sessions": {
+    "s_d8af1621289a9d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1a483bc-35d1-41cd-a875-f01f22f1b8cc",
+        "model": "unknown"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
