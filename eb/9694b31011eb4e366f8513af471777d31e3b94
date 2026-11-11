@@ -1,0 +1,23 @@
+packages/embed/src/EmbedApp.tsx
+  s_1efc0cc5cec7c1::t_423ac8bcd9e69b 190,192-193
+packages/embed/src/components/Composer.tsx
+  s_1efc0cc5cec7c1::t_f651f89a60ba99 15,21-22,28-36
+packages/embed/tests/EmbedApp.test.tsx
+  s_1efc0cc5cec7c1::t_8547d8bbb9f4fc 79-81,236,240,356,444,517
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb9694b31011eb4e366f8513af471777d31e3b94",
+  "prompts": {},
+  "sessions": {
+    "s_1efc0cc5cec7c1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "66074365-0074-477f-a951-f05a8cb2303b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
