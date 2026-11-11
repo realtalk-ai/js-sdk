@@ -18,6 +18,7 @@ import {
 import type { ComponentProps, ReactNode } from "react";
 import {
   buildTimeline,
+  EventType,
   type AgentState,
   type AnnotationItem,
   type ConnectionStatus,
@@ -35,6 +36,7 @@ type EmbedAppProps = ComponentProps<typeof EmbedApp>;
 const AGENT_ID = "agent-1";
 const IDLE_PAUSE_SECONDS = 30;
 const IDLE_END_SECONDS = 300;
+const SENT_MESSAGE_WAIT_SECONDS = 30;
 const HANDOFF_REQUESTED: AnnotationItem = {
   id: "a1",
   createdAt: "2024-01-01T00:00:15Z",
@@ -112,9 +114,10 @@ vi.mock("../src/sound-player.js", () => ({
 function message(
   id: string,
   text: string,
+  role: Message["role"] = "agent",
   createdAt = "2024-01-01T00:00:00Z",
 ): Message {
-  return { id, role: "agent", text, createdAt };
+  return { id, role, text, createdAt };
 }
 
 function jsonResponse(body: unknown): Response {
@@ -160,13 +163,33 @@ async function renderWidget(
   Object.assign(conversation, patch);
   const rendered = render(widget(props));
   await screen.findByRole("button", { name: /Open chat/ });
+  if (patch.connectionStatus) changeConnectionStatus(patch.connectionStatus);
 
   const update = (next: Partial<typeof conversation>) => {
     Object.assign(conversation, next);
+    if (next.connectionStatus) changeConnectionStatus(next.connectionStatus);
+    if (next.canSendMessage !== undefined) {
+      receiveMessagesAccepted(next.canSendMessage);
+    }
     rendered.rerender(widget(props));
   };
 
   return { ...rendered, update };
+}
+
+// Calls the callback the way useConversation does, ahead of the render.
+function changeConnectionStatus(status: ConnectionStatus) {
+  conversationOptions.current.onConnectionStatusChange?.(status);
+}
+
+// Calls onEvent the way useConversation does, ahead of the canSendMessage render.
+function receiveMessagesAccepted(accepted: boolean) {
+  act(() =>
+    conversationOptions.current.onEvent?.({
+      type: EventType.WebMessagesAccepted,
+      data: { accepted },
+    }),
+  );
 }
 
 function openPanel() {
@@ -196,10 +219,6 @@ function launcherLabel(): string | null {
 
 function receiveMessage(message: Message) {
   act(() => conversationOptions.current.onMessage?.(message));
-}
-
-function userMessage(id: string, text: string): Message {
-  return { id, role: "user", text, createdAt: "2024-01-01T00:00:00Z" };
 }
 
 function receiveAnnotation(item: AnnotationItem) {
@@ -346,7 +365,7 @@ describe("EmbedApp", () => {
         fireEvent.submit(textarea.closest("form") as HTMLFormElement);
         expect(conversation.sendMessage).toHaveBeenCalledTimes(1);
 
-        receiveMessage(userMessage("m1", "Hello"));
+        receiveMessage(message("m1", "Hello", "user"));
         await vi.waitFor(() => expect(textarea.value).toBe(""));
         fireEvent.change(textarea, { target: { value: "Next" } });
         expect(sendButton.hasAttribute("disabled")).toBe(false);
@@ -356,7 +375,7 @@ describe("EmbedApp", () => {
         const { textarea, sendButton } = await sendInActiveConversation();
 
         fireEvent.change(textarea, { target: { value: "Hello and more" } });
-        receiveMessage(userMessage("m1", "Hello"));
+        receiveMessage(message("m1", "Hello", "user"));
         await vi.waitFor(() => expect(textarea.value).toBe(" and more"));
         expect(sendButton.hasAttribute("disabled")).toBe(false);
       });
@@ -365,7 +384,7 @@ describe("EmbedApp", () => {
         const { textarea, sendButton } = await sendInActiveConversation();
 
         fireEvent.change(textarea, { target: { value: "Hi again" } });
-        receiveMessage(userMessage("m1", "Hello"));
+        receiveMessage(message("m1", "Hello", "user"));
         await vi.waitFor(() =>
           expect(sendButton.hasAttribute("disabled")).toBe(false),
         );
@@ -375,8 +394,31 @@ describe("EmbedApp", () => {
       it("clears the whitespace around the sent text with it", async () => {
         const { textarea } = await sendInActiveConversation("  Hello\n");
 
-        receiveMessage(userMessage("m1", "Hello"));
+        receiveMessage(message("m1", "Hello ", "user"));
         await vi.waitFor(() => expect(textarea.value).toBe(""));
+      });
+
+      it("sends once when the visitor presses Enter several times before the next render", async () => {
+        await renderWidget({ status: "active", connectionStatus: "connected" });
+        openPanel();
+        const { textarea } = composer();
+        fireEvent.change(textarea, { target: { value: "Hello" } });
+
+        act(() => {
+          for (let press = 0; press < 3; press++) {
+            textarea.dispatchEvent(
+              new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+            );
+          }
+        });
+        expect(conversation.sendMessage).toHaveBeenCalledTimes(1);
+
+        receiveMessage(message("m1", "Hello", "user"));
+        await vi.waitFor(() => expect(textarea.value).toBe(""));
+        submit("Next");
+        await vi.waitFor(() =>
+          expect(conversation.sendMessage).toHaveBeenCalledTimes(2),
+        );
       });
 
       it("keeps waiting while agent messages arrive", async () => {
@@ -388,33 +430,66 @@ describe("EmbedApp", () => {
         expect(sendButton.hasAttribute("disabled")).toBe(true);
       });
 
-      it("takes the sent message amended into the visitor's earlier one as shown", async () => {
-        const earlierMessage = userMessage("m0", "Hi");
-        const { textarea } = await sendInActiveConversation("Hello", {
-          messages: [earlierMessage],
-        });
+      it("keeps waiting when the visitor's earlier message with the same text is updated", async () => {
+        const earlierMessage = message("m0", "Hello", "user");
+        const { textarea, sendButton } = await sendInActiveConversation(
+          "Hello",
+          { messages: [earlierMessage] },
+        );
 
-        receiveMessage(userMessage("m0", "Hi. Hello"));
+        receiveMessage({
+          ...earlierMessage,
+          metadata: { latencies: { transcriptionMs: 120 } },
+        });
+        await act(async () => {});
+        expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+        receiveMessage(message("m1", "Hello", "user"));
         await vi.waitFor(() => expect(textarea.value).toBe(""));
       });
 
-      it("takes the first visitor message to show up as the sent one, whatever its text", async () => {
-        const { textarea } = await sendInActiveConversation();
+      it("keeps waiting when a visitor message with other text shows up, such as a voice transcript", async () => {
+        const { textarea, sendButton } = await sendInActiveConversation();
 
-        receiveMessage(userMessage("m1", "Something I said"));
-        await vi.waitFor(() => expect(textarea.value).toBe(""));
-
-        fireEvent.change(textarea, { target: { value: "Hello" } });
-        receiveMessage(userMessage("m2", "Hello"));
+        receiveMessage(message("m1", "Something I said", "user"));
         await act(async () => {});
         expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+        receiveMessage(message("m2", "Hello", "user"));
+        await vi.waitFor(() => expect(textarea.value).toBe(""));
+      });
+
+      it("keeps the draft and waits out the 30 seconds when the sent message is amended into the visitor's earlier one", async () => {
+        await renderWidget({
+          status: "active",
+          connectionStatus: "connected",
+          messages: [message("m0", "Hi", "user")],
+        });
+        openPanel();
+        vi.useFakeTimers();
+        submit("Hello");
+        expect(conversation.sendMessage).toHaveBeenCalledWith("Hello");
+        const { textarea, sendButton } = composer();
+
+        receiveMessage(message("m0", "Hello", "user"));
+        await act(async () => {});
+        expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+        act(() => {
+          vi.advanceTimersByTime(SENT_MESSAGE_WAIT_SECONDS * 1000);
+        });
+        expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(false);
       });
 
       it("clears the draft and locks when the sent message shows up before the lock", async () => {
         const { update, textarea, sendButton } =
           await sendInActiveConversation();
 
-        receiveMessage(userMessage("m1", "Hello"));
+        receiveMessage(message("m1", "Hello", "user"));
         update({ canSendMessage: false });
         await vi.waitFor(() => expect(textarea.value).toBe(""));
         fireEvent.change(textarea, { target: { value: "Next" } });
@@ -429,6 +504,7 @@ describe("EmbedApp", () => {
           await sendInActiveConversation();
 
         update({ canSendMessage: false });
+        await act(async () => {});
         expect(textarea.value).toBe("Hello");
         expect(sendButton.hasAttribute("disabled")).toBe(true);
 
@@ -440,8 +516,25 @@ describe("EmbedApp", () => {
         await vi.waitFor(() =>
           expect(conversation.sendMessage).toHaveBeenCalledTimes(2),
         );
-        receiveMessage(userMessage("m1", "Hello"));
+        receiveMessage(message("m1", "Hello", "user"));
         await vi.waitFor(() => expect(textarea.value).toBe(""));
+      });
+
+      it("keeps the draft to send again when the server locks and unlocks within one render", async () => {
+        const { textarea, sendButton } = await sendInActiveConversation();
+
+        act(() => {
+          conversationOptions.current.onEvent?.({
+            type: EventType.WebMessagesAccepted,
+            data: { accepted: false },
+          });
+          conversationOptions.current.onEvent?.({
+            type: EventType.WebMessagesAccepted,
+            data: { accepted: true },
+          });
+        });
+        expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(false);
       });
 
       it("keeps the draft when a lock arrives before the accepted message shows up", async () => {
@@ -449,7 +542,7 @@ describe("EmbedApp", () => {
           await sendInActiveConversation();
 
         update({ canSendMessage: false });
-        receiveMessage(userMessage("m1", "Hello"));
+        receiveMessage(message("m1", "Hello", "user"));
         await act(async () => {});
         expect(textarea.value).toBe("Hello");
 
@@ -463,11 +556,108 @@ describe("EmbedApp", () => {
           await sendInActiveConversation();
 
         update({ connectionStatus: "reconnecting" });
+        update({ connectionStatus: "connecting" });
         update({ connectionStatus: "connected" });
         expect(textarea.value).toBe("Hello");
         expect(sendButton.hasAttribute("disabled")).toBe(false);
 
-        receiveMessage(userMessage("m1", "Hello"));
+        receiveMessage(message("m1", "Hello", "user"));
+        await act(async () => {});
+        expect(textarea.value).toBe("Hello");
+      });
+
+      it("keeps the draft to send again when the message was sent while reconnecting", async () => {
+        const { update, textarea, sendButton } = await sendInActiveConversation(
+          "Hello",
+          { connectionStatus: "reconnecting" },
+        );
+        expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+        update({ connectionStatus: "connecting" });
+        expect(textarea.value).toBe("Hello");
+        update({ connectionStatus: "connected" });
+        expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(false);
+      });
+
+      it("keeps the draft to send again when the message was sent while connecting again after a drop", async () => {
+        const { update } = await renderWidget({
+          status: "active",
+          connectionStatus: "connected",
+        });
+        update({ connectionStatus: "reconnecting" });
+        update({ connectionStatus: "connecting" });
+        openPanel();
+        submit("Hello");
+        await vi.waitFor(() =>
+          expect(conversation.sendMessage).toHaveBeenCalledWith("Hello"),
+        );
+        const { textarea, sendButton } = composer();
+        expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+        update({ connectionStatus: "connected" });
+        expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(false);
+      });
+
+      it("waits for the sent message when the connection is back but not yet shown as connected", async () => {
+        const { update } = await renderWidget({
+          status: "active",
+          connectionStatus: "reconnecting",
+        });
+        openPanel();
+        changeConnectionStatus("connected");
+        submit("Hello");
+        await vi.waitFor(() =>
+          expect(conversation.sendMessage).toHaveBeenCalledWith("Hello"),
+        );
+        const { textarea, sendButton } = composer();
+
+        update({ connectionStatus: "connected" });
+        expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+        receiveMessage(message("m1", "Hello", "user"));
+        await vi.waitFor(() => expect(textarea.value).toBe(""));
+      });
+
+      it("keeps the draft to send again when the server finishes the conversation before the sent message shows up", async () => {
+        const { update, textarea, sendButton } =
+          await sendInActiveConversation();
+
+        update({ status: "finished", connectionStatus: "disconnected" });
+        expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(false);
+      });
+
+      it("keeps the draft to send again when the conversation stops being active before the sent message shows up", async () => {
+        const { update, textarea, sendButton } =
+          await sendInActiveConversation();
+
+        update({ status: "paused" });
+        expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(false);
+      });
+
+      it("keeps the draft to send again when the sent message has not shown up after 30 seconds", async () => {
+        await renderWidget({ status: "active", connectionStatus: "connected" });
+        openPanel();
+        vi.useFakeTimers();
+        submit("Hello");
+        expect(conversation.sendMessage).toHaveBeenCalledWith("Hello");
+        const { textarea, sendButton } = composer();
+
+        act(() => {
+          vi.advanceTimersByTime(SENT_MESSAGE_WAIT_SECONDS * 1000 - 1);
+        });
+        expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+        act(() => {
+          vi.advanceTimersByTime(1);
+        });
+        expect(textarea.value).toBe("Hello");
+        expect(sendButton.hasAttribute("disabled")).toBe(false);
+
+        receiveMessage(message("m1", "Hello", "user"));
         await act(async () => {});
         expect(textarea.value).toBe("Hello");
       });
@@ -534,7 +724,7 @@ describe("EmbedApp", () => {
         expect(textarea.value).toBe("Hello");
         expect(sendButton.hasAttribute("disabled")).toBe(true);
 
-        receiveMessage(userMessage("m1", "Hello"));
+        receiveMessage(message("m1", "Hello", "user"));
         await vi.waitFor(() => expect(textarea.value).toBe(""));
       });
     });
@@ -1035,7 +1225,7 @@ describe("EmbedApp", () => {
         status: "active",
         messages: [
           message("m1", "Before"),
-          message("m2", "After", "2024-01-01T00:00:30Z"),
+          message("m2", "After", "agent", "2024-01-01T00:00:30Z"),
         ],
         annotations: [HANDOFF_REQUESTED],
       });
@@ -1095,7 +1285,12 @@ describe("EmbedApp", () => {
     });
 
     it("places the joined note between the messages from before and after the join", async () => {
-      const beforeJoin = message("m1", "Before", "2024-01-01T00:00:30Z");
+      const beforeJoin = message(
+        "m1",
+        "Before",
+        "agent",
+        "2024-01-01T00:00:30Z",
+      );
       const { update } = await renderWidget({
         status: "active",
         messages: [beforeJoin],
@@ -1107,7 +1302,10 @@ describe("EmbedApp", () => {
       ).toBe(screen.getByText("Filip has joined the chat"));
 
       update({
-        messages: [beforeJoin, message("m2", "After", "2024-01-01T00:01:30Z")],
+        messages: [
+          beforeJoin,
+          message("m2", "After", "agent", "2024-01-01T00:01:30Z"),
+        ],
       });
       const joinedNote = screen.getByText("Filip has joined the chat");
       expect(

@@ -19,13 +19,18 @@ export function Composer({
   const [draft, setDraft] = useState("");
   const hasText = draft.trim() !== "";
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Set before the next render disables the form, so a burst of Enters sends once.
+  const sendingRef = useRef(false);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const sentDraft = draft;
     const text = sentDraft.trim();
-    if (!text || disabled) return;
-    const shown = await onSend(text);
+    if (!text || disabled || sendingRef.current) return;
+    sendingRef.current = true;
+    const shown = await onSend(text).finally(() => {
+      sendingRef.current = false;
+    });
     if (!shown) return;
     setDraft((current) =>
       current.startsWith(sentDraft) ? current.slice(sentDraft.length) : current,
