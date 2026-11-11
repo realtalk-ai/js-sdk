@@ -5,6 +5,7 @@ import {
   ConnectionErrorReason,
   ApiError,
   ProtocolError,
+  MessageNotShownError,
 } from "../src/errors.js";
 
 describe("RealtalkError", () => {
@@ -87,5 +88,14 @@ describe("ProtocolError", () => {
   it("rawData is optional", () => {
     const err = new ProtocolError("unknown");
     expect(err.rawData).toBeUndefined();
+  });
+});
+
+describe("MessageNotShownError", () => {
+  it("extends RealtalkError", () => {
+    const err = new MessageNotShownError();
+    expect(err).toBeInstanceOf(RealtalkError);
+    expect(err).toBeInstanceOf(MessageNotShownError);
+    expect(err.name).toBe("MessageNotShownError");
   });
 });

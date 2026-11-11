@@ -66,12 +66,13 @@ You can write your own policy by implementing the `ReconnectPolicy` interface.
 
 All errors extend `RealtalkError`:
 
-| Error class       | Properties            | Description                                   |
-| ----------------- | --------------------- | --------------------------------------------- |
-| `ConnectionError` | `reason`              | WebSocket connection or reconnection failures |
-| `ApiError`        | `statusCode`, `body?` | HTTP errors from token endpoints              |
-| `ProtocolError`   | `rawData?`            | Server-side protocol or backend errors        |
-| `ValidationError` | —                     | Invalid arguments or missing configuration    |
+| Error class            | Properties            | Description                                        |
+| ---------------------- | --------------------- | -------------------------------------------------- |
+| `ConnectionError`      | `reason`              | WebSocket connection or reconnection failures      |
+| `ApiError`             | `statusCode`, `body?` | HTTP errors from token endpoints                   |
+| `ProtocolError`        | `rawData?`            | Server-side protocol or backend errors             |
+| `ValidationError`      | —                     | Invalid arguments or missing configuration         |
+| `MessageNotShownError` | —                     | A sent message did not show up in the conversation |
 
 ```ts
 import { ConnectionError, ValidationError } from "@realtalk-ai/core";
@@ -150,6 +151,7 @@ You can also send arbitrary custom events — any object with a `type` string fi
 | `ApiError`                    | HTTP errors from token endpoints                                               |
 | `ProtocolError`               | Server-side protocol or backend errors                                         |
 | `ValidationError`             | Invalid arguments or missing configuration                                     |
+| `MessageNotShownError`        | A sent message did not show up in the conversation                             |
 | `setLogLevel`                 | Control debug log output                                                       |
 | `DEFAULT_WS_URL`              | Default WebSocket endpoint URL                                                 |
 | `RECONNECTABLE_CLOSE_CODES`   | Close codes that warrant an automatic reconnect                                |

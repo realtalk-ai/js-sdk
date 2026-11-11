@@ -65,11 +65,13 @@ export interface UseConversationReturn {
   volume: number;
   mode: ConversationMode;
   canSendMessage: boolean;
+  isSendPending: boolean;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
   endConversation: () => Promise<void>;
   sendMessage: (text: string) => void;
+  sendMessageAndWait: (text: string) => Promise<void>;
   sendDTMF: (digit: DTMFDigit) => void;
   sendEvent: (payload: ClientEvent) => void;
   clearMessages: () => void;
@@ -153,9 +155,11 @@ export function useConversation(
     error,
     mode,
     canSendMessage,
+    isSendPending,
     startConversation: connectionStart,
     endConversation,
     sendMessage,
+    sendMessageAndWait,
     sendDTMF,
     sendEvent,
     sendAudio,
@@ -290,9 +294,11 @@ export function useConversation(
     volume,
     mode,
     canSendMessage,
+    isSendPending,
     startConversation,
     endConversation,
     sendMessage,
+    sendMessageAndWait,
     sendDTMF,
     sendEvent,
     clearMessages,

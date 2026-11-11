@@ -51,3 +51,10 @@ export class ValidationError extends RealtalkError {
     this.name = "ValidationError";
   }
 }
+
+export class MessageNotShownError extends RealtalkError {
+  constructor(message = "The sent message did not show up") {
+    super(message);
+    this.name = "MessageNotShownError";
+  }
+}

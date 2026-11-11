@@ -21,6 +21,7 @@ import {
   ApiError,
   ProtocolError,
   ValidationError,
+  MessageNotShownError,
 } from "@realtalk-ai/core";
 import type {
   UseConversationOptions,
@@ -30,6 +31,7 @@ import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+const SENT_MESSAGE_WAIT_MS = 30_000;
 export const DEFAULT_CONVERSATION_MODE: ConversationMode = {
   userAudio: false,
   agentAudio: false,
@@ -39,6 +41,12 @@ function isSameMode(a: ConversationMode, b: ConversationMode): boolean {
   return a.userAudio === b.userAudio && a.agentAudio === b.agentAudio;
 }
 
+interface PendingSend {
+  resolve: () => void;
+  reject: (error: MessageNotShownError) => void;
+  timeout: ReturnType<typeof setTimeout>;
+}
+
 export interface UseConnectionReturn {
   connectionStatus: ConnectionStatus;
   status: ConversationStatus;
@@ -46,11 +54,13 @@ export interface UseConnectionReturn {
   error: ConversationError | null;
   mode: ConversationMode;
   canSendMessage: boolean;
+  isSendPending: boolean;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
   endConversation: () => Promise<void>;
   sendMessage: (text: string) => void;
+  sendMessageAndWait: (text: string) => Promise<void>;
   sendDTMF: (digit: DTMFDigit) => void;
   sendEvent: (payload: ClientEvent) => void;
   sendAudio: (pcm: Int16Array) => void;
@@ -95,6 +105,7 @@ export function useConnection(opts: {
   const [error, setError] = useState<ConversationError | null>(null);
   const [mode, setMode] = useState<ConversationMode>(DEFAULT_CONVERSATION_MODE);
   const [canSendMessage, setCanSendMessage] = useState(true);
+  const [isSendPending, setIsSendPending] = useState(false);
 
   const modeRef = useRef<ConversationMode>(DEFAULT_CONVERSATION_MODE);
   const requestedModeRef = useRef<ConversationMode | null>(null);
@@ -107,6 +118,8 @@ export function useConnection(opts: {
     null,
   );
   const intentionalDisconnectRef = useRef(false);
+  const connectionStatusRef = useRef<ConnectionStatus>("disconnected");
+  const pendingSendRef = useRef<PendingSend | null>(null);
 
   const setConversationIdBoth = useCallback((id: string | null) => {
     conversationIdRef.current = id;
@@ -119,12 +132,24 @@ export function useConnection(opts: {
     setMode(newMode);
   }, []);
 
+  const settlePendingSend = useCallback((shown: boolean) => {
+    const pendingSend = pendingSendRef.current;
+    if (!pendingSend) return;
+    pendingSendRef.current = null;
+    clearTimeout(pendingSend.timeout);
+    setIsSendPending(false);
+    if (shown) pendingSend.resolve();
+    else pendingSend.reject(new MessageNotShownError());
+  }, []);
+
   const updateConnectionStatus = useCallback(
     (newStatus: ConnectionStatus) => {
+      connectionStatusRef.current = newStatus;
+      if (newStatus !== "connected") settlePendingSend(false);
       setConnectionStatus(newStatus);
       optionsRef.current.onConnectionStatusChange?.(newStatus);
     },
-    [optionsRef],
+    [optionsRef, settlePendingSend],
   );
 
   const updateConversationStatus = useCallback(
@@ -142,6 +167,7 @@ export function useConnection(opts: {
     }
 
     onCleanup();
+    settlePendingSend(false);
 
     if (transportRef.current) {
       transportRef.current.removeAllListeners();
@@ -154,15 +180,18 @@ export function useConnection(opts: {
     sessionOptionsRef.current = null;
     sessionTokenRef.current = null;
     reconnectAttemptRef.current = 0;
-  }, [setConversationIdBoth, onCleanup]);
+  }, [setConversationIdBoth, onCleanup, settlePendingSend]);
 
   const handleConversationEvent = useCallback(
     (event: ConversationEvent) => {
       optionsRef.current.onEvent?.(event);
 
       switch (event.type) {
-        case EventType.ExistingMessages:
         case EventType.MessageCreated:
+          onEvent(event);
+          if (event.data.role === "user") settlePendingSend(true);
+          break;
+        case EventType.ExistingMessages:
         case EventType.MessageUpdated:
         case EventType.AnnotationCreated:
         case EventType.Vad:
@@ -198,6 +227,7 @@ export function useConnection(opts: {
         }
         case EventType.WebMessagesAccepted:
           setCanSendMessage(event.data.accepted);
+          if (!event.data.accepted) settlePendingSend(false);
           break;
         case EventType.ConversationFinished: {
           const finishedId = conversationIdRef.current;
@@ -263,6 +293,7 @@ export function useConnection(opts: {
       onClear,
       onModeRefused,
       setModeBoth,
+      settlePendingSend,
       optionsRef,
     ],
   );
@@ -515,6 +546,31 @@ export function useConnection(opts: {
     }
   }, []);
 
+  const sendMessageAndWait = useCallback(
+    (text: string): Promise<void> => {
+      const transport = transportRef.current;
+      const canSendNow =
+        transport !== null &&
+        connectionStatusRef.current === "connected" &&
+        pendingSendRef.current === null;
+      if (!canSendNow) return Promise.reject(new MessageNotShownError());
+
+      transport.sendEvent({ type: "message", data: text });
+      setIsSendPending(true);
+      return new Promise<void>((resolve, reject) => {
+        pendingSendRef.current = {
+          resolve,
+          reject,
+          timeout: setTimeout(
+            () => settlePendingSend(false),
+            SENT_MESSAGE_WAIT_MS,
+          ),
+        };
+      });
+    },
+    [settlePendingSend],
+  );
+
   const sendDTMF = useCallback((digit: DTMFDigit) => {
     if (transportRef.current) {
       transportRef.current.sendEvent({ event: "dtmf", data: digit });
@@ -561,9 +617,11 @@ export function useConnection(opts: {
     error,
     mode,
     canSendMessage,
+    isSendPending,
     startConversation,
     endConversation,
     sendMessage,
+    sendMessageAndWait,
     sendDTMF,
     sendEvent,
     sendAudio,
