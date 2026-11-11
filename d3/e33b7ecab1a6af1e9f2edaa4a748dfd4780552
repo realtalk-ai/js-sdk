@@ -1,0 +1,39 @@
+README.md
+  s_1efc0cc5cec7c1::t_574c1aa9906fc1 21
+packages/core/README.md
+  s_1efc0cc5cec7c1::t_cb7c2019600381 69-75,154
+packages/core/src/errors.ts
+  s_1efc0cc5cec7c1::t_ce8a7dc8a9e407 54-60
+packages/core/src/index.ts
+  s_1efc0cc5cec7c1::t_68452ca4f268be 59
+packages/core/tests/errors.test.ts
+  s_1efc0cc5cec7c1::t_d53adf71cc9b13 8,93-101
+packages/react/README.md
+  s_1efc0cc5cec7c1::t_9070547a49b782 120,124-139,175,178,181-186
+packages/react/src/hooks/useConnection.ts
+  s_1efc0cc5cec7c1::t_e3f81d1bac913a 24,45-46,62-63,141-142,543-550,556,560,563,624
+packages/react/src/index.ts
+  s_1efc0cc5cec7c1::t_ebc56f2399d14f 22
+packages/react/src/useConversation.ts
+  s_1efc0cc5cec7c1::t_f6dcc4e936580e 73-74,162,301
+packages/react/tests/useConnection.test.ts
+  s_1efc0cc5cec7c1::t_23b60d13cf7b08 294
+packages/react/tests/useConversation.test.tsx
+  s_1efc0cc5cec7c1::t_00253b3f60f4c6 4,160,863,902-904,906,908-915,927,934,952,956,964,969,980-982,984,986-988,990,998,1002,1008,1012,1019,1024,1032,1040,1047-1050,1053,1056,1061-1077,1084,1089,1091,1094,1097
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d3e33b7ecab1a6af1e9f2edaa4a748dfd4780552",
+  "prompts": {},
+  "sessions": {
+    "s_1efc0cc5cec7c1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "66074365-0074-477f-a951-f05a8cb2303b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
