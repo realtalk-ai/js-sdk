@@ -12,7 +12,8 @@ export function Composer({
   disabled: boolean;
   showVoice: boolean;
   voiceOn: boolean;
-  onSend: (text: string) => Promise<void>;
+  /** Resolves to whether the sent message showed up in the chat. */
+  onSend: (text: string) => Promise<boolean>;
   onToggleVoice: () => void;
 }): JSX.Element {
   const [draft, setDraft] = useState("");
@@ -21,14 +22,14 @@ export function Composer({
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const text = draft.trim();
+    const sentDraft = draft;
+    const text = sentDraft.trim();
     if (!text || disabled) return;
-    setDraft("");
-    try {
-      await onSend(text);
-    } catch {
-      setDraft(text);
-    }
+    const shown = await onSend(text);
+    if (!shown) return;
+    setDraft((current) =>
+      current.startsWith(sentDraft) ? current.slice(sentDraft.length) : current,
+    );
   };
 
   const sendOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {

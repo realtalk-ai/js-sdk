@@ -20,6 +20,7 @@ import {
   buildTimeline,
   type AgentState,
   type AnnotationItem,
+  type ConnectionStatus,
   type ConversationStatus,
   type Message,
   type TimelineItem,
@@ -47,7 +48,7 @@ const HUMAN_AGENT_JOINED: AnnotationItem = {
 
 const conversation = {
   status: "not_started" as ConversationStatus,
-  connectionStatus: "disconnected" as const,
+  connectionStatus: "disconnected" as ConnectionStatus,
   messages: [] as Message[],
   annotations: [] as AnnotationItem[],
   get timeline(): TimelineItem[] {
@@ -58,6 +59,7 @@ const conversation = {
   mode: { userAudio: false, agentAudio: false },
   isMicEnabled: false,
   isAudioMuted: false,
+  canSendMessage: true,
   startConversation: vi.fn(),
   endConversation: vi.fn(),
   clearMessages: vi.fn(),
@@ -193,7 +195,11 @@ function launcherLabel(): string | null {
 }
 
 function receiveMessage(message: Message) {
-  conversationOptions.current.onMessage?.(message);
+  act(() => conversationOptions.current.onMessage?.(message));
+}
+
+function userMessage(id: string, text: string): Message {
+  return { id, role: "user", text, createdAt: "2024-01-01T00:00:00Z" };
 }
 
 function receiveAnnotation(item: AnnotationItem) {
@@ -213,6 +219,7 @@ describe("EmbedApp", () => {
       agentState: "idle",
       isMicEnabled: false,
       isAudioMuted: false,
+      canSendMessage: true,
       mode: { userAudio: false, agentAudio: false },
     });
   });
@@ -273,6 +280,112 @@ describe("EmbedApp", () => {
       expect(sendButton.hasAttribute("disabled")).toBe(true);
 
       fireEvent.change(textarea, { target: { value: "Hello" } });
+      expect(sendButton.hasAttribute("disabled")).toBe(false);
+    });
+
+    it("locks sending while the agent answers and keeps the textarea typeable", async () => {
+      const { update } = await renderWidget({
+        status: "active",
+        canSendMessage: false,
+      });
+      openPanel();
+
+      const sendButton = screen.getByRole("button", { name: "Send message" });
+      const textarea = screen.getByPlaceholderText(
+        "Type a message…",
+      ) as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      expect(textarea.value).toBe("Hello");
+      expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      expect(conversation.sendMessage).not.toHaveBeenCalled();
+
+      update({ canSendMessage: true });
+      expect(sendButton.hasAttribute("disabled")).toBe(false);
+    });
+
+    it("keeps the draft until the sent message shows up in the chat", async () => {
+      await renderWidget({
+        status: "active",
+        connectionStatus: "connected",
+      });
+      openPanel();
+
+      const sendButton = screen.getByRole("button", { name: "Send message" });
+      const textarea = screen.getByPlaceholderText(
+        "Type a message…",
+      ) as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      await vi.waitFor(() =>
+        expect(conversation.sendMessage).toHaveBeenCalledWith("Hello"),
+      );
+      expect(textarea.value).toBe("Hello");
+      expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      expect(conversation.sendMessage).toHaveBeenCalledTimes(1);
+
+      fireEvent.change(textarea, { target: { value: "Hello and more" } });
+      receiveMessage(userMessage("m1", "Hello"));
+      await vi.waitFor(() => expect(textarea.value).toBe(" and more"));
+      expect(sendButton.hasAttribute("disabled")).toBe(false);
+    });
+
+    it("keeps the draft to send again when the server rejects the message", async () => {
+      const { update } = await renderWidget({
+        status: "active",
+        connectionStatus: "connected",
+      });
+      openPanel();
+
+      const sendButton = screen.getByRole("button", { name: "Send message" });
+      const textarea = screen.getByPlaceholderText(
+        "Type a message…",
+      ) as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      await vi.waitFor(() =>
+        expect(conversation.sendMessage).toHaveBeenCalledWith("Hello"),
+      );
+
+      update({ canSendMessage: false });
+      expect(textarea.value).toBe("Hello");
+      expect(sendButton.hasAttribute("disabled")).toBe(true);
+
+      update({ canSendMessage: true });
+      expect(textarea.value).toBe("Hello");
+      expect(sendButton.hasAttribute("disabled")).toBe(false);
+
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      await vi.waitFor(() =>
+        expect(conversation.sendMessage).toHaveBeenCalledTimes(2),
+      );
+      receiveMessage(userMessage("m1", "Hello"));
+      await vi.waitFor(() => expect(textarea.value).toBe(""));
+    });
+
+    it("keeps the draft to send again when the connection drops before the sent message shows up", async () => {
+      const { update } = await renderWidget({
+        status: "active",
+        connectionStatus: "connected",
+      });
+      openPanel();
+
+      const sendButton = screen.getByRole("button", { name: "Send message" });
+      const textarea = screen.getByPlaceholderText(
+        "Type a message…",
+      ) as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      await vi.waitFor(() =>
+        expect(conversation.sendMessage).toHaveBeenCalledWith("Hello"),
+      );
+
+      update({ connectionStatus: "reconnecting" });
+      update({ connectionStatus: "connected" });
+      expect(textarea.value).toBe("Hello");
       expect(sendButton.hasAttribute("disabled")).toBe(false);
     });
   });

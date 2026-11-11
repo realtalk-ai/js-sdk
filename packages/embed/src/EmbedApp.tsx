@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RealTalkProvider, useConversation } from "@realtalk-ai/react";
 import type { ConversationMode } from "@realtalk-ai/core";
 import {
@@ -79,6 +79,13 @@ function Widget({
   const [previousChatEnded, setPreviousChatEnded] = useState(false);
   const [expired, setExpired] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [awaitingSentMessage, setAwaitingSentMessage] = useState(false);
+  const settleSentMessageRef = useRef<((shown: boolean) => void) | null>(null);
+  const settleSentMessage = useCallback((shown: boolean) => {
+    setAwaitingSentMessage(false);
+    settleSentMessageRef.current?.(shown);
+    settleSentMessageRef.current = null;
+  }, []);
 
   const [startMode, setStartMode] = useState<ConversationMode>(TEXT_ONLY);
   // Set further down, because the sounds need the conversation's messages.
@@ -89,7 +96,10 @@ function Widget({
       setStartMode(currentMode);
       setNotice("Voice is not available right now. Please try again later.");
     },
-    onMessage: (message) => soundsRef.current?.onMessage(message),
+    onMessage: (message) => {
+      soundsRef.current?.onMessage(message);
+      if (message.role === "user") settleSentMessage(true);
+    },
     onAnnotation: (item) => soundsRef.current?.onAnnotation(item),
   });
   const conversationRef = useRef(conversation);
@@ -104,6 +114,7 @@ function Widget({
     agentState,
     userState,
     isMicEnabled: micOn,
+    canSendMessage,
   } = conversation;
 
   const firstOpenHandledRef = useRef(false);
@@ -142,6 +153,15 @@ function Widget({
   const active = status === "active";
   const paused = status === "paused";
   const mode = active ? conversation.mode : startMode;
+
+  // A lock or a lost connection before the sent message shows up means it was
+  // rejected or dropped.
+  useEffect(() => {
+    if (!canSendMessage || connectionStatus !== "connected") {
+      settleSentMessage(false);
+    }
+  }, [canSendMessage, connectionStatus, settleSentMessage]);
+
   const sounds = useSounds(open, mode.agentAudio, messages, soundsDisabled);
   soundsRef.current = sounds;
 
@@ -185,8 +205,12 @@ function Widget({
     } catch (error) {
       console.error("[realtalk-embed] failed to send message", error);
       setNotice("Your message was not sent. Please try again.");
-      throw error;
+      return false;
     }
+    setAwaitingSentMessage(true);
+    return new Promise<boolean>((resolve) => {
+      settleSentMessageRef.current = resolve;
+    });
   };
 
   const handleEnd = async () => {
@@ -313,7 +337,7 @@ function Widget({
               <NewConversation onStartNew={handleStartNew} />
             ) : (
               <Composer
-                disabled={starting}
+                disabled={starting || awaitingSentMessage || !canSendMessage}
                 showVoice={showVoice}
                 voiceOn={voiceOn}
                 onSend={handleSend}
