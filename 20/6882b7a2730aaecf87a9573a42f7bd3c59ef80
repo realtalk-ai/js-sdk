@@ -1,0 +1,31 @@
+README.md
+  s_1efc0cc5cec7c1::t_3d3952f586f65d 21
+packages/react/README.md
+  s_1efc0cc5cec7c1::t_e79b81bd3f58c9 120,124-138,172-189
+packages/react/src/hooks/useConnection.ts
+  s_1efc0cc5cec7c1::t_f2b7cb6ff80a89 33,43-51,59,64,109,122-123,136-144,147-148,152,170,183,191-194,230,296,543-567,615
+packages/react/src/index.ts
+  s_1efc0cc5cec7c1::t_4cb613183dd46f 22-25
+packages/react/src/useConversation.ts
+  s_1efc0cc5cec7c1::t_98bee36aef4f61 21,69,74,158,296
+packages/react/tests/useConnection.test.ts
+  s_1efc0cc5cec7c1::t_25d921adcf919a 294-296
+packages/react/tests/useConversation.test.tsx
+  s_1efc0cc5cec7c1::t_f4ed75175a0448 1,4,159-161,863-1093
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "206882b7a2730aaecf87a9573a42f7bd3c59ef80",
+  "prompts": {},
+  "sessions": {
+    "s_1efc0cc5cec7c1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "66074365-0074-477f-a951-f05a8cb2303b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
