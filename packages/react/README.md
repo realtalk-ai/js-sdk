@@ -116,6 +116,7 @@ const conversation = useConversation(options);
 | `isMicMuted`       | `boolean`                   | Microphone mute state                                                   |
 | `isMicEnabled`     | `boolean`                   | Whether a microphone is currently attached                              |
 | `isAudioMuted`     | `boolean`                   | Audio output mute state                                                 |
+| `canSendMessage`   | `boolean`                   | Whether a typed message is accepted now; false while the agent answers  |
 
 ### Methods
 

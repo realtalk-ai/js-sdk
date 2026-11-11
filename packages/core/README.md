@@ -103,18 +103,19 @@ The SDK communicates over WebSocket using typed events. Use `onEvent` to receive
 
 Events received from the server during a conversation:
 
-| Event                   | `EventType` constant             | Data                                            | Description                                                               |
-| ----------------------- | -------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------- |
-| `existing_messages`     | `EventType.ExistingMessages`     | `Message[]` and `annotations: AnnotationItem[]` | All prior messages and annotations, sent on connection                    |
-| `message_created`       | `EventType.MessageCreated`       | `Message`                                       | New message from the agent or user                                        |
-| `message_updated`       | `EventType.MessageUpdated`       | `Message`                                       | An existing message was updated                                           |
-| `annotation_created`    | `EventType.AnnotationCreated`    | `AnnotationItem`                                | A new annotation was added to the conversation                            |
-| `vad`                   | `EventType.Vad`                  | `{ state: "speech" \| "silence" }`              | Voice activity detection state changed                                    |
-| `clear`                 | `EventType.Clear`                | —                                               | Audio buffer should be cleared                                            |
-| `conversation_finished` | `EventType.ConversationFinished` | —                                               | The conversation session has ended                                        |
-| `conversation_mode`     | `EventType.ConversationMode`     | `{ user_audio: boolean; agent_audio: boolean }` | The mode the conversation is in, sent in reply to `set_conversation_mode` |
-| `close`                 | `EventType.Close`                | `{ code: number; reason: string }`              | WebSocket connection closed                                               |
-| `error`                 | `EventType.Error`                | `{ message?: string }`                          | A protocol or backend error occurred                                      |
+| Event                   | `EventType` constant             | Data                                            | Description                                                                 |
+| ----------------------- | -------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------- |
+| `existing_messages`     | `EventType.ExistingMessages`     | `Message[]` and `annotations: AnnotationItem[]` | All prior messages and annotations, sent on connection                      |
+| `message_created`       | `EventType.MessageCreated`       | `Message`                                       | New message from the agent or user                                          |
+| `message_updated`       | `EventType.MessageUpdated`       | `Message`                                       | An existing message was updated                                             |
+| `annotation_created`    | `EventType.AnnotationCreated`    | `AnnotationItem`                                | A new annotation was added to the conversation                              |
+| `vad`                   | `EventType.Vad`                  | `{ state: "speech" \| "silence" }`              | Voice activity detection state changed                                      |
+| `clear`                 | `EventType.Clear`                | —                                               | Audio buffer should be cleared                                              |
+| `conversation_finished` | `EventType.ConversationFinished` | —                                               | The conversation session has ended                                          |
+| `conversation_mode`     | `EventType.ConversationMode`     | `{ user_audio: boolean; agent_audio: boolean }` | The mode the conversation is in, sent in reply to `set_conversation_mode`   |
+| `web_messages_accepted` | `EventType.WebMessagesAccepted`  | `{ accepted: boolean }`                         | Whether the server takes text messages now; `false` while the agent answers |
+| `close`                 | `EventType.Close`                | `{ code: number; reason: string }`              | WebSocket connection closed                                                 |
+| `error`                 | `EventType.Error`                | `{ message?: string }`                          | A protocol or backend error occurred                                        |
 
 An `AnnotationItem` is `{ id, createdAt, annotation }`, where `annotation` is `{ kind: "handoff_requested" }` or `{ kind: "human_agent_joined"; humanAgentName: string | null }`. The server sends annotations as messages marked with `role: "annotation"`, and their `metadata.kind` names the kind. `existing_messages` moves them out of `data` into `annotations`, sorted by `createdAt`. Kinds this SDK version does not know are left out of both, and an `annotation_created` of such a kind is not emitted.
 

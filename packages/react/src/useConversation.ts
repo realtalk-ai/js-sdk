@@ -64,6 +64,7 @@ export interface UseConversationReturn {
   isAudioMuted: boolean;
   volume: number;
   mode: ConversationMode;
+  canSendMessage: boolean;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
@@ -151,6 +152,7 @@ export function useConversation(
     conversationId,
     error,
     mode,
+    canSendMessage,
     startConversation: connectionStart,
     endConversation,
     sendMessage,
@@ -287,6 +289,7 @@ export function useConversation(
     isAudioMuted,
     volume,
     mode,
+    canSendMessage,
     startConversation,
     endConversation,
     sendMessage,

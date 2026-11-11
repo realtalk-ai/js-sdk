@@ -45,6 +45,7 @@ export interface UseConnectionReturn {
   conversationId: string | null;
   error: ConversationError | null;
   mode: ConversationMode;
+  canSendMessage: boolean;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
@@ -93,6 +94,7 @@ export function useConnection(opts: {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<ConversationError | null>(null);
   const [mode, setMode] = useState<ConversationMode>(DEFAULT_CONVERSATION_MODE);
+  const [canSendMessage, setCanSendMessage] = useState(true);
 
   const modeRef = useRef<ConversationMode>(DEFAULT_CONVERSATION_MODE);
   const requestedModeRef = useRef<ConversationMode | null>(null);
@@ -148,6 +150,7 @@ export function useConnection(opts: {
     }
 
     setConversationIdBoth(null);
+    setCanSendMessage(true);
     sessionOptionsRef.current = null;
     sessionTokenRef.current = null;
     reconnectAttemptRef.current = 0;
@@ -193,6 +196,9 @@ export function useConnection(opts: {
           }
           break;
         }
+        case EventType.WebMessagesAccepted:
+          setCanSendMessage(event.data.accepted);
+          break;
         case EventType.ConversationFinished: {
           const finishedId = conversationIdRef.current;
           intentionalDisconnectRef.current = true;
@@ -266,6 +272,7 @@ export function useConnection(opts: {
       const { agentId } = sessionOptions;
 
       updateConnectionStatus("connecting");
+      setCanSendMessage(true);
 
       const id = conversationIdRef.current;
       if (!id) {
@@ -553,6 +560,7 @@ export function useConnection(opts: {
     conversationId,
     error,
     mode,
+    canSendMessage,
     startConversation,
     endConversation,
     sendMessage,

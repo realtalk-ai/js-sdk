@@ -175,6 +175,7 @@ export const EventType = {
   Clear: "clear",
   ConversationFinished: "conversation_finished",
   ConversationMode: "conversation_mode",
+  WebMessagesAccepted: "web_messages_accepted",
   Close: "close",
   Error: "error",
 } as const;
@@ -209,5 +210,6 @@ export type ConversationEvent =
       type: "conversation_mode";
       data: { user_audio: boolean; agent_audio: boolean };
     }
+  | { type: "web_messages_accepted"; data: { accepted: boolean } }
   | { type: "close"; code: number; reason: string }
   | { type: "error"; message?: string };
