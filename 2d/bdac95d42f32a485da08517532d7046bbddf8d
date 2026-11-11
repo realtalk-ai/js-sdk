@@ -1,0 +1,40 @@
+packages/embed/src/EmbedApp.tsx
+  s_1efc0cc5cec7c1::t_398fb684671e04 27
+packages/embed/tests/EmbedApp.test.tsx
+  s_1efc0cc5cec7c1::t_549364721a1428 128,131,192-193,447-448,450,452,1029,1089-1094,1106-1109
+  s_1efc0cc5cec7c1::t_e6ba7391e79329 455,458,460,461-462
+  s_1efc0cc5cec7c1::t_711ae963b8a397 472,473,475-476,478,480-481,485,490-492
+  s_1efc0cc5cec7c1::t_eae1d510d36732 470
+  s_1efc0cc5cec7c1::t_993734793c9508 409
+packages/react/tests/useConnection.test.ts
+  s_1efc0cc5cec7c1::t_4831d09c448553 906
+  s_1efc0cc5cec7c1::t_5d47b4dc92c832 960-969,971-975
+packages/react-native/tests/useConnection.test.ts
+  s_1efc0cc5cec7c1::t_99819865615125 1025-1034,1036-1040
+packages/core/README.md
+  s_1efc0cc5cec7c1::t_9652a07d199da0 107-119
+packages/react/README.md
+  s_1efc0cc5cec7c1::t_e79b81bd3f58c9 173-174,176-177,179-180,187-193
+packages/react/src/hooks/useConnection.ts
+  s_1efc0cc5cec7c1::t_f2b7cb6ff80a89 34,44,47-49,57,108,121-122,135-140,143-144,147-148,152,170,183,191-194,230,296,551-555,557-558,559,561-562,564-572,620
+packages/react/src/useConversation.ts
+  s_1efc0cc5cec7c1::t_98bee36aef4f61 68,158,297
+packages/react/tests/useConversation.test.tsx
+  s_1efc0cc5cec7c1::t_f4ed75175a0448 1,5,862,864-901,905,907,916-926,928-933,935-951,953-955,957-963,965-968,970-979,983,985,989,991-997,999-1001,1003-1007,1009-1011,1013-1018,1020-1023,1025-1031,1033-1039,1041-1046,1051-1052,1054-1055,1057-1060,1078-1083,1085-1088,1090,1092-1093,1095-1096,1098-1100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2dbdac95d42f32a485da08517532d7046bbddf8d",
+  "prompts": {},
+  "sessions": {
+    "s_1efc0cc5cec7c1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "66074365-0074-477f-a951-f05a8cb2303b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
