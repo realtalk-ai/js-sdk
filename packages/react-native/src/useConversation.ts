@@ -46,6 +46,7 @@ export interface UseConversationReturn {
   isMicMuted: boolean;
   isAudioMuted: boolean;
   volume: number;
+  canSendMessage: boolean;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
@@ -103,6 +104,7 @@ export function useConversation(
     status,
     conversationId,
     error,
+    canSendMessage,
     startConversation: connectionStart,
     endConversation,
     sendMessage,
@@ -188,6 +190,7 @@ export function useConversation(
     isMicMuted,
     isAudioMuted,
     volume,
+    canSendMessage,
     startConversation,
     endConversation,
     sendMessage,

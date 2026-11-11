@@ -968,4 +968,76 @@ describe("useConnection", () => {
     expect(opts.getToken).toHaveBeenCalledTimes(2);
     expect(vi.mocked(WebSocketTransport).mock.results).toHaveLength(2);
   });
+
+  describe("sending messages", () => {
+    async function startedConnection() {
+      const opts = defaultOpts();
+      const rendered = renderHook(() => useConnection(opts));
+      await act(async () => {
+        await rendered.result.current.startConversation({
+          agentId: "agent-1",
+          conversationId: "conv-1",
+        });
+      });
+      const { WebSocketTransport } = await import("@realtalk-ai/core");
+      const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+      const emit = transport.onEvent.mock.calls[0][0] as (
+        event: ConversationEvent,
+      ) => void;
+      return { ...rendered, emit };
+    }
+
+    it("are allowed before the server says anything", async () => {
+      const { result } = await startedConnection();
+
+      expect(result.current.canSendMessage).toBe(true);
+    });
+
+    it("follow web_messages_accepted from the server", async () => {
+      const { result, emit } = await startedConnection();
+
+      act(() =>
+        emit({ type: "web_messages_accepted", data: { accepted: false } }),
+      );
+      expect(result.current.canSendMessage).toBe(false);
+
+      act(() =>
+        emit({ type: "web_messages_accepted", data: { accepted: true } }),
+      );
+      expect(result.current.canSendMessage).toBe(true);
+    });
+
+    it("are allowed again after the conversation ends", async () => {
+      const { result, emit } = await startedConnection();
+      act(() =>
+        emit({ type: "web_messages_accepted", data: { accepted: false } }),
+      );
+
+      await act(async () => {
+        await result.current.endConversation();
+      });
+
+      expect(result.current.canSendMessage).toBe(true);
+    });
+
+    it("are allowed again after a reconnect", async () => {
+      vi.useFakeTimers();
+      try {
+        const { result, emit } = await startedConnection();
+        act(() =>
+          emit({ type: "web_messages_accepted", data: { accepted: false } }),
+        );
+
+        act(() => emit({ type: "close", code: 1006, reason: "" }));
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(1000);
+        });
+
+        expect(result.current.connectionStatus).toBe("connected");
+        expect(result.current.canSendMessage).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
 });
