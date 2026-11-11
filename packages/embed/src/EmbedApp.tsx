@@ -1,11 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RealTalkProvider, useConversation } from "@realtalk-ai/react";
-import {
-  EventType,
-  type ConnectionStatus,
-  type ConversationMode,
-  type Message,
-} from "@realtalk-ai/core";
+import type { ConversationMode } from "@realtalk-ai/core";
 import {
   createSessionMinter,
   resolveServer,
@@ -29,18 +24,6 @@ const AUDIO_BOTH_WAYS: ConversationMode = {
   userAudio: true,
   agentAudio: true,
 };
-const SENT_MESSAGE_WAIT_MS = 30_000;
-
-type SentMessage = { text: string; earlierMessageIds: Set<string> };
-
-function showsSentMessage(message: Message, sent: SentMessage | null) {
-  return (
-    sent !== null &&
-    message.role === "user" &&
-    !sent.earlierMessageIds.has(message.id) &&
-    message.text.trim() === sent.text.trim()
-  );
-}
 
 export function EmbedApp({
   agentId,
@@ -96,19 +79,6 @@ function Widget({
   const [previousChatEnded, setPreviousChatEnded] = useState(false);
   const [expired, setExpired] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [awaitingSentMessage, setAwaitingSentMessage] = useState(false);
-  const settleSentMessageRef = useRef<((shown: boolean) => void) | null>(null);
-  const sentMessageRef = useRef<SentMessage | null>(null);
-  const sentWhileOfflineRef = useRef(false);
-  // Set before the render, so a send right after the transport opens counts as online.
-  const connectionStatusRef = useRef<ConnectionStatus>("disconnected");
-  const settleSentMessage = useCallback((shown: boolean) => {
-    setAwaitingSentMessage(false);
-    sentWhileOfflineRef.current = false;
-    sentMessageRef.current = null;
-    settleSentMessageRef.current?.(shown);
-    settleSentMessageRef.current = null;
-  }, []);
 
   const [startMode, setStartMode] = useState<ConversationMode>(TEXT_ONLY);
   // Set further down, because the sounds need the conversation's messages.
@@ -119,21 +89,8 @@ function Widget({
       setStartMode(currentMode);
       setNotice("Voice is not available right now. Please try again later.");
     },
-    onMessage: (message) => {
-      soundsRef.current?.onMessage(message);
-      if (showsSentMessage(message, sentMessageRef.current)) {
-        settleSentMessage(true);
-      }
-    },
+    onMessage: (message) => soundsRef.current?.onMessage(message),
     onAnnotation: (item) => soundsRef.current?.onAnnotation(item),
-    onEvent: (event) => {
-      const sentMessageRejected =
-        event.type === EventType.WebMessagesAccepted && !event.data.accepted;
-      if (sentMessageRejected) settleSentMessage(false);
-    },
-    onConnectionStatusChange: (newStatus) => {
-      connectionStatusRef.current = newStatus;
-    },
   });
   const conversationRef = useRef(conversation);
   conversationRef.current = conversation;
@@ -148,6 +105,7 @@ function Widget({
     userState,
     isMicEnabled: micOn,
     canSendMessage,
+    isSendPending,
   } = conversation;
 
   const firstOpenHandledRef = useRef(false);
@@ -187,23 +145,6 @@ function Widget({
   const paused = status === "paused";
   const mode = active ? conversation.mode : startMode;
 
-  useEffect(() => {
-    const sentMessageDropped =
-      !active ||
-      connectionStatus !== "connected" ||
-      sentWhileOfflineRef.current;
-    if (sentMessageDropped) settleSentMessage(false);
-  }, [active, connectionStatus, settleSentMessage]);
-
-  useEffect(() => {
-    if (!awaitingSentMessage) return;
-    const timer = setTimeout(
-      () => settleSentMessage(false),
-      SENT_MESSAGE_WAIT_MS,
-    );
-    return () => clearTimeout(timer);
-  }, [awaitingSentMessage, settleSentMessage]);
-
   const sounds = useSounds(open, mode.agentAudio, messages, soundsDisabled);
   soundsRef.current = sounds;
 
@@ -241,27 +182,14 @@ function Widget({
   const handleSend = async (text: string) => {
     sounds.unlock();
     setNotice(null);
-    const startsConversation = !active;
     try {
-      if (startsConversation) await start();
-      conversationRef.current.sendMessage(text);
+      if (!active) await start();
     } catch (error) {
       console.error("[realtalk-embed] failed to send message", error);
       setNotice("Your message was not sent. Please try again.");
-      return false;
+      throw error;
     }
-    sentWhileOfflineRef.current =
-      !startsConversation && connectionStatusRef.current !== "connected";
-    sentMessageRef.current = {
-      text,
-      earlierMessageIds: new Set(
-        conversationRef.current.messages.map((message) => message.id),
-      ),
-    };
-    setAwaitingSentMessage(true);
-    return new Promise<boolean>((resolve) => {
-      settleSentMessageRef.current = resolve;
-    });
+    await conversationRef.current.sendMessageAndWait(text);
   };
 
   const handleEnd = async () => {
@@ -388,7 +316,7 @@ function Widget({
               <NewConversation onStartNew={handleStartNew} />
             ) : (
               <Composer
-                disabled={starting || awaitingSentMessage || !canSendMessage}
+                disabled={starting || isSendPending || !canSendMessage}
                 showVoice={showVoice}
                 voiceOn={voiceOn}
                 onSend={handleSend}

@@ -12,26 +12,27 @@ export function Composer({
   disabled: boolean;
   showVoice: boolean;
   voiceOn: boolean;
-  /** Resolves to whether the sent message showed up in the chat. */
-  onSend: (text: string) => Promise<boolean>;
+  onSend: (text: string) => Promise<void>;
   onToggleVoice: () => void;
 }): JSX.Element {
   const [draft, setDraft] = useState("");
   const hasText = draft.trim() !== "";
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Set before the next render disables the form, so a burst of Enters sends once.
-  const sendingRef = useRef(false);
+  const sendInFlightRef = useRef(false);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const sentDraft = draft;
     const text = sentDraft.trim();
-    if (!text || disabled || sendingRef.current) return;
-    sendingRef.current = true;
-    const shown = await onSend(text).finally(() => {
-      sendingRef.current = false;
-    });
-    if (!shown) return;
+    if (!text || disabled || sendInFlightRef.current) return;
+    sendInFlightRef.current = true;
+    try {
+      await onSend(text);
+    } catch {
+      return;
+    } finally {
+      sendInFlightRef.current = false;
+    }
     setDraft((current) =>
       current.startsWith(sentDraft) ? current.slice(sentDraft.length) : current,
     );
