@@ -56,7 +56,6 @@ export {
   ApiError,
   ProtocolError,
   ValidationError,
-  MessageNotShownError,
 } from "./errors.js";
 export type { ConnectionErrorReasonValue } from "./errors.js";
 

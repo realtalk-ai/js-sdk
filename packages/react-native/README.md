@@ -139,7 +139,7 @@ The main hook — combines connection, messages, and audio controls.
 | `volume`           | `number`                    | Audio playback volume (0–1)                                             |
 | `isMicMuted`       | `boolean`                   | Microphone mute state                                                   |
 | `isAudioMuted`     | `boolean`                   | Audio output mute state                                                 |
-| `canSendMessage`   | `boolean`                   | Whether a typed message is accepted now; false while the agent answers  |
+| `canSendMessage`   | `boolean`                   | False from a send until it shows up, and while the agent answers        |
 
 ### Methods
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import type { ConversationEvent, ConversationMode } from "@realtalk-ai/core";
 import {
@@ -15,6 +15,7 @@ function onTheWire(mode: ConversationMode) {
 }
 
 const mockTransport = {
+  status: "connected",
   connect: vi.fn(),
   disconnect: vi.fn(),
   gracefulDisconnect: vi.fn(),
@@ -944,6 +945,7 @@ describe("useConnection", () => {
 
     it("are allowed again after the conversation ends", async () => {
       const { result, emit } = await startedConnection();
+      act(() => result.current.sendMessage("hi"));
       act(() =>
         emit({ type: "web_messages_accepted", data: { accepted: false } }),
       );
@@ -973,6 +975,204 @@ describe("useConnection", () => {
       } finally {
         vi.useRealTimers();
       }
+    });
+
+    it("are locked after a message is sent", async () => {
+      const { result } = await startedConnection();
+
+      act(() => result.current.sendMessage("hi"));
+
+      expect(result.current.canSendMessage).toBe(false);
+    });
+
+    it("are unlocked by web_messages_accepted: true after a send", async () => {
+      const { result, emit } = await startedConnection();
+
+      act(() => result.current.sendMessage("hi"));
+      act(() =>
+        emit({ type: "web_messages_accepted", data: { accepted: true } }),
+      );
+
+      expect(result.current.canSendMessage).toBe(true);
+    });
+
+    it("stay locked by web_messages_accepted: false, with the send lock's timers cleared", async () => {
+      vi.useFakeTimers();
+      try {
+        const { result, emit } = await startedConnection();
+
+        act(() => result.current.sendMessage("hi"));
+        expect(vi.getTimerCount()).toBe(1);
+        act(() =>
+          emit({ type: "web_messages_accepted", data: { accepted: false } }),
+        );
+
+        expect(result.current.canSendMessage).toBe(false);
+        expect(vi.getTimerCount()).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("are unlocked when the connection drops", async () => {
+      const { result, emit } = await startedConnection();
+
+      act(() => result.current.sendMessage("hi"));
+      act(() => emit({ type: "close", code: 1006, reason: "" }));
+
+      expect(result.current.connectionStatus).not.toBe("connected");
+      expect(result.current.canSendMessage).toBe(true);
+    });
+
+    it("are unlocked after 15 seconds without an answer", async () => {
+      vi.useFakeTimers();
+      try {
+        const { result } = await startedConnection();
+
+        act(() => result.current.sendMessage("hi"));
+        act(() => vi.advanceTimersByTime(14_999));
+        expect(result.current.canSendMessage).toBe(false);
+        act(() => vi.advanceTimersByTime(1));
+        expect(result.current.canSendMessage).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("leave no send lock timers behind when the hook unmounts", async () => {
+      vi.useFakeTimers();
+      try {
+        const { result, emit, unmount } = await startedConnection();
+        act(() => result.current.sendMessage("hi"));
+        act(() =>
+          emit({
+            type: "message_created",
+            data: {
+              id: "m1",
+              role: "user",
+              text: "hi",
+              createdAt: "2024-01-01T00:00:00Z",
+            },
+          }),
+        );
+        expect(vi.getTimerCount()).toBe(2);
+
+        unmount();
+
+        expect(vi.getTimerCount()).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("are not locked by a message the transport drops", async () => {
+      const { result } = await startedConnection();
+      const { WebSocketTransport } = await import("@realtalk-ai/core");
+      const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+      transport.status = "connecting";
+
+      act(() => result.current.sendMessage("hi"));
+
+      expect(result.current.canSendMessage).toBe(true);
+    });
+
+    it("still go out while locked", async () => {
+      const { result } = await startedConnection();
+      const { WebSocketTransport } = await import("@realtalk-ai/core");
+      const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+
+      act(() => result.current.sendMessage("first"));
+      act(() => result.current.sendMessage("second"));
+
+      expect(transport.sendEvent).toHaveBeenCalledWith({
+        type: "message",
+        data: "second",
+      });
+    });
+
+    describe("after the visitor's own message shows up", () => {
+      const created = (role: "user" | "agent"): ConversationEvent => ({
+        type: "message_created",
+        data: { id: role, role, text: "hi", createdAt: "2024-01-01T00:00:00Z" },
+      });
+
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it("stay locked when the server stops accepting within 100 ms", async () => {
+        const { result, emit } = await startedConnection();
+
+        act(() => result.current.sendMessage("hi"));
+        act(() => emit(created("user")));
+        expect(result.current.canSendMessage).toBe(false);
+        act(() => vi.advanceTimersByTime(5));
+        expect(result.current.canSendMessage).toBe(false);
+        act(() =>
+          emit({ type: "web_messages_accepted", data: { accepted: false } }),
+        );
+
+        expect(result.current.canSendMessage).toBe(false);
+        expect(vi.getTimerCount()).toBe(0);
+      });
+
+      it("are unlocked 100 ms later when the server says nothing", async () => {
+        const { result, emit } = await startedConnection();
+
+        act(() => result.current.sendMessage("hi"));
+        act(() => emit(created("agent")));
+        act(() => vi.advanceTimersByTime(1000));
+        expect(result.current.canSendMessage).toBe(false);
+
+        act(() => emit(created("user")));
+        act(() => vi.advanceTimersByTime(99));
+        expect(result.current.canSendMessage).toBe(false);
+        act(() => vi.advanceTimersByTime(1));
+        expect(result.current.canSendMessage).toBe(true);
+      });
+
+      it("are locked again by a new send, which cancels the 100 ms wait", async () => {
+        const { result, emit } = await startedConnection();
+
+        act(() => result.current.sendMessage("hi"));
+        act(() => emit(created("user")));
+        act(() => vi.advanceTimersByTime(50));
+        act(() => result.current.sendMessage("again"));
+        act(() => vi.advanceTimersByTime(60));
+
+        expect(result.current.canSendMessage).toBe(false);
+      });
+
+      it("are unlocked at once by web_messages_accepted, which cancels the 100 ms wait", async () => {
+        const { result, emit } = await startedConnection();
+
+        act(() => result.current.sendMessage("hi"));
+        act(() => emit(created("user")));
+        act(() =>
+          emit({ type: "web_messages_accepted", data: { accepted: true } }),
+        );
+        expect(result.current.canSendMessage).toBe(true);
+
+        act(() => result.current.sendMessage("again"));
+        act(() => vi.advanceTimersByTime(100));
+        expect(result.current.canSendMessage).toBe(false);
+      });
+
+      it("are unlocked when the connection drops, with no late unlock", async () => {
+        const { result, emit } = await startedConnection();
+
+        act(() => result.current.sendMessage("hi"));
+        act(() => emit(created("user")));
+        expect(vi.getTimerCount()).toBe(2);
+        act(() => emit({ type: "close", code: 1006, reason: "" }));
+
+        expect(result.current.canSendMessage).toBe(true);
+        expect(vi.getTimerCount()).toBe(1);
+      });
     });
   });
 

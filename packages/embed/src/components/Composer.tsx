@@ -18,24 +18,17 @@ export function Composer({
   const [draft, setDraft] = useState("");
   const hasText = draft.trim() !== "";
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const sendInFlightRef = useRef(false);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const sentDraft = draft;
-    const text = sentDraft.trim();
-    if (!text || disabled || sendInFlightRef.current) return;
-    sendInFlightRef.current = true;
+    const text = draft.trim();
+    if (!text || disabled) return;
+    setDraft("");
     try {
       await onSend(text);
     } catch {
-      return;
-    } finally {
-      sendInFlightRef.current = false;
+      setDraft(text);
     }
-    setDraft((current) =>
-      current.startsWith(sentDraft) ? current.slice(sentDraft.length) : current,
-    );
   };
 
   const sendOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {

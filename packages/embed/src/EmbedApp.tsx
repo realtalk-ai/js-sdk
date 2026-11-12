@@ -105,7 +105,6 @@ function Widget({
     userState,
     isMicEnabled: micOn,
     canSendMessage,
-    isSendPending,
   } = conversation;
 
   const firstOpenHandledRef = useRef(false);
@@ -144,7 +143,6 @@ function Widget({
   const active = status === "active";
   const paused = status === "paused";
   const mode = active ? conversation.mode : startMode;
-
   const sounds = useSounds(open, mode.agentAudio, messages, soundsDisabled);
   soundsRef.current = sounds;
 
@@ -184,12 +182,12 @@ function Widget({
     setNotice(null);
     try {
       if (!active) await start();
+      conversationRef.current.sendMessage(text);
     } catch (error) {
       console.error("[realtalk-embed] failed to send message", error);
       setNotice("Your message was not sent. Please try again.");
       throw error;
     }
-    await conversationRef.current.sendMessageAndWait(text);
   };
 
   const handleEnd = async () => {
@@ -316,7 +314,7 @@ function Widget({
               <NewConversation onStartNew={handleStartNew} />
             ) : (
               <Composer
-                disabled={starting || isSendPending || !canSendMessage}
+                disabled={starting || !canSendMessage}
                 showVoice={showVoice}
                 voiceOn={voiceOn}
                 onSend={handleSend}

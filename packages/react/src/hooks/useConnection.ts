@@ -21,7 +21,6 @@ import {
   ApiError,
   ProtocolError,
   ValidationError,
-  MessageNotShownError,
 } from "@realtalk-ai/core";
 import type {
   UseConversationOptions,
@@ -31,7 +30,8 @@ import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
-const SENT_MESSAGE_WAIT_MS = 30_000;
+const SEND_LOCK_TIMEOUT_MS = 15_000;
+const SEND_LOCK_GRACE_MS = 100;
 export const DEFAULT_CONVERSATION_MODE: ConversationMode = {
   userAudio: false,
   agentAudio: false,
@@ -41,12 +41,6 @@ function isSameMode(a: ConversationMode, b: ConversationMode): boolean {
   return a.userAudio === b.userAudio && a.agentAudio === b.agentAudio;
 }
 
-interface PendingSend {
-  resolve: () => void;
-  reject: (error: MessageNotShownError) => void;
-  timeout: ReturnType<typeof setTimeout>;
-}
-
 export interface UseConnectionReturn {
   connectionStatus: ConnectionStatus;
   status: ConversationStatus;
@@ -54,13 +48,11 @@ export interface UseConnectionReturn {
   error: ConversationError | null;
   mode: ConversationMode;
   canSendMessage: boolean;
-  isSendPending: boolean;
   startConversation: (
     options: UseConversationSessionOptions,
   ) => Promise<string>;
   endConversation: () => Promise<void>;
   sendMessage: (text: string) => void;
-  sendMessageAndWait: (text: string) => Promise<void>;
   sendDTMF: (digit: DTMFDigit) => void;
   sendEvent: (payload: ClientEvent) => void;
   sendAudio: (pcm: Int16Array) => void;
@@ -104,8 +96,8 @@ export function useConnection(opts: {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<ConversationError | null>(null);
   const [mode, setMode] = useState<ConversationMode>(DEFAULT_CONVERSATION_MODE);
-  const [canSendMessage, setCanSendMessage] = useState(true);
-  const [isSendPending, setIsSendPending] = useState(false);
+  const [messagesAccepted, setMessagesAccepted] = useState(true);
+  const [isSendLocked, setIsSendLocked] = useState(false);
 
   const modeRef = useRef<ConversationMode>(DEFAULT_CONVERSATION_MODE);
   const requestedModeRef = useRef<ConversationMode | null>(null);
@@ -118,8 +110,8 @@ export function useConnection(opts: {
     null,
   );
   const intentionalDisconnectRef = useRef(false);
-  const connectionStatusRef = useRef<ConnectionStatus>("disconnected");
-  const pendingSendRef = useRef<PendingSend | null>(null);
+  const sendLockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sendLockGraceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setConversationIdBoth = useCallback((id: string | null) => {
     conversationIdRef.current = id;
@@ -132,24 +124,35 @@ export function useConnection(opts: {
     setMode(newMode);
   }, []);
 
-  const settlePendingSend = useCallback((shown: boolean) => {
-    const pendingSend = pendingSendRef.current;
-    if (!pendingSend) return;
-    pendingSendRef.current = null;
-    clearTimeout(pendingSend.timeout);
-    setIsSendPending(false);
-    if (shown) pendingSend.resolve();
-    else pendingSend.reject(new MessageNotShownError());
+  const clearSendLockTimers = useCallback(() => {
+    if (sendLockTimeoutRef.current) {
+      clearTimeout(sendLockTimeoutRef.current);
+      sendLockTimeoutRef.current = null;
+    }
+    if (sendLockGraceRef.current) {
+      clearTimeout(sendLockGraceRef.current);
+      sendLockGraceRef.current = null;
+    }
   }, []);
+
+  const releaseSendLock = useCallback(() => {
+    clearSendLockTimers();
+    setIsSendLocked(false);
+  }, [clearSendLockTimers]);
+
+  const releaseSendLockSoon = useCallback(() => {
+    const isLocked = sendLockTimeoutRef.current !== null;
+    if (!isLocked || sendLockGraceRef.current) return;
+    sendLockGraceRef.current = setTimeout(releaseSendLock, SEND_LOCK_GRACE_MS);
+  }, [releaseSendLock]);
 
   const updateConnectionStatus = useCallback(
     (newStatus: ConnectionStatus) => {
-      connectionStatusRef.current = newStatus;
-      if (newStatus !== "connected") settlePendingSend(false);
+      if (newStatus !== "connected") releaseSendLock();
       setConnectionStatus(newStatus);
       optionsRef.current.onConnectionStatusChange?.(newStatus);
     },
-    [optionsRef, settlePendingSend],
+    [optionsRef, releaseSendLock],
   );
 
   const updateConversationStatus = useCallback(
@@ -167,7 +170,6 @@ export function useConnection(opts: {
     }
 
     onCleanup();
-    settlePendingSend(false);
 
     if (transportRef.current) {
       transportRef.current.removeAllListeners();
@@ -176,11 +178,12 @@ export function useConnection(opts: {
     }
 
     setConversationIdBoth(null);
-    setCanSendMessage(true);
+    setMessagesAccepted(true);
+    releaseSendLock();
     sessionOptionsRef.current = null;
     sessionTokenRef.current = null;
     reconnectAttemptRef.current = 0;
-  }, [setConversationIdBoth, onCleanup, settlePendingSend]);
+  }, [setConversationIdBoth, onCleanup, releaseSendLock]);
 
   const handleConversationEvent = useCallback(
     (event: ConversationEvent) => {
@@ -188,8 +191,8 @@ export function useConnection(opts: {
 
       switch (event.type) {
         case EventType.MessageCreated:
+          if (event.data.role === "user") releaseSendLockSoon();
           onEvent(event);
-          if (event.data.role === "user") settlePendingSend(true);
           break;
         case EventType.ExistingMessages:
         case EventType.MessageUpdated:
@@ -226,8 +229,8 @@ export function useConnection(opts: {
           break;
         }
         case EventType.WebMessagesAccepted:
-          setCanSendMessage(event.data.accepted);
-          if (!event.data.accepted) settlePendingSend(false);
+          setMessagesAccepted(event.data.accepted);
+          releaseSendLock();
           break;
         case EventType.ConversationFinished: {
           const finishedId = conversationIdRef.current;
@@ -286,6 +289,8 @@ export function useConnection(opts: {
     },
     [
       cleanup,
+      releaseSendLock,
+      releaseSendLockSoon,
       updateConnectionStatus,
       updateConversationStatus,
       setConversationIdBoth,
@@ -293,7 +298,6 @@ export function useConnection(opts: {
       onClear,
       onModeRefused,
       setModeBoth,
-      settlePendingSend,
       optionsRef,
     ],
   );
@@ -303,7 +307,7 @@ export function useConnection(opts: {
       const { agentId } = sessionOptions;
 
       updateConnectionStatus("connecting");
-      setCanSendMessage(true);
+      setMessagesAccepted(true);
 
       const id = conversationIdRef.current;
       if (!id) {
@@ -540,35 +544,20 @@ export function useConnection(opts: {
     setConversationIdBoth,
   ]);
 
-  const sendMessage = useCallback((text: string) => {
-    if (transportRef.current) {
-      transportRef.current.sendEvent({ type: "message", data: text });
-    }
-  }, []);
-
-  const sendMessageAndWait = useCallback(
-    (text: string): Promise<void> => {
+  const sendMessage = useCallback(
+    (text: string) => {
       const transport = transportRef.current;
-      const canSendNow =
-        transport !== null &&
-        connectionStatusRef.current === "connected" &&
-        pendingSendRef.current === null;
-      if (!canSendNow) return Promise.reject(new MessageNotShownError());
-
+      if (!transport) return;
       transport.sendEvent({ type: "message", data: text });
-      setIsSendPending(true);
-      return new Promise<void>((resolve, reject) => {
-        pendingSendRef.current = {
-          resolve,
-          reject,
-          timeout: setTimeout(
-            () => settlePendingSend(false),
-            SENT_MESSAGE_WAIT_MS,
-          ),
-        };
-      });
+      if (transport.status !== "connected") return;
+      clearSendLockTimers();
+      sendLockTimeoutRef.current = setTimeout(
+        releaseSendLock,
+        SEND_LOCK_TIMEOUT_MS,
+      );
+      setIsSendLocked(true);
     },
-    [settlePendingSend],
+    [clearSendLockTimers, releaseSendLock],
   );
 
   const sendDTMF = useCallback((digit: DTMFDigit) => {
@@ -616,12 +605,10 @@ export function useConnection(opts: {
     conversationId,
     error,
     mode,
-    canSendMessage,
-    isSendPending,
+    canSendMessage: messagesAccepted && !isSendLocked,
     startConversation,
     endConversation,
     sendMessage,
-    sendMessageAndWait,
     sendDTMF,
     sendEvent,
     sendAudio,

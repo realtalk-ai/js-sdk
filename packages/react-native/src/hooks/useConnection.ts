@@ -29,6 +29,8 @@ import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+const SEND_LOCK_TIMEOUT_MS = 15_000;
+const SEND_LOCK_GRACE_MS = 100;
 export const DEFAULT_CONVERSATION_MODE: ConversationMode = {
   userAudio: false,
   agentAudio: false,
@@ -78,7 +80,8 @@ export function useConnection(opts: {
   const [status, setStatus] = useState<ConversationStatus>("not_started");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<ConversationError | null>(null);
-  const [canSendMessage, setCanSendMessage] = useState(true);
+  const [messagesAccepted, setMessagesAccepted] = useState(true);
+  const [isSendLocked, setIsSendLocked] = useState(false);
 
   const transportRef = useRef<WebSocketTransport | null>(null);
   const conversationIdRef = useRef<string | null>(null);
@@ -89,18 +92,43 @@ export function useConnection(opts: {
     null,
   );
   const intentionalDisconnectRef = useRef(false);
+  const sendLockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sendLockGraceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setConversationIdBoth = useCallback((id: string | null) => {
     conversationIdRef.current = id;
     setConversationId(id);
   }, []);
 
+  const clearSendLockTimers = useCallback(() => {
+    if (sendLockTimeoutRef.current) {
+      clearTimeout(sendLockTimeoutRef.current);
+      sendLockTimeoutRef.current = null;
+    }
+    if (sendLockGraceRef.current) {
+      clearTimeout(sendLockGraceRef.current);
+      sendLockGraceRef.current = null;
+    }
+  }, []);
+
+  const releaseSendLock = useCallback(() => {
+    clearSendLockTimers();
+    setIsSendLocked(false);
+  }, [clearSendLockTimers]);
+
+  const releaseSendLockSoon = useCallback(() => {
+    const isLocked = sendLockTimeoutRef.current !== null;
+    if (!isLocked || sendLockGraceRef.current) return;
+    sendLockGraceRef.current = setTimeout(releaseSendLock, SEND_LOCK_GRACE_MS);
+  }, [releaseSendLock]);
+
   const updateConnectionStatus = useCallback(
     (newStatus: ConnectionStatus) => {
+      if (newStatus !== "connected") releaseSendLock();
       setConnectionStatus(newStatus);
       optionsRef.current.onConnectionStatusChange?.(newStatus);
     },
-    [optionsRef],
+    [optionsRef, releaseSendLock],
   );
 
   const updateConversationStatus = useCallback(
@@ -126,19 +154,23 @@ export function useConnection(opts: {
     }
 
     setConversationIdBoth(null);
-    setCanSendMessage(true);
+    setMessagesAccepted(true);
+    releaseSendLock();
     sessionOptionsRef.current = null;
     sessionTokenRef.current = null;
     reconnectAttemptRef.current = 0;
-  }, [setConversationIdBoth, onCleanup]);
+  }, [setConversationIdBoth, onCleanup, releaseSendLock]);
 
   const handleConversationEvent = useCallback(
     (event: ConversationEvent) => {
       optionsRef.current.onEvent?.(event);
 
       switch (event.type) {
-        case EventType.ExistingMessages:
         case EventType.MessageCreated:
+          if (event.data.role === "user") releaseSendLockSoon();
+          onEvent(event);
+          break;
+        case EventType.ExistingMessages:
         case EventType.MessageUpdated:
         case EventType.Vad:
           onEvent(event);
@@ -148,7 +180,8 @@ export function useConnection(opts: {
           break;
         }
         case EventType.WebMessagesAccepted:
-          setCanSendMessage(event.data.accepted);
+          setMessagesAccepted(event.data.accepted);
+          releaseSendLock();
           break;
         case EventType.ConversationFinished: {
           const finishedId = conversationIdRef.current;
@@ -207,6 +240,8 @@ export function useConnection(opts: {
     },
     [
       cleanup,
+      releaseSendLock,
+      releaseSendLockSoon,
       updateConnectionStatus,
       updateConversationStatus,
       setConversationIdBoth,
@@ -221,7 +256,7 @@ export function useConnection(opts: {
       const { agentId } = sessionOptions;
 
       updateConnectionStatus("connecting");
-      setCanSendMessage(true);
+      setMessagesAccepted(true);
 
       const id = conversationIdRef.current;
       if (!id) {
@@ -449,11 +484,21 @@ export function useConnection(opts: {
     setConversationIdBoth,
   ]);
 
-  const sendMessage = useCallback((text: string) => {
-    if (transportRef.current) {
-      transportRef.current.sendEvent({ type: "message", data: text });
-    }
-  }, []);
+  const sendMessage = useCallback(
+    (text: string) => {
+      const transport = transportRef.current;
+      if (!transport) return;
+      transport.sendEvent({ type: "message", data: text });
+      if (transport.status !== "connected") return;
+      clearSendLockTimers();
+      sendLockTimeoutRef.current = setTimeout(
+        releaseSendLock,
+        SEND_LOCK_TIMEOUT_MS,
+      );
+      setIsSendLocked(true);
+    },
+    [clearSendLockTimers, releaseSendLock],
+  );
 
   const sendDTMF = useCallback((digit: DTMFDigit) => {
     if (transportRef.current) {
@@ -485,7 +530,7 @@ export function useConnection(opts: {
     status,
     conversationId,
     error,
-    canSendMessage,
+    canSendMessage: messagesAccepted && !isSendLocked,
     startConversation,
     endConversation,
     sendMessage,

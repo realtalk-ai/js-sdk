@@ -116,8 +116,7 @@ const conversation = useConversation(options);
 | `isMicMuted`       | `boolean`                   | Microphone mute state                                                   |
 | `isMicEnabled`     | `boolean`                   | Whether a microphone is currently attached                              |
 | `isAudioMuted`     | `boolean`                   | Audio output mute state                                                 |
-| `canSendMessage`   | `boolean`                   | Whether a typed message is accepted now; false while the agent answers  |
-| `isSendPending`    | `boolean`                   | Whether `sendMessageAndWait` is waiting for the sent message to show up |
+| `canSendMessage`   | `boolean`                   | False from a send until it shows up, and while the agent answers        |
 
 ### Methods
 
@@ -126,7 +125,6 @@ const conversation = useConversation(options);
 | `startConversation(options)` | Start a conversation session                                                                 |
 | `endConversation()`          | Send hangup and end the current session                                                      |
 | `sendMessage(text)`          | Send a text message                                                                          |
-| `sendMessageAndWait(text)`   | Send a text message and wait until it shows up (see [Sending messages](#sending-messages))   |
 | `sendDTMF(digit)`            | Send a DTMF tone                                                                             |
 | `sendEvent(payload)`         | Send a custom event                                                                          |
 | `toggleMic()`                | Toggle microphone mute                                                                       |
@@ -168,27 +166,6 @@ const { mode, setMode } = useConversation();
 
 await setMode({ userAudio: false, agentAudio: true }); // start hearing the agent
 await setMode({ userAudio: true, agentAudio: true }); // and talk to it
-```
-
-### Sending messages
-
-`sendMessage` sends a text message and returns at once. `sendMessageAndWait` sends it and resolves once the next user message arrives from the server. It rejects with `MessageNotShownError` if the server stops accepting messages (`canSendMessage` turns false), the connection leaves `"connected"`, or nothing has happened after 30 seconds, and at once, without sending, when the connection isn't `"connected"` or an earlier `sendMessageAndWait` is still waiting. `isSendPending` is true while it waits, so a chat UI can lock sending and keep the draft until the message shows up.
-
-```tsx
-const { sendMessageAndWait, isSendPending, canSendMessage } = useConversation();
-
-const send = async () => {
-  try {
-    await sendMessageAndWait(draft);
-    setDraft("");
-  } catch {
-    // MessageNotShownError: keep the draft
-  }
-};
-
-<button onClick={send} disabled={isSendPending || !canSendMessage}>
-  Send
-</button>;
 ```
 
 ### Paused conversations
