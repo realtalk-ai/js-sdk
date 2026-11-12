@@ -295,6 +295,21 @@ describe("EmbedApp", () => {
       update({ canSendMessage: true });
       expect(sendButton.hasAttribute("disabled")).toBe(false);
     });
+
+    it("does not lock sending during a handoff", async () => {
+      await renderWidget({
+        status: "active",
+        canSendMessage: false,
+        annotations: [HANDOFF_REQUESTED],
+      });
+      openPanel();
+
+      const textarea = screen.getByPlaceholderText("Type a message…");
+      fireEvent.change(textarea, { target: { value: "Hello" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+
+      expect(conversation.sendMessage).toHaveBeenCalledWith("Hello");
+    });
   });
 
   describe("voice", () => {

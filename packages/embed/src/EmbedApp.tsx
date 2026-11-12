@@ -261,6 +261,10 @@ function Widget({
     audioOn,
     annotations,
   });
+  const inHandoff = annotations.some(
+    ({ annotation }) => annotation.kind === "handoff_requested",
+  );
+  const sendLocked = !canSendMessage && !inHandoff;
 
   if (!open) {
     return (
@@ -314,7 +318,7 @@ function Widget({
               <NewConversation onStartNew={handleStartNew} />
             ) : (
               <Composer
-                disabled={starting || !canSendMessage}
+                disabled={starting || sendLocked}
                 showVoice={showVoice}
                 voiceOn={voiceOn}
                 onSend={handleSend}
