@@ -1,0 +1,27 @@
+packages/react-native/src/hooks/useConnection.ts
+  s_16624c998fc169::t_e544b9c22b1346 33,96,103,108-111,114-124,170,244,493,500
+packages/react-native/tests/useConnection.test.ts
+  s_16624c998fc169::t_c494176da2a539 1140,1142,1144-1148
+  s_16624c998fc169::t_5afab48a8dda2a 1,1072,1078-1080,1082-1084,1086-1139,1141,1143,1149
+packages/react/tests/useConnection.test.ts
+  s_16624c998fc169::t_5afab48a8dda2a 1,1007,1013-1015,1017-1019,1021-1074,1076,1078,1084
+  s_16624c998fc169::t_c494176da2a539 1075,1077,1079-1083
+packages/react/src/hooks/useConnection.ts
+  s_16624c998fc169::t_e544b9c22b1346 34,114,127,132-135,138-148,194,293,553,560
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "29e5e3a014783841cdd6bee9738d18c324505328",
+  "prompts": {},
+  "sessions": {
+    "s_16624c998fc169": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b60103a1-c2c8-4e88-b101-10feef0b3b86",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
