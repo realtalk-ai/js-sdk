@@ -1,0 +1,22 @@
+packages/embed/src/EmbedApp.tsx
+  s_16624c998fc169::t_26087dfa60bf01 264-268
+  s_16624c998fc169::t_5e5d44ae6bd5de 322
+packages/embed/tests/EmbedApp.test.tsx
+  s_16624c998fc169::t_26087dfa60bf01 298-312
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5cde25cfcaf0c94156bbfab4292ba1170e183807",
+  "prompts": {},
+  "sessions": {
+    "s_16624c998fc169": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b60103a1-c2c8-4e88-b101-10feef0b3b86",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
