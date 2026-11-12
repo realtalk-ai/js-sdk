@@ -1,0 +1,23 @@
+packages/react/package.json
+  s_16624c998fc169::t_e5f34aee18f626 26
+packages/react-native/package.json
+  s_16624c998fc169::t_e5f34aee18f626 32
+.changeset/lock-chat-while-agent-answers.md
+  s_16624c998fc169::t_eaf0ab9ceaacb4 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f09e2f062ffd60b34faa4adf258444dd4d02b2d7",
+  "prompts": {},
+  "sessions": {
+    "s_16624c998fc169": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b60103a1-c2c8-4e88-b101-10feef0b3b86",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
