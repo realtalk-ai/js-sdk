@@ -1,0 +1,43 @@
+packages/react/tests/useConversation.test.tsx
+  s_16624c998fc169::t_ae69641a4a1d9b 1,4
+packages/react/README.md
+  s_16624c998fc169::t_15aaf4a9cd81e0 119
+packages/embed/tests/EmbedApp.test.tsx
+  s_16624c998fc169::t_192ff275583a74 50,116,197,281,289,293,348,795,855,867,1047,1069
+README.md
+  s_16624c998fc169::t_bc9e5fceaa7de3 21
+packages/react-native/README.md
+  s_16624c998fc169::t_c36a326a7a2b80 142
+packages/embed/src/components/Composer.tsx
+  s_16624c998fc169::t_c22d1785327cf8 24-26,30
+packages/core/README.md
+  s_16624c998fc169::t_ef68b0b529fff1 69-74
+packages/react-native/tests/useConnection.test.ts
+  s_16624c998fc169::t_c1f840f88e9089 1043-1134
+  s_16624c998fc169::t_55143f6fd87b18 48
+packages/react-native/src/hooks/useConnection.ts
+  s_16624c998fc169::t_814903b55b9a59 32,82-83,94,101-108,111,115,141-142,146,164-165,224,239,467-482,514
+packages/react/tests/useConnection.test.ts
+  s_16624c998fc169::t_d7ff698b58622e 978-1069
+  s_16624c998fc169::t_bc30a499472341 18
+packages/react/src/hooks/useConnection.ts
+  s_16624c998fc169::t_8a9f3114c3df63 33,98-99,112,125-130,135,139,165-166,170,178,213-214,273,290,527-528,530,532-539,541,589
+packages/embed/src/EmbedApp.tsx
+  s_16624c998fc169::t_43eee53631cfe6 185,317
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ae7559315568e11735389187ca25d9e774414cf2",
+  "prompts": {},
+  "sessions": {
+    "s_16624c998fc169": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b60103a1-c2c8-4e88-b101-10feef0b3b86",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jf-Lindberg <jakob.filip.lindberg@gmail.com>"
+    }
+  }
+}
