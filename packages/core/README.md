@@ -42,7 +42,7 @@ await transport.connect({
   protocol: 2,
 });
 
-transport.sendEvent({ type: "conversation.start" });
+transport.sendEvent({ type: "start" });
 ```
 
 Always pass `protocol: 2` to `connect`. Connecting without it is deprecated and logs a warning.
@@ -125,15 +125,15 @@ Two exported sets classify `close` codes: `RECONNECTABLE_CLOSE_CODES` (transient
 
 Events you can send to the server:
 
-| Event                      | Payload                                                                                     | Description                                                      |
-| -------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `conversation.start`       | `{ type: "conversation.start" }`                                                            | Start the conversation. The agent comes from the session token   |
-| `message.create`           | `{ type: "message.create"; data: string }`                                                  | Send a text message                                              |
-| `dtmf.press`               | `{ type: "dtmf.press"; data: DTMFDigit }`                                                   | Send a DTMF tone (0–9, \*, #, A–D)                               |
-| `conversation_mode.update` | `{ type: "conversation_mode.update"; data: { user_audio: boolean; agent_audio: boolean } }` | Change which audio the conversation carries without reconnecting |
-| `conversation.end`         | `{ type: "conversation.end" }`                                                              | End the conversation                                             |
+| Event                   | Payload                                                                                  | Description                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `start`                 | `{ type: "start" }`                                                                      | Start the conversation. The agent comes from the session token   |
+| `message`               | `{ type: "message"; data: string }`                                                      | Send a text message                                              |
+| `dtmf`                  | `{ type: "dtmf"; data: DTMFDigit }`                                                      | Send a DTMF tone (0–9, \*, #, A–D)                               |
+| `set_conversation_mode` | `{ type: "set_conversation_mode"; data: { user_audio: boolean; agent_audio: boolean } }` | Change which audio the conversation carries without reconnecting |
+| `end_conversation`      | `{ type: "end_conversation" }`                                                           | End the conversation                                             |
 
-The older names `start`, `message`, `dtmf`, `set_conversation_mode` and `end_conversation` still work, but new code should use the names above. The server only accepts the events it knows.
+`hangup` and DTMF sent as `{ event: "dtmf" }` are deprecated and log a warning. The server only accepts the events it knows.
 
 ## API overview
 
