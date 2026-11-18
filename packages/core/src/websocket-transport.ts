@@ -19,6 +19,7 @@ import {
   ProtocolError,
 } from "./errors.js";
 import { pcmToBase64, base64ToPcm } from "./audio.js";
+import { warnDeprecated } from "./deprecations.js";
 import { logger } from "./logger.js";
 
 export interface WebSocketTransportOptions {
@@ -80,6 +81,14 @@ export class WebSocketTransport implements AudioTransport {
       throw new ConnectionError(
         ConnectionErrorReason.WebSocketFailed,
         "Already connected or connecting",
+      );
+    }
+
+    const isOnProtocol1 = options.protocol !== 2;
+    if (isOnProtocol1) {
+      warnDeprecated(
+        "protocol_1",
+        "protocol 1 will be removed. Upgrade @realtalk-ai/react or @realtalk-ai/react-native, or pass protocol: 2 to connect.",
       );
     }
 
@@ -152,6 +161,20 @@ export class WebSocketTransport implements AudioTransport {
   }
 
   sendEvent(payload: ClientEvent): void {
+    const isHangup = "type" in payload && payload.type === "hangup";
+    if (isHangup) {
+      warnDeprecated(
+        "hangup",
+        '"hangup" will be removed. Send "end_conversation" instead.',
+      );
+    }
+    if ("event" in payload) {
+      warnDeprecated(
+        "event_key",
+        'Events with an "event" key will be removed. Use "type".',
+      );
+    }
+
     if (this.ws?.readyState !== WebSocket.OPEN) {
       logger.warn("send_event_dropped", {
         eventType:

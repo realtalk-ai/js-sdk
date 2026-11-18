@@ -452,7 +452,7 @@ export function useConnection(opts: {
 
   const sendDTMF = useCallback((digit: DTMFDigit) => {
     if (transportRef.current) {
-      transportRef.current.sendEvent({ event: "dtmf", data: digit });
+      transportRef.current.sendEvent({ type: "dtmf", data: digit });
     }
   }, []);
 

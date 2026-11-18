@@ -409,7 +409,7 @@ describe("useConversation", () => {
     const { WebSocketTransport } = await import("@realtalk-ai/core");
     const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
     expect(transport.sendEvent).toHaveBeenCalledWith({
-      event: "dtmf",
+      type: "dtmf",
       data: "9",
     });
   });

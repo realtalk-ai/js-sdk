@@ -131,7 +131,7 @@ Events you can send to the server:
 | Event                   | Payload                                                                                  | Description                                                      |
 | ----------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `message`               | `{ type: "message"; data: string }`                                                      | Send a text message                                              |
-| `dtmf`                  | `{ event: "dtmf"; data: DTMFDigit }`                                                     | Send a DTMF tone (0–9, \*, #, A–D)                               |
+| `dtmf`                  | `{ type: "dtmf"; data: DTMFDigit }`                                                      | Send a DTMF tone (0–9, \*, #, A–D)                               |
 | `set_conversation_mode` | `{ type: "set_conversation_mode"; data: { user_audio: boolean; agent_audio: boolean } }` | Change which audio the conversation carries without reconnecting |
 
 You can also send arbitrary custom events — any object with a `type` string field will be forwarded.

@@ -4,6 +4,9 @@ import { ConnectionError, ConnectionErrorReason } from "../src/errors.js";
 import { DefaultReconnectPolicy } from "../src/reconnect.js";
 import { SDK_NAME, SDK_VERSION } from "../src/version.js";
 import type { ClientEvent } from "../src/types.js";
+import { warnDeprecated } from "../src/deprecations.js";
+
+vi.mock("../src/deprecations.js", () => ({ warnDeprecated: vi.fn() }));
 
 const coreSdkInfo = {
   name: SDK_NAME,
@@ -577,6 +580,81 @@ describe("WebSocketTransport", () => {
 
       expect(handler.mock.calls[0][0].type).toBe("message_created");
       expect(handler.mock.calls[0][0].data.text).toBe("Hej");
+    });
+  });
+
+  describe("deprecation warnings", () => {
+    async function connectOn(protocol?: 1 | 2) {
+      const transport = new WebSocketTransport();
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "",
+        sdkInfo: coreSdkInfo,
+        protocol,
+      });
+      mockWs.simulateOpen();
+      await p;
+      vi.mocked(warnDeprecated).mockClear();
+      return transport;
+    }
+
+    function warnedNames() {
+      return vi.mocked(warnDeprecated).mock.calls.map(([name]) => name);
+    }
+
+    beforeEach(() => {
+      vi.mocked(warnDeprecated).mockClear();
+    });
+
+    it("warns when connecting without protocol 2", async () => {
+      const transport = new WebSocketTransport();
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "",
+        sdkInfo: coreSdkInfo,
+      });
+      mockWs.simulateOpen();
+      await p;
+
+      expect(warnedNames()).toEqual(["protocol_1"]);
+    });
+
+    it("does not warn when connecting on protocol 2", async () => {
+      const transport = new WebSocketTransport();
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "",
+        sdkInfo: coreSdkInfo,
+        protocol: 2,
+      });
+      mockWs.simulateOpen();
+      await p;
+
+      expect(warnedNames()).toEqual([]);
+    });
+
+    it("warns when sending hangup", async () => {
+      const transport = await connectOn(2);
+
+      transport.sendEvent({ type: "hangup", data: {} });
+
+      expect(warnedNames()).toEqual(["hangup"]);
+    });
+
+    it("warns when sending an event key", async () => {
+      const transport = await connectOn(2);
+
+      transport.sendEvent({ event: "dtmf", data: "5" });
+
+      expect(warnedNames()).toEqual(["event_key"]);
+    });
+
+    it("does not warn when sending end_conversation", async () => {
+      const transport = await connectOn(2);
+
+      transport.sendEvent({ type: "end_conversation", data: {} });
+
+      expect(warnedNames()).toEqual([]);
     });
   });
 
