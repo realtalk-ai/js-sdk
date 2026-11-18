@@ -191,6 +191,7 @@ export type ClientEvent =
   | { type: "hangup"; data?: Record<string, unknown> }
   | { type: "end_conversation"; data?: Record<string, unknown> }
   | { type: "start"; agent_id: string; metadata?: Record<string, unknown> }
+  | { type: "dtmf"; data: DTMFDigit }
   | { event: "dtmf"; data: DTMFDigit }
   | {
       type: "set_conversation_mode";

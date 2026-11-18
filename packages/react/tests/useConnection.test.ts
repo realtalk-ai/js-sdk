@@ -324,7 +324,7 @@ describe("useConnection", () => {
       (await import("@realtalk-ai/core")).WebSocketTransport,
     ).mock.results[0].value;
     expect(transport.sendEvent).toHaveBeenCalledWith({
-      event: "dtmf",
+      type: "dtmf",
       data: "5",
     });
   });
