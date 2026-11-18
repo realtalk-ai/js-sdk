@@ -190,7 +190,7 @@ export type ClientEvent =
   | { type: "message"; data: string }
   | { type: "hangup"; data?: Record<string, unknown> }
   | { type: "end_conversation"; data?: Record<string, unknown> }
-  | { type: "start"; agent_id: string; metadata?: Record<string, unknown> }
+  | { type: "start"; agent_id?: string }
   | { type: "dtmf"; data: DTMFDigit }
   | { event: "dtmf"; data: DTMFDigit }
   | {
