@@ -1,5 +1,13 @@
 # @realtalk-ai/embed
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [320c237]
+  - @realtalk-ai/core@0.8.0
+  - @realtalk-ai/react@0.10.0
+
 ## 0.8.0
 
 ### Minor Changes
