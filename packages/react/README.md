@@ -122,7 +122,7 @@ const conversation = useConversation(options);
 | Method                       | Description                                                                                  |
 | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | `startConversation(options)` | Start a conversation session                                                                 |
-| `endConversation()`          | Send hangup and end the current session                                                      |
+| `endConversation()`          | End the conversation and the current session                                                 |
 | `sendMessage(text)`          | Send a text message                                                                          |
 | `sendDTMF(digit)`            | Send a DTMF tone                                                                             |
 | `sendEvent(payload)`         | Send a custom event                                                                          |

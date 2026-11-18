@@ -3,6 +3,7 @@ import { WebSocketTransport } from "../src/websocket-transport.js";
 import { ConnectionError, ConnectionErrorReason } from "../src/errors.js";
 import { DefaultReconnectPolicy } from "../src/reconnect.js";
 import { SDK_NAME, SDK_VERSION } from "../src/version.js";
+import type { ClientEvent } from "../src/types.js";
 
 const coreSdkInfo = {
   name: SDK_NAME,
@@ -467,6 +468,115 @@ describe("WebSocketTransport", () => {
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler.mock.calls[0][0].type).toBe("error");
       expect(handler.mock.calls[0][0].message).toContain("Failed to parse");
+    });
+  });
+
+  describe("protocol 2", () => {
+    async function connectOnProtocol2() {
+      const transport = new WebSocketTransport();
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "",
+        sdkInfo: coreSdkInfo,
+        protocol: 2,
+      });
+      mockWs.simulateOpen();
+      await p;
+      return transport;
+    }
+
+    it("asks for protocol 2 when connecting", async () => {
+      await connectOnProtocol2();
+
+      expect(mockWs.url).toContain("&protocol=2");
+    });
+
+    it("does not ask for a protocol by default", async () => {
+      const transport = new WebSocketTransport();
+      const p = transport.connect({
+        url: "wss://test.com",
+        token: "",
+        sdkInfo: coreSdkInfo,
+      });
+      mockWs.simulateOpen();
+      await p;
+
+      expect(mockWs.url).not.toContain("protocol=");
+    });
+
+    it.each([
+      [
+        { type: "start", agent_id: "a1" },
+        { type: "conversation.start", agent_id: "a1" },
+      ],
+      [
+        { type: "message", data: "hi" },
+        { type: "message.create", data: "hi" },
+      ],
+      [
+        { type: "end_conversation", data: {} },
+        { type: "conversation.end", data: {} },
+      ],
+      [
+        { type: "hangup", data: {} },
+        { type: "conversation.end", data: {} },
+      ],
+      [
+        { event: "dtmf", data: "5" },
+        { type: "dtmf.press", data: "5" },
+      ],
+      [
+        { type: "subscribe_audio", data: {} },
+        { type: "audio.subscribe", data: {} },
+      ],
+      [{ type: "something_else" }, { type: "something_else" }],
+    ])("sends %o as %o", async (sent, onTheWire) => {
+      const transport = await connectOnProtocol2();
+
+      transport.sendEvent(sent as ClientEvent);
+
+      expect(JSON.parse(mockWs.sent[0])).toEqual(onTheWire);
+    });
+
+    it.each([
+      [
+        { type: "conversation.status", data: { status: "ended" } },
+        { type: "conversation_status", data: { status: "ended" } },
+      ],
+      [
+        { type: "vad.changed", data: { state: "speech" } },
+        { type: "vad", data: { state: "speech" } },
+      ],
+      [{ type: "audio.clear" }, { type: "clear" }],
+    ])("emits %o as %o", async (received, emitted) => {
+      const transport = await connectOnProtocol2();
+      const handler = vi.fn();
+      transport.onEvent(handler);
+
+      mockWs.simulateMessage(JSON.stringify(received));
+
+      expect(handler).toHaveBeenCalledWith(emitted);
+    });
+
+    it("emits a created message as a normalized message", async () => {
+      const transport = await connectOnProtocol2();
+      const handler = vi.fn();
+      transport.onEvent(handler);
+
+      mockWs.simulateMessage(
+        JSON.stringify({
+          type: "message.created",
+          data: {
+            id: "m1",
+            sender: "Agent",
+            text: "Hej",
+            timestamp: "2026-11-18T10:00:00Z",
+          },
+        }),
+      );
+
+      expect(handler.mock.calls[0][0].type).toBe("message_created");
+      expect(handler.mock.calls[0][0].data.text).toBe("Hej");
     });
   });
 

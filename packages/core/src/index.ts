@@ -21,6 +21,8 @@ export type {
   AgentState,
   UserState,
   AudioSource,
+  Protocol,
+  ServerConversationStatus,
   ClientEvent,
   ConversationEvent,
 } from "./types.js";

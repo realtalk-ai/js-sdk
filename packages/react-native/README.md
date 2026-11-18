@@ -142,16 +142,16 @@ The main hook — combines connection, messages, and audio controls.
 
 ### Methods
 
-| Method                       | Description                             |
-| ---------------------------- | --------------------------------------- |
-| `startConversation(options)` | Start a conversation session            |
-| `endConversation()`          | Send hangup and end the current session |
-| `sendMessage(text)`          | Send a text message                     |
-| `sendDTMF(digit)`            | Send a DTMF tone                        |
-| `sendEvent(payload)`         | Send a custom event                     |
-| `toggleMic()`                | Toggle microphone mute                  |
-| `toggleAudio()`              | Toggle audio output mute                |
-| `setVolume(volume)`          | Set playback volume                     |
+| Method                       | Description                                  |
+| ---------------------------- | -------------------------------------------- |
+| `startConversation(options)` | Start a conversation session                 |
+| `endConversation()`          | End the conversation and the current session |
+| `sendMessage(text)`          | Send a text message                          |
+| `sendDTMF(digit)`            | Send a DTMF tone                             |
+| `sendEvent(payload)`         | Send a custom event                          |
+| `toggleMic()`                | Toggle microphone mute                       |
+| `toggleAudio()`              | Toggle audio output mute                     |
+| `setVolume(volume)`          | Set playback volume                          |
 
 ### Session options
 

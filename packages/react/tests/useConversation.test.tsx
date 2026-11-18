@@ -108,7 +108,7 @@ describe("useConversation", () => {
     expect(result.current.conversationId).toBe("conv-1");
   });
 
-  it("endConversation sends hangup, disconnects and keeps the messages", async () => {
+  it("endConversation sends end_conversation, disconnects and keeps the messages", async () => {
     const { result } = renderHook(() => useConversation(), { wrapper });
 
     await act(async () => {
@@ -138,7 +138,7 @@ describe("useConversation", () => {
     });
 
     expect(transport.sendEvent).toHaveBeenCalledWith({
-      type: "hangup",
+      type: "end_conversation",
       data: {},
     });
     expect(result.current.connectionStatus).toBe("disconnected");
@@ -381,7 +381,7 @@ describe("useConversation", () => {
     });
   });
 
-  it("endConversation sends hangup event", async () => {
+  it("endConversation sends end_conversation", async () => {
     const { result } = renderHook(() => useConversation(), { wrapper });
 
     await act(async () => {
@@ -398,7 +398,7 @@ describe("useConversation", () => {
     const { WebSocketTransport } = await import("@realtalk-ai/core");
     const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
     expect(transport.sendEvent).toHaveBeenCalledWith({
-      type: "hangup",
+      type: "end_conversation",
       data: {},
     });
     expect(result.current.connectionStatus).toBe("disconnected");

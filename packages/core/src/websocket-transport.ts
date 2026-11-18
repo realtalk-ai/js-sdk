@@ -11,6 +11,7 @@ import {
   EventEmitter,
   convertEventForSDK,
   convertEventForTransport,
+  eventTypeFromTransport,
 } from "./events.js";
 import {
   ConnectionError,
@@ -164,7 +165,11 @@ export class WebSocketTransport implements AudioTransport {
       return;
     }
 
-    this.ws.send(JSON.stringify(convertEventForTransport(payload)));
+    this.ws.send(
+      JSON.stringify(
+        convertEventForTransport(payload, this.connectOptions?.protocol),
+      ),
+    );
   }
 
   onAudio(
@@ -198,6 +203,9 @@ export class WebSocketTransport implements AudioTransport {
       if (options.mode) {
         wsUrl += `&user_audio=${options.mode.userAudio}`;
         wsUrl += `&agent_audio=${options.mode.agentAudio}`;
+      }
+      if (options.protocol) {
+        wsUrl += `&protocol=${options.protocol}`;
       }
       let settled = false;
 
@@ -354,6 +362,10 @@ export class WebSocketTransport implements AudioTransport {
   private handleMessage(data: string): void {
     try {
       const message = JSON.parse(data);
+      message.type = eventTypeFromTransport(
+        message.type,
+        this.connectOptions?.protocol,
+      );
 
       if (message.type === "media" && message.media?.payload) {
         const pcmData = base64ToPcm(message.media.payload);

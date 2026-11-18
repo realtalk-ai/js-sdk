@@ -10,6 +10,7 @@ import type {
   ToolCall,
   ToolResult,
   ConversationEvent,
+  Protocol,
   UserMessageLatencies,
   AssistantMessageLatencies,
 } from "./types.js";
@@ -244,13 +245,59 @@ const CLIENT_TO_WIRE_TYPES: Record<string, string> = {
   message: "web_message",
 };
 
-export function convertEventForTransport(
+const V2_NAME_BY_CLIENT_TYPE: Record<string, string> = {
+  start: "conversation.start",
+  message: "message.create",
+  end_conversation: "conversation.end",
+  hangup: "conversation.end",
+  dtmf: "dtmf.press",
+  set_conversation_mode: "conversation_mode.update",
+  subscribe_audio: "audio.subscribe",
+  unsubscribe_audio: "audio.unsubscribe",
+  audio_clip_started: "audio_clip.started",
+  audio_clip_ended: "audio_clip.ended",
+};
+
+const SDK_TYPE_BY_V2_NAME: Record<string, string> = {
+  "message.history": "existing_messages",
+  "message.created": "message_created",
+  "message.updated": "message_updated",
+  "annotation.created": "annotation_created",
+  "vad.changed": "vad",
+  "audio.clear": "clear",
+  "conversation_mode.updated": "conversation_mode",
+  "conversation.status": "conversation_status",
+};
+
+function convertEventForProtocolV2(
   event: ClientEvent,
 ): Record<string, unknown> {
+  const { event: legacyType, ...rest } = event as Record<string, unknown>;
+  const type = (rest.type ?? legacyType) as string;
+  return { ...rest, type: V2_NAME_BY_CLIENT_TYPE[type] ?? type };
+}
+
+export function convertEventForTransport(
+  event: ClientEvent,
+  protocol: Protocol = 1,
+): Record<string, unknown> {
+  if (protocol === 2) {
+    return convertEventForProtocolV2(event);
+  }
   if ("type" in event && CLIENT_TO_WIRE_TYPES[event.type]) {
     return { ...event, type: CLIENT_TO_WIRE_TYPES[event.type] };
   }
   return event;
+}
+
+export function eventTypeFromTransport(
+  type: string,
+  protocol: Protocol = 1,
+): string {
+  if (protocol === 2) {
+    return SDK_TYPE_BY_V2_NAME[type] ?? type;
+  }
+  return type;
 }
 
 export function convertEventForSDK(
