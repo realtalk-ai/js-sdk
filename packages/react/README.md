@@ -125,7 +125,7 @@ const conversation = useConversation(options);
 | `endConversation()`          | End the conversation and the current session                                                 |
 | `sendMessage(text)`          | Send a text message                                                                          |
 | `sendDTMF(digit)`            | Send a DTMF tone                                                                             |
-| `sendEvent(payload)`         | Send a custom event                                                                          |
+| `sendEvent(payload)`         | Send an event to the server                                                                  |
 | `toggleMic()`                | Toggle microphone mute                                                                       |
 | `toggleAudio()`              | Toggle audio output mute                                                                     |
 | `setVolume(volume)`          | Set playback volume                                                                          |
@@ -194,7 +194,7 @@ With `startMuted: true`, playback starts at volume 0 but still runs silently in 
 
 The `onMessage` and `onAnnotation` callbacks fire only for live events, not for the history the server sends on connect. `onMessage` can fire several times for one message as it updates, and `onAnnotation` fires for each annotation the server sends, such as a human agent joining. Annotations of a kind this SDK version doesn't know are dropped, so they never reach `onAnnotation`. Key on `id` to act once per message or annotation.
 
-The `onEvent` callback receives server events like `message_created`, `message_updated`, `vad`, and others. Use `sendEvent` to send custom events to the server. See the [core package events reference](../core/README.md#events) for the full list of event types and their payloads.
+The `onEvent` callback receives server events like `message_created`, `message_updated`, `vad`, and others. Use `sendEvent` to send other events to the server. See the [core package events reference](../core/README.md#events) for the full list of event types and their payloads.
 
 ## Lower-level hooks
 

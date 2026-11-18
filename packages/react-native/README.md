@@ -148,7 +148,7 @@ The main hook — combines connection, messages, and audio controls.
 | `endConversation()`          | End the conversation and the current session |
 | `sendMessage(text)`          | Send a text message                          |
 | `sendDTMF(digit)`            | Send a DTMF tone                             |
-| `sendEvent(payload)`         | Send a custom event                          |
+| `sendEvent(payload)`         | Send an event to the server                  |
 | `toggleMic()`                | Toggle microphone mute                       |
 | `toggleAudio()`              | Toggle audio output mute                     |
 | `setVolume(volume)`          | Set playback volume                          |
@@ -176,7 +176,7 @@ useConversation({
 });
 ```
 
-The `onEvent` callback receives server events like `message_created`, `message_updated`, `vad`, and others. Use `sendEvent` to send custom events to the server. See the [core package events reference](../core/README.md#events) for the full list of event types and their payloads.
+The `onEvent` callback receives server events like `message_created`, `message_updated`, `vad`, and others. Use `sendEvent` to send other events to the server. See the [core package events reference](../core/README.md#events) for the full list of event types and their payloads.
 
 ## Lower-level hooks
 
