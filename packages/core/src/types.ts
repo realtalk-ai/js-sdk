@@ -160,6 +160,10 @@ export type UserState = "idle" | "speaking";
 
 export type AudioSource = "agent" | "user";
 
+export type Protocol = 1 | 2;
+
+export type ServerConversationStatus = "ongoing" | "idle" | "ended";
+
 export interface ConversationError {
   error: Error;
   fatal: boolean;
@@ -174,6 +178,7 @@ export const EventType = {
   Vad: "vad",
   Clear: "clear",
   ConversationFinished: "conversation_finished",
+  ConversationStatus: "conversation_status",
   ConversationMode: "conversation_mode",
   Close: "close",
   Error: "error",
@@ -205,6 +210,10 @@ export type ConversationEvent =
   | { type: "vad"; data: { state: VadState } }
   | { type: "clear" }
   | { type: "conversation_finished" }
+  | {
+      type: "conversation_status";
+      data: { status: ServerConversationStatus };
+    }
   | {
       type: "conversation_mode";
       data: { user_audio: boolean; agent_audio: boolean };

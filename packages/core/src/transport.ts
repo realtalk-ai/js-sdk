@@ -4,6 +4,7 @@ import type {
   ClientEvent,
   ConversationEvent,
   ConversationMode,
+  Protocol,
 } from "./types.js";
 
 export type SdkContext = "web_chat" | "embed_widget" | "mobile_app";
@@ -19,6 +20,7 @@ export interface ConnectOptions {
   token: string;
   sdkInfo: SdkInfo;
   mode?: ConversationMode;
+  protocol?: Protocol;
   signal?: AbortSignal;
 }
 

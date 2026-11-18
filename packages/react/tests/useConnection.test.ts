@@ -65,6 +65,15 @@ function defaultOpts() {
   };
 }
 
+const ENDED_STATUS = {
+  type: "conversation_status",
+  data: { status: "ended" },
+} as const;
+const IDLE_STATUS = {
+  type: "conversation_status",
+  data: { status: "idle" },
+} as const;
+
 describe("useConnection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -202,7 +211,7 @@ describe("useConnection", () => {
     ).rejects.toThrow("Conversation already active");
   });
 
-  it("endConversation sends end_conversation and hangup, gracefully disconnects, and sets status to finished", async () => {
+  it("endConversation sends end_conversation, gracefully disconnects, and sets status to finished", async () => {
     const opts = defaultOpts();
     const { result } = renderHook(() => useConnection(opts));
 
@@ -223,10 +232,6 @@ describe("useConnection", () => {
     ).mock.results[0].value;
     expect(transport.sendEvent).toHaveBeenCalledWith({
       type: "end_conversation",
-      data: {},
-    });
-    expect(transport.sendEvent).toHaveBeenCalledWith({
-      type: "hangup",
       data: {},
     });
     expect(transport.removeAllListeners).toHaveBeenCalled();
@@ -421,7 +426,7 @@ describe("useConnection", () => {
     expect(opts.onClear).toHaveBeenCalled();
   });
 
-  it("transport conversation_finished event triggers cleanup and finished status", async () => {
+  it("an ended conversation status triggers cleanup and finished status", async () => {
     const opts = defaultOpts();
     const onEvent = vi.fn();
     opts.optionsRef.current = { onEvent };
@@ -438,11 +443,53 @@ describe("useConnection", () => {
     const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
     const onEventCb = transport.onEvent.mock.calls[0][0];
 
-    act(() => onEventCb({ type: "conversation_finished" }));
+    act(() => onEventCb(ENDED_STATUS));
 
     expect(result.current.status).toBe("finished");
     expect(result.current.connectionStatus).toBe("disconnected");
-    expect(onEvent).toHaveBeenCalledWith({ type: "conversation_finished" });
+    expect(onEvent).toHaveBeenCalledWith(ENDED_STATUS);
+  });
+
+  it("an idle conversation status keeps the conversation active", async () => {
+    const opts = defaultOpts();
+    const onEvent = vi.fn();
+    opts.optionsRef.current = { onEvent };
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+
+    act(() => onEventCb(IDLE_STATUS));
+
+    expect(result.current.status).toBe("active");
+    expect(result.current.connectionStatus).toBe("connected");
+    expect(onEvent).toHaveBeenCalledWith(IDLE_STATUS);
+  });
+
+  it("connects on protocol 2", async () => {
+    const opts = defaultOpts();
+    const { result } = renderHook(() => useConnection(opts));
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    expect(transport.connect).toHaveBeenCalledWith(
+      expect.objectContaining({ protocol: 2 }),
+    );
   });
 
   it("audio callback forwards data via onAudio", async () => {

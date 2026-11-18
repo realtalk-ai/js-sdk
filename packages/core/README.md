@@ -25,8 +25,8 @@ transport.onEvent((event) => {
     case EventType.MessageCreated:
       console.log("New message:", event.data.text);
       break;
-    case EventType.ConversationFinished:
-      transport.disconnect();
+    case EventType.ConversationStatus:
+      if (event.data.status === "ended") transport.disconnect();
       break;
   }
 });
@@ -39,6 +39,7 @@ await transport.connect({
   url: "wss://api.realtalk.ml/api/v1/ws/conversations/audio/a1b2c3d4-e5f6-7890-abcd-ef1234567890/",
   token: "",
   sdkInfo: { name: "my-app", version: "1.0.0", context: "web_chat" },
+  protocol: 2,
 });
 
 transport.sendEvent({
@@ -46,6 +47,8 @@ transport.sendEvent({
   agent_id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
 });
 ```
+
+Pass `protocol: 2` to `connect` to use the current wire protocol. The events you send and receive keep the names documented below; the transport translates them. Without it the transport uses protocol 1, which will be removed in a future release.
 
 ## Reconnection
 
@@ -111,7 +114,8 @@ Events received from the server during a conversation:
 | `annotation_created`    | `EventType.AnnotationCreated`    | `AnnotationItem`                                | A new annotation was added to the conversation                            |
 | `vad`                   | `EventType.Vad`                  | `{ state: "speech" \| "silence" }`              | Voice activity detection state changed                                    |
 | `clear`                 | `EventType.Clear`                | —                                               | Audio buffer should be cleared                                            |
-| `conversation_finished` | `EventType.ConversationFinished` | —                                               | The conversation session has ended                                        |
+| `conversation_status`   | `EventType.ConversationStatus`   | `{ status: "ongoing" \| "idle" \| "ended" }`    | The conversation's status, sent on connection and whenever it changes     |
+| `conversation_finished` | `EventType.ConversationFinished` | —                                               | Deprecated, only sent on protocol 1. Use `conversation_status` instead    |
 | `conversation_mode`     | `EventType.ConversationMode`     | `{ user_audio: boolean; agent_audio: boolean }` | The mode the conversation is in, sent in reply to `set_conversation_mode` |
 | `close`                 | `EventType.Close`                | `{ code: number; reason: string }`              | WebSocket connection closed                                               |
 | `error`                 | `EventType.Error`                | `{ message?: string }`                          | A protocol or backend error occurred                                      |

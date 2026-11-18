@@ -144,7 +144,9 @@ export function useConnection(opts: {
           onClear();
           break;
         }
-        case EventType.ConversationFinished: {
+        case EventType.ConversationStatus: {
+          const hasEnded = event.data.status === "ended";
+          if (!hasEnded) break;
           const finishedId = conversationIdRef.current;
           intentionalDisconnectRef.current = true;
           cleanup();
@@ -245,6 +247,7 @@ export function useConnection(opts: {
           context: SDK_CONTEXT,
         },
         mode: sessionOptions.mode ?? DEFAULT_CONVERSATION_MODE,
+        protocol: 2,
       });
 
       reconnectAttemptRef.current = 0;
@@ -421,7 +424,6 @@ export function useConnection(opts: {
     const transport = transportRef.current;
     if (transport) {
       transport.sendEvent({ type: "end_conversation", data: {} });
-      transport.sendEvent({ type: "hangup", data: {} });
       transport.removeAllListeners();
       await transport.gracefulDisconnect();
       transportRef.current = null;
