@@ -42,10 +42,7 @@ await transport.connect({
   protocol: 2,
 });
 
-transport.sendEvent({
-  type: "conversation.start",
-  agent_id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-});
+transport.sendEvent({ type: "conversation.start" });
 ```
 
 Always pass `protocol: 2` to `connect`. Connecting without it is deprecated and logs a warning.
@@ -118,7 +115,7 @@ Events received from the server during a conversation:
 | `conversation_finished` | `EventType.ConversationFinished` | —                                               | Deprecated, not sent with `protocol: 2`. Use `conversation_status`        |
 | `conversation_mode`     | `EventType.ConversationMode`     | `{ user_audio: boolean; agent_audio: boolean }` | The mode the conversation is in, sent in reply to `set_conversation_mode` |
 | `close`                 | `EventType.Close`                | `{ code: number; reason: string }`              | WebSocket connection closed                                               |
-| `error`                 | `EventType.Error`                | `{ message?: string }`                          | A protocol or backend error occurred                                      |
+| `error`                 | `EventType.Error`                | `{ message?: string }`                          | A message from the server could not be parsed                             |
 
 An `AnnotationItem` is `{ id, createdAt, annotation }`, where `annotation` is `{ kind: "handoff_requested" }` or `{ kind: "human_agent_joined"; humanAgentName: string | null }`. The server sends annotations as messages marked with `role: "annotation"`, and their `metadata.kind` names the kind. `existing_messages` moves them out of `data` into `annotations`, sorted by `createdAt`. Kinds this SDK version does not know are left out of both, and an `annotation_created` of such a kind is not emitted.
 
@@ -130,11 +127,11 @@ Events you can send to the server:
 
 | Event                      | Payload                                                                                     | Description                                                      |
 | -------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `conversation.start`       | `{ type: "conversation.start"; agent_id: string; metadata?: Record<string, unknown> }`      | Start the conversation with an agent                             |
+| `conversation.start`       | `{ type: "conversation.start" }`                                                            | Start the conversation. The agent comes from the session token   |
 | `message.create`           | `{ type: "message.create"; data: string }`                                                  | Send a text message                                              |
 | `dtmf.press`               | `{ type: "dtmf.press"; data: DTMFDigit }`                                                   | Send a DTMF tone (0–9, \*, #, A–D)                               |
 | `conversation_mode.update` | `{ type: "conversation_mode.update"; data: { user_audio: boolean; agent_audio: boolean } }` | Change which audio the conversation carries without reconnecting |
-| `conversation.end`         | `{ type: "conversation.end"; data?: Record<string, unknown> }`                              | End the conversation                                             |
+| `conversation.end`         | `{ type: "conversation.end" }`                                                              | End the conversation                                             |
 
 The older names `start`, `message`, `dtmf`, `set_conversation_mode` and `end_conversation` still work, but new code should use the names above. The server only accepts the events it knows.
 
