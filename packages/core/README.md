@@ -43,12 +43,12 @@ await transport.connect({
 });
 
 transport.sendEvent({
-  type: "start",
+  type: "conversation.start",
   agent_id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
 });
 ```
 
-Pass `protocol: 2` to `connect` to use the current wire protocol. The events you send and receive keep the names documented below; the transport translates them. Without it the transport uses protocol 1, which will be removed in a future release.
+Always pass `protocol: 2` to `connect`. Connecting without it is deprecated and logs a warning.
 
 ## Reconnection
 
@@ -115,7 +115,7 @@ Events received from the server during a conversation:
 | `vad`                   | `EventType.Vad`                  | `{ state: "speech" \| "silence" }`              | Voice activity detection state changed                                    |
 | `clear`                 | `EventType.Clear`                | —                                               | Audio buffer should be cleared                                            |
 | `conversation_status`   | `EventType.ConversationStatus`   | `{ status: "ongoing" \| "idle" \| "ended" }`    | The conversation's status, sent on connection and whenever it changes     |
-| `conversation_finished` | `EventType.ConversationFinished` | —                                               | Deprecated, only sent on protocol 1. Use `conversation_status` instead    |
+| `conversation_finished` | `EventType.ConversationFinished` | —                                               | Deprecated, not sent with `protocol: 2`. Use `conversation_status`        |
 | `conversation_mode`     | `EventType.ConversationMode`     | `{ user_audio: boolean; agent_audio: boolean }` | The mode the conversation is in, sent in reply to `set_conversation_mode` |
 | `close`                 | `EventType.Close`                | `{ code: number; reason: string }`              | WebSocket connection closed                                               |
 | `error`                 | `EventType.Error`                | `{ message?: string }`                          | A protocol or backend error occurred                                      |
@@ -128,13 +128,15 @@ Two exported sets classify `close` codes: `RECONNECTABLE_CLOSE_CODES` (transient
 
 Events you can send to the server:
 
-| Event                   | Payload                                                                                  | Description                                                      |
-| ----------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `message`               | `{ type: "message"; data: string }`                                                      | Send a text message                                              |
-| `dtmf`                  | `{ type: "dtmf"; data: DTMFDigit }`                                                      | Send a DTMF tone (0–9, \*, #, A–D)                               |
-| `set_conversation_mode` | `{ type: "set_conversation_mode"; data: { user_audio: boolean; agent_audio: boolean } }` | Change which audio the conversation carries without reconnecting |
+| Event                      | Payload                                                                                     | Description                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `conversation.start`       | `{ type: "conversation.start"; agent_id: string; metadata?: Record<string, unknown> }`      | Start the conversation with an agent                             |
+| `message.create`           | `{ type: "message.create"; data: string }`                                                  | Send a text message                                              |
+| `dtmf.press`               | `{ type: "dtmf.press"; data: DTMFDigit }`                                                   | Send a DTMF tone (0–9, \*, #, A–D)                               |
+| `conversation_mode.update` | `{ type: "conversation_mode.update"; data: { user_audio: boolean; agent_audio: boolean } }` | Change which audio the conversation carries without reconnecting |
+| `conversation.end`         | `{ type: "conversation.end"; data?: Record<string, unknown> }`                              | End the conversation                                             |
 
-You can also send arbitrary custom events — any object with a `type` string field will be forwarded.
+The older names `start`, `message`, `dtmf`, `set_conversation_mode` and `end_conversation` still work, but new code should use the names above. The server only accepts the events it knows.
 
 ## API overview
 

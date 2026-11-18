@@ -532,6 +532,10 @@ describe("WebSocketTransport", () => {
         { type: "subscribe_audio", data: {} },
         { type: "audio.subscribe", data: {} },
       ],
+      [
+        { type: "dtmf.press", data: "5" },
+        { type: "dtmf.press", data: "5" },
+      ],
       [{ type: "something_else" }, { type: "something_else" }],
     ])("sends %o as %o", async (sent, onTheWire) => {
       const transport = await connectOnProtocol2();
