@@ -529,8 +529,30 @@ describe("WebSocketTransport", () => {
         { type: "dtmf.press", data: "5" },
       ],
       [
+        {
+          type: "set_conversation_mode",
+          data: { user_audio: false, agent_audio: true },
+        },
+        {
+          type: "conversation_mode.update",
+          data: { user_audio: false, agent_audio: true },
+        },
+      ],
+      [
         { type: "subscribe_audio", data: {} },
         { type: "audio.subscribe", data: {} },
+      ],
+      [
+        { type: "unsubscribe_audio", data: {} },
+        { type: "audio.unsubscribe", data: {} },
+      ],
+      [
+        { type: "audio_clip_started", trace_id: "t1" },
+        { type: "audio_clip.started", trace_id: "t1" },
+      ],
+      [
+        { type: "audio_clip_ended", trace_id: "t1" },
+        { type: "audio_clip.ended", trace_id: "t1" },
       ],
       [
         { type: "dtmf.press", data: "5" },
@@ -555,6 +577,20 @@ describe("WebSocketTransport", () => {
         { type: "vad", data: { state: "speech" } },
       ],
       [{ type: "audio.clear" }, { type: "clear" }],
+      [
+        {
+          type: "conversation_mode.updated",
+          data: { user_audio: true, agent_audio: true },
+        },
+        {
+          type: "conversation_mode",
+          data: { user_audio: true, agent_audio: true },
+        },
+      ],
+      [
+        { type: "call.transfer", data: { number: "+46700000000" } },
+        { type: "blind_transfer", data: { number: "+46700000000" } },
+      ],
     ])("emits %o as %o", async (received, emitted) => {
       const transport = await connectOnProtocol2();
       const handler = vi.fn();
@@ -565,25 +601,53 @@ describe("WebSocketTransport", () => {
       expect(handler).toHaveBeenCalledWith(emitted);
     });
 
-    it("emits a created message as a normalized message", async () => {
+    const agentMessage = {
+      id: "m1",
+      sender: "Agent",
+      text: "Hej",
+      timestamp: "2026-11-18T10:00:00Z",
+    };
+
+    it.each([
+      [{ type: "message.history", data: [agentMessage] }, "existing_messages"],
+      [{ type: "message.created", data: agentMessage }, "message_created"],
+      [{ type: "message.updated", data: agentMessage }, "message_updated"],
+      [
+        {
+          type: "annotation.created",
+          data: {
+            ...agentMessage,
+            role: "annotation",
+            metadata: { kind: "handoff_requested" },
+          },
+        },
+        "annotation_created",
+      ],
+    ])("emits %o as a normalized %s", async (received, emittedType) => {
       const transport = await connectOnProtocol2();
       const handler = vi.fn();
       transport.onEvent(handler);
 
+      mockWs.simulateMessage(JSON.stringify(received));
+
+      expect(handler.mock.calls[0][0].type).toBe(emittedType);
+    });
+
+    it("emits media as audio", async () => {
+      const transport = await connectOnProtocol2();
+      const handler = vi.fn();
+      transport.onAudio(handler);
+
       mockWs.simulateMessage(
         JSON.stringify({
-          type: "message.created",
-          data: {
-            id: "m1",
-            sender: "Agent",
-            text: "Hej",
-            timestamp: "2026-11-18T10:00:00Z",
-          },
+          type: "media",
+          media: { payload: btoa("test") },
+          trace_id: "tr-1",
         }),
       );
 
-      expect(handler.mock.calls[0][0].type).toBe("message_created");
-      expect(handler.mock.calls[0][0].data.text).toBe("Hej");
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler.mock.calls[0][1]).toBe("tr-1");
     });
   });
 

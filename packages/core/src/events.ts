@@ -267,6 +267,7 @@ const SDK_TYPE_BY_V2_NAME: Record<string, string> = {
   "audio.clear": "clear",
   "conversation_mode.updated": "conversation_mode",
   "conversation.status": "conversation_status",
+  "call.transfer": "blind_transfer",
 };
 
 function convertEventForProtocolV2(
