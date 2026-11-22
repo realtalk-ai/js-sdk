@@ -90,6 +90,23 @@ button {
   pointer-events: none;
 }
 
+.launcher-unread {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--rt-danger);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+
 .panel {
   display: flex;
   flex-direction: column;

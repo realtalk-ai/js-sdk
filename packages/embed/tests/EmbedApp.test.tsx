@@ -46,6 +46,7 @@ const HUMAN_AGENT_JOINED: AnnotationItem = {
 };
 
 const conversation = {
+  conversationId: null as string | null,
   status: "not_started" as ConversationStatus,
   connectionStatus: "disconnected" as const,
   messages: [] as Message[],
@@ -206,6 +207,7 @@ describe("EmbedApp", () => {
     sessionStorage.clear();
     mockFetch();
     Object.assign(conversation, {
+      conversationId: null,
       status: "not_started",
       connectionStatus: "disconnected",
       messages: [],
@@ -257,6 +259,186 @@ describe("EmbedApp", () => {
       });
 
       expect(launcherLabel()).toBe("Open chat");
+    });
+
+    it("counts the agent messages that arrive while the widget is minimized", async () => {
+      const seen = message("m1", "Hello", "2024-01-01T00:00:00Z");
+      const { update } = await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [seen],
+      });
+
+      update({
+        messages: [
+          seen,
+          message("m2", "Are you there?", "2024-01-01T00:01:00Z"),
+          {
+            ...message("m3", "Yes", "2024-01-01T00:02:00Z"),
+            role: "user",
+          },
+        ],
+      });
+      expect(launcherLabel()).toBe("Open chat, 1 new message");
+      expect(screen.getByText("1")).toBeTruthy();
+    });
+
+    it("counts the agent replies that came while the page was closed", async () => {
+      sessionStorage.setItem(
+        "realtalk-embed:last-seen:conv-1",
+        String(Date.parse("2024-01-01T00:00:00Z")),
+      );
+
+      await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [
+          message("m1", "Hello", "2024-01-01T00:00:00Z"),
+          message("m2", "A colleague will answer", "2024-01-01T00:01:00Z"),
+          message("m3", "Hi, I'm Filip", "2024-01-01T00:02:00Z"),
+        ],
+      });
+
+      expect(launcherLabel()).toBe("Open chat, 2 new messages");
+    });
+
+    it("shows no new messages after a reload when the visitor had seen them all", async () => {
+      sessionStorage.setItem(
+        "realtalk-embed:last-seen:conv-1",
+        String(Date.parse("2024-01-01T00:01:00Z")),
+      );
+
+      await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [
+          message("m1", "Hello", "2024-01-01T00:00:00Z"),
+          message("m2", "Hi, I'm Filip", "2024-01-01T00:01:00Z"),
+        ],
+      });
+
+      expect(launcherLabel()).toBe("Open chat, conversation in progress");
+    });
+
+    it("treats the history as seen when nothing was seen before", async () => {
+      await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [message("m1", "Hello", "2024-01-01T00:00:00Z")],
+      });
+
+      expect(launcherLabel()).toBe("Open chat, conversation in progress");
+    });
+
+    it("clears the new messages once the widget is opened", async () => {
+      const seen = message("m1", "Hello", "2024-01-01T00:00:00Z");
+      const { update } = await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [seen],
+      });
+      update({
+        messages: [seen, message("m2", "Hi", "2024-01-01T00:01:00Z")],
+      });
+      expect(launcherLabel()).toBe("Open chat, 1 new message");
+
+      openPanel();
+      fireEvent.click(screen.getByRole("button", { name: "Minimize chat" }));
+
+      expect(launcherLabel()).toBe("Open chat, conversation in progress");
+    });
+  });
+
+  describe("resume", () => {
+    const STORAGE_KEY = `realtalk-embed:conversation:${AGENT_ID}`;
+
+    it("resumes a stored conversation when the page loads, before the widget is opened", async () => {
+      sessionStorage.setItem(STORAGE_KEY, "conv-1");
+
+      await renderWidget();
+
+      expect(conversation.startConversation).toHaveBeenCalledWith(
+        expect.objectContaining({ agentId: AGENT_ID }),
+      );
+    });
+
+    it("does not start a conversation on page load when none is stored", async () => {
+      await renderWidget();
+
+      expect(conversation.startConversation).not.toHaveBeenCalled();
+    });
+
+    it("forgets a conversation that can no longer be resumed instead of starting a new one", async () => {
+      sessionStorage.setItem(STORAGE_KEY, "conv-old");
+      const fetchMock = vi.mocked(fetch);
+      fetchMock.mockImplementation((url) =>
+        Promise.resolve(
+          String(url).includes("/embed-configs/")
+            ? jsonResponse({
+                display_name: "Support",
+                greeting: "Hi there!",
+                idle_pause_seconds: IDLE_PAUSE_SECONDS,
+                idle_end_seconds: IDLE_END_SECONDS,
+                voice_enabled: true,
+              })
+            : new Response("{}", { status: 403 }),
+        ),
+      );
+      conversation.startConversation.mockImplementationOnce(async () => {
+        await (providerProps.current.getToken as () => Promise<unknown>)();
+      });
+
+      await renderWidget();
+      openPanel();
+
+      expect(
+        await screen.findByText(/Your previous conversation ended/),
+      ).toBeTruthy();
+      const sessionMints = fetchMock.mock.calls.filter(([url]) =>
+        String(url).includes("/embed-sessions/"),
+      );
+      expect(sessionMints).toHaveLength(1);
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+    });
+
+    it("starts a new chat when the visitor writes after the stored one ended", async () => {
+      sessionStorage.setItem(STORAGE_KEY, "conv-old");
+      const mintStatuses = [429, 403, 201];
+      vi.mocked(fetch).mockImplementation((url) => {
+        if (String(url).includes("/embed-configs/")) {
+          return Promise.resolve(
+            jsonResponse({
+              display_name: "Support",
+              greeting: "Hi there!",
+              idle_pause_seconds: IDLE_PAUSE_SECONDS,
+              idle_end_seconds: IDLE_END_SECONDS,
+              voice_enabled: true,
+            }),
+          );
+        }
+        const status = mintStatuses.shift() ?? 201;
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ token: "token", conversation_id: "conv-new" }),
+            { status },
+          ),
+        );
+      });
+      conversation.startConversation.mockImplementation(async () => {
+        await (providerProps.current.getToken as () => Promise<unknown>)();
+      });
+
+      await renderWidget();
+      openPanel();
+      const textarea = screen.getByPlaceholderText("Type a message…");
+      fireEvent.change(textarea, { target: { value: "Hej igen" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+
+      expect(
+        await screen.findByText(/Your previous conversation ended/),
+      ).toBeTruthy();
+      expect(conversation.sendMessage).toHaveBeenCalledWith("Hej igen");
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBe("conv-new");
     });
   });
 
@@ -890,6 +1072,16 @@ describe("EmbedApp", () => {
     afterEach(() => {
       visibilityState.mockRestore();
       hasFocus.mockRestore();
+    });
+
+    it("unlocks sound on the first click or key press anywhere on the page", async () => {
+      await renderWidget();
+
+      fireEvent.pointerDown(document.body);
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(1);
+
+      fireEvent.keyDown(document.body, { key: "a" });
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(2);
     });
 
     it("plays no message sound while the visitor watches the open widget", async () => {

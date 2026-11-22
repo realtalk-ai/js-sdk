@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   createSessionMinter,
+  ResumeRejectedError,
   fetchEmbedConfig,
   resolveServer,
 } from "../src/session.js";
@@ -132,35 +133,42 @@ describe("createSessionMinter", () => {
     );
   });
 
-  it("drops a no-longer-resumable conversation and mints a fresh one", async () => {
+  it("forgets a conversation that can no longer be resumed", async () => {
     sessionStorage.setItem("realtalk-embed:conversation:agent-1", "conv-old");
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(409, {}))
-      .mockResolvedValueOnce(
-        jsonResponse(200, { token: "tok-2", conversation_id: "conv-new" }),
-      );
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(403, {}));
     vi.stubGlobal("fetch", fetchMock);
 
     const minter = createSessionMinter(server, "agent-1");
-    expect(minter.conversationId).toBe("conv-old");
+    await expect(minter.getToken()).rejects.toThrow(ResumeRejectedError);
 
-    await expect(minter.getToken()).resolves.toEqual({
-      token: "tok-2",
-      conversationId: "conv-new",
-    });
-    expect(minter.conversationId).toBe("conv-new");
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        body: JSON.stringify({ agent_id: "agent-1" }),
-      }),
-    );
-    expect(sessionStorage.getItem("realtalk-embed:conversation:agent-1")).toBe(
-      "conv-new",
-    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(minter.conversationId).toBeUndefined();
+    expect(
+      sessionStorage.getItem("realtalk-embed:conversation:agent-1"),
+    ).toBeNull();
   });
+
+  it.each([429, 502, 503])(
+    "keeps the stored conversation when resuming fails with %s",
+    async (status) => {
+      sessionStorage.setItem(
+        "realtalk-embed:conversation:agent-1",
+        "conv-live",
+      );
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(jsonResponse(status, {})),
+      );
+
+      const minter = createSessionMinter(server, "agent-1");
+      await expect(minter.getToken()).rejects.toThrow(String(status));
+
+      expect(minter.conversationId).toBe("conv-live");
+      expect(
+        sessionStorage.getItem("realtalk-embed:conversation:agent-1"),
+      ).toBe("conv-live");
+    },
+  );
 
   it("throws when minting fails outright", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(500, {})));

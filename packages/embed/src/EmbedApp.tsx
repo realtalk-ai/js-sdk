@@ -4,12 +4,14 @@ import type { ConversationMode } from "@realtalk-ai/core";
 import {
   createSessionMinter,
   resolveServer,
+  ResumeRejectedError,
   type EmbedServer,
   type SessionMinter,
 } from "./session.js";
 import { useEmbedConfig } from "./hooks/useEmbedConfig.js";
 import { useConversationExpiry } from "./hooks/useConversationExpiry.js";
 import { useSounds, type WidgetSounds } from "./hooks/useSounds.js";
+import { useUnreadMessages } from "./hooks/useUnreadMessages.js";
 import { deriveWidgetStatus } from "./status.js";
 import { AboutPage } from "./components/AboutPage.js";
 import { Composer } from "./components/Composer.js";
@@ -106,14 +108,13 @@ function Widget({
     isMicEnabled: micOn,
   } = conversation;
 
-  const firstOpenHandledRef = useRef(false);
+  const resumeHandledRef = useRef(false);
   useEffect(() => {
-    if (!open || firstOpenHandledRef.current) return;
-    firstOpenHandledRef.current = true;
+    if (resumeHandledRef.current) return;
+    resumeHandledRef.current = true;
 
-    const storedConversationId = minter.conversationId;
     const hasConversationToResume =
-      storedConversationId !== undefined && status === "not_started";
+      minter.conversationId !== undefined && status === "not_started";
     if (!hasConversationToResume) return;
 
     const resumeConversation = async () => {
@@ -123,9 +124,11 @@ function Widget({
           agentId,
           mode: startMode,
         });
-        const resumeWasDropped = minter.conversationId !== storedConversationId;
-        if (resumeWasDropped) setPreviousChatEnded(true);
       } catch (error) {
+        if (error instanceof ResumeRejectedError) {
+          setPreviousChatEnded(true);
+          return;
+        }
         console.error("[realtalk-embed] failed to resume conversation", error);
         setNotice("Your previous conversation could not be restored.");
       } finally {
@@ -133,7 +136,7 @@ function Widget({
       }
     };
     void resumeConversation();
-  }, [open, status, agentId, minter, startMode]);
+  }, [status, agentId, minter, startMode]);
 
   useEffect(() => {
     if (status === "finished") minter.reset();
@@ -144,6 +147,11 @@ function Widget({
   const mode = active ? conversation.mode : startMode;
   const sounds = useSounds(open, mode.agentAudio, messages, soundsDisabled);
   soundsRef.current = sounds;
+  const unreadCount = useUnreadMessages(
+    conversation.conversationId,
+    open,
+    messages,
+  );
 
   useConversationExpiry(paused, config, () => {
     minter.reset();
@@ -163,13 +171,14 @@ function Widget({
   const start = async (mode: ConversationMode = startMode) => {
     if (starting || active) return;
     setStarting(true);
-    const storedConversationId = minter.conversationId;
     try {
-      await conversationRef.current.startConversation({ agentId, mode });
-      const resumeWasDropped =
-        storedConversationId !== undefined &&
-        minter.conversationId !== storedConversationId;
-      if (resumeWasDropped) setPreviousChatEnded(true);
+      try {
+        await conversationRef.current.startConversation({ agentId, mode });
+      } catch (error) {
+        if (!(error instanceof ResumeRejectedError)) throw error;
+        setPreviousChatEnded(true);
+        await conversationRef.current.startConversation({ agentId, mode });
+      }
       setExpired(false);
     } finally {
       setStarting(false);
@@ -266,6 +275,7 @@ function Widget({
       <div className="container">
         <Launcher
           conversationInProgress={conversationInProgress}
+          unreadCount={unreadCount}
           onOpen={() => {
             sounds.unlock();
             setOpen(true);

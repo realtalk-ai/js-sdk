@@ -21,6 +21,13 @@ export interface SessionMinter {
   readonly conversationId: string | undefined;
 }
 
+export class ResumeRejectedError extends Error {
+  constructor() {
+    super("The stored conversation can no longer be resumed");
+    this.name = "ResumeRejectedError";
+  }
+}
+
 function conversationStorageKey(agentId: string): string {
   return `realtalk-embed:conversation:${agentId}`;
 }
@@ -42,6 +49,25 @@ function storeConversationId(agentId: string, conversationId: string): void {
 function clearStoredConversationId(agentId: string): void {
   try {
     sessionStorage.removeItem(conversationStorageKey(agentId));
+  } catch {}
+}
+
+function lastSeenStorageKey(conversationId: string): string {
+  return `realtalk-embed:last-seen:${conversationId}`;
+}
+
+export function readLastSeenAt(conversationId: string): number | undefined {
+  try {
+    const stored = sessionStorage.getItem(lastSeenStorageKey(conversationId));
+    return stored === null ? undefined : Number(stored);
+  } catch {
+    return undefined;
+  }
+}
+
+export function storeLastSeenAt(conversationId: string, seenAt: number): void {
+  try {
+    sessionStorage.setItem(lastSeenStorageKey(conversationId), String(seenAt));
   } catch {}
 }
 
@@ -112,13 +138,16 @@ export function createSessionMinter(
     },
 
     async getToken() {
-      let response = await mint(conversationId);
+      const response = await mint(conversationId);
 
-      const resumeRejected = !response.ok && conversationId !== undefined;
+      const isTemporaryFailure =
+        response.status === 429 || response.status >= 500;
+      const resumeRejected =
+        !response.ok && !isTemporaryFailure && conversationId !== undefined;
       if (resumeRejected) {
         conversationId = undefined;
         clearStoredConversationId(agentId);
-        response = await mint(undefined);
+        throw new ResumeRejectedError();
       }
 
       if (!response.ok) {

@@ -18,7 +18,8 @@ function visitorIsLooking(open: boolean): boolean {
  * Plays the message sound for a new agent message while the visitor is not
  * looking, and the join sound when a human agent joins. Pass `onMessage` and
  * `onAnnotation` to `useConversation`, which calls them only for live events,
- * and call `unlock` inside the visitor's own gestures.
+ * and call `unlock` inside the visitor's own gestures. The first click or key
+ * press anywhere on the page unlocks sound too.
  */
 export function useSounds(
   open: boolean,
@@ -31,6 +32,18 @@ export function useSounds(
   const handledAnnotationIds = useRef(new Set<string>());
 
   useEffect(() => () => player.close(), [player]);
+
+  useEffect(() => {
+    if (disabled) return;
+    const unlockOnFirstGesture = () => player.unlock();
+    const options = { capture: true, once: true };
+    window.addEventListener("pointerdown", unlockOnFirstGesture, options);
+    window.addEventListener("keydown", unlockOnFirstGesture, options);
+    return () => {
+      window.removeEventListener("pointerdown", unlockOnFirstGesture, options);
+      window.removeEventListener("keydown", unlockOnFirstGesture, options);
+    };
+  }, [player, disabled]);
 
   const play = (sound: Uint8Array) => {
     if (!disabled && !agentAudio) void player.play(sound);
