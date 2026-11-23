@@ -164,6 +164,21 @@ startConversation({
 
 `mode` says which audio the conversation carries. Both flags default to `false`, which is text only. `agentAudio` adds the agent's voice to the replies and `userAudio` enables the microphone.
 
+### Reconnecting
+
+When the connection drops, for example while the server restarts or the network is away, `connectionStatus` becomes `"reconnecting"` and the SDK keeps trying until the connection is back: quickly at first, then every 30 seconds. It fetches a new session token before each attempt. A `getToken` passed to `startConversation` is used for that before the provider's, so you can pass it together with `token` when you already have a token for the first connection:
+
+```ts
+startConversation({
+  agentId: "your-agent-id",
+  conversationId,
+  token,
+  getToken: () => fetchTokenFor(conversationId),
+});
+```
+
+The SDK stops reconnecting and reports a fatal error when the token request is refused (a 4xx response other than 429), or when the new token is for another conversation.
+
 ### Callbacks
 
 ```ts

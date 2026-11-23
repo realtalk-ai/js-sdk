@@ -29,6 +29,23 @@ import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+
+function reconnectDelay(attempt: number): number {
+  return RECONNECT_DELAYS[Math.min(attempt, RECONNECT_DELAYS.length - 1)];
+}
+
+function tokenWasRefused(error: unknown): error is ApiError {
+  if (!(error instanceof ApiError)) return false;
+  const isClientError = error.statusCode >= 400 && error.statusCode < 500;
+  const isRateLimited = error.statusCode === 429;
+  return isClientError && !isRateLimited;
+}
+
+interface FetchedToken {
+  token: string;
+  conversationId?: string;
+}
+
 export const DEFAULT_CONVERSATION_MODE: ConversationMode = {
   userAudio: false,
   agentAudio: false,
@@ -259,38 +276,39 @@ export function useConnection(opts: {
     [baseUrl, updateConnectionStatus, handleConversationEvent, onAudio],
   );
 
-  const refreshToken = useCallback(async () => {
-    if (getToken) {
-      const tokenResult = await getToken();
-      if (typeof tokenResult === "string") {
-        sessionTokenRef.current = tokenResult;
-      } else {
-        sessionTokenRef.current = tokenResult.token;
+  const fetchToken = useCallback(
+    async (
+      sessionOptions: UseConversationSessionOptions,
+    ): Promise<FetchedToken | null> => {
+      const tokenSource = sessionOptions.getToken ?? getToken;
+      if (tokenSource) {
+        const tokenResult = await tokenSource();
+        return typeof tokenResult === "string"
+          ? { token: tokenResult }
+          : tokenResult;
       }
-    } else if (tokenUrl) {
+
+      if (!tokenUrl) return null;
       const response = await fetch(tokenUrl);
       if (!response.ok) {
         throw new ApiError(
           response.status,
-          `Failed to refresh session token: ${response.status}`,
+          `Failed to fetch session token: ${response.status}`,
         );
       }
       const data = (await response.json()) as SessionToken;
-      sessionTokenRef.current = data.token;
-    }
-  }, [getToken, tokenUrl]);
+      return {
+        token: data.token,
+        conversationId: data.conversation_id || undefined,
+      };
+    },
+    [getToken, tokenUrl],
+  );
 
-  const scheduleReconnect = useCallback(() => {
-    if (intentionalDisconnectRef.current) {
-      return;
-    }
-
-    if (reconnectAttemptRef.current >= RECONNECT_DELAYS.length) {
+  const stopReconnecting = useCallback(
+    (error: Error) => {
       const conversationError: ConversationError = {
-        error: new ConnectionError(
-          "websocket_failed",
-          "All reconnection attempts exhausted",
-        ),
+        error,
         fatal: true,
         timestamp: Date.now(),
       };
@@ -299,67 +317,77 @@ export function useConnection(opts: {
       cleanup();
       updateConversationStatus("not_started");
       updateConnectionStatus("disconnected");
+    },
+    [cleanup, optionsRef, updateConnectionStatus, updateConversationStatus],
+  );
+
+  const scheduleReconnect = useCallback(() => {
+    if (intentionalDisconnectRef.current) {
       return;
     }
 
-    const delay = RECONNECT_DELAYS[reconnectAttemptRef.current];
+    const delay = reconnectDelay(reconnectAttemptRef.current);
 
     reconnectTimeoutRef.current = setTimeout(async () => {
-      if (intentionalDisconnectRef.current || !sessionOptionsRef.current) {
+      const sessionOptions = sessionOptionsRef.current;
+      if (intentionalDisconnectRef.current || !sessionOptions) {
         return;
       }
 
       reconnectAttemptRef.current++;
 
+      let fetched: FetchedToken | null;
       try {
-        await refreshToken();
-        await connect(sessionOptionsRef.current);
+        fetched = await fetchToken(sessionOptions);
+      } catch (error) {
+        if (tokenWasRefused(error)) {
+          stopReconnecting(error);
+          return;
+        }
+        scheduleReconnect();
+        return;
+      }
+
+      const isForAnotherConversation =
+        fetched?.conversationId !== undefined &&
+        fetched.conversationId !== conversationIdRef.current;
+      if (isForAnotherConversation) {
+        stopReconnecting(
+          new ConnectionError(
+            "websocket_failed",
+            "The refreshed session token is for another conversation",
+          ),
+        );
+        return;
+      }
+      if (fetched) {
+        sessionTokenRef.current = fetched.token;
+      }
+
+      try {
+        await connect(sessionOptions);
       } catch {
+        updateConnectionStatus("reconnecting");
         scheduleReconnect();
       }
     }, delay);
-  }, [
-    connect,
-    refreshToken,
-    cleanup,
-    updateConnectionStatus,
-    updateConversationStatus,
-  ]);
+  }, [connect, fetchToken, stopReconnecting, updateConnectionStatus]);
 
   const resolveToken = useCallback(
     async (
       sessionOptions: UseConversationSessionOptions,
     ): Promise<string | undefined> => {
-      let tokenConversationId: string | undefined;
-
       if (sessionOptions.token) {
         sessionTokenRef.current = sessionOptions.token;
-      } else if (getToken) {
-        const tokenResult = await getToken();
-        if (typeof tokenResult === "string") {
-          sessionTokenRef.current = tokenResult;
-        } else {
-          sessionTokenRef.current = tokenResult.token;
-          tokenConversationId = tokenResult.conversationId;
-        }
-      } else if (tokenUrl) {
-        const response = await fetch(tokenUrl);
-        if (!response.ok) {
-          throw new ApiError(
-            response.status,
-            `Failed to fetch session token: ${response.status}`,
-          );
-        }
-        const data = (await response.json()) as SessionToken;
-        sessionTokenRef.current = data.token;
-        if (data.conversation_id) {
-          tokenConversationId = data.conversation_id;
-        }
+        return undefined;
       }
 
-      return tokenConversationId;
+      const fetched = await fetchToken(sessionOptions);
+      if (!fetched) return undefined;
+      sessionTokenRef.current = fetched.token;
+      return fetched.conversationId;
     },
-    [getToken, tokenUrl],
+    [fetchToken],
   );
 
   const startConversation = useCallback(

@@ -9,6 +9,7 @@ import type {
   DTMFDigit,
   Message,
   ConversationEvent,
+  TokenResponse,
   UserState,
 } from "@realtalk-ai/core";
 import { useRealTalkConfig } from "./provider.js";
@@ -24,6 +25,7 @@ export interface UseConversationSessionOptions {
   conversationId?: string;
   mode?: ConversationMode;
   token?: string;
+  getToken?: () => Promise<TokenResponse>;
   volume?: number;
 }
 

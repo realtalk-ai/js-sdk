@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
+import { ApiError } from "@realtalk-ai/core";
+import type { UseConversationSessionOptions } from "../src/useConversation.js";
 import type { ConversationEvent, ConversationMode } from "@realtalk-ai/core";
 import {
   DEFAULT_CONVERSATION_MODE,
@@ -876,6 +878,146 @@ describe("useConnection", () => {
     expect(result.current.connectionStatus).toBe("reconnecting");
 
     vi.useRealTimers();
+  });
+
+  describe("reconnecting", () => {
+    async function startAndDropConnection(
+      opts: ReturnType<typeof defaultOpts>,
+      sessionOptions: UseConversationSessionOptions = { agentId: "agent-1" },
+    ) {
+      const rendered = renderHook(() => useConnection(opts));
+      await act(async () => {
+        await rendered.result.current.startConversation(sessionOptions);
+      });
+      const { WebSocketTransport } = await import("@realtalk-ai/core");
+      const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+      const onEventCb = transport.onEvent.mock.calls[0][0];
+      act(() => {
+        onEventCb({ type: "close", code: 1012, reason: "Service restart" });
+      });
+      return rendered;
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("keeps retrying every 30 seconds after the first attempts fail", async () => {
+      const opts = defaultOpts();
+      opts.getToken = vi.fn().mockResolvedValue({
+        token: "token",
+        conversationId: "conv-1",
+      });
+      const { result } = await startAndDropConnection(opts);
+      mockTransport.connect.mockRejectedValue(new Error("unreachable"));
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(
+          1000 + 2000 + 4000 + 8000 + 16000 + 30000 * 3,
+        );
+      });
+
+      expect(mockTransport.connect).toHaveBeenCalledTimes(1 + 8);
+      expect(result.current.connectionStatus).toBe("reconnecting");
+      expect(result.current.error).toBeNull();
+    });
+
+    it("stops and reports the error when the token is refused", async () => {
+      const opts = defaultOpts();
+      const onError = vi.fn();
+      opts.optionsRef.current = { onError };
+      const refused = new ApiError(403, "Cannot resume");
+      opts.getToken = vi
+        .fn()
+        .mockResolvedValueOnce({ token: "token", conversationId: "conv-1" })
+        .mockRejectedValue(refused);
+      const { result } = await startAndDropConnection(opts);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(result.current.status).toBe("not_started");
+      expect(result.current.connectionStatus).toBe("disconnected");
+      expect(result.current.error).toMatchObject({
+        error: refused,
+        fatal: true,
+      });
+      expect(onError).toHaveBeenCalledWith(
+        expect.objectContaining({ error: refused }),
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60000);
+      });
+      expect(opts.getToken).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps retrying when the token request is rate limited", async () => {
+      const opts = defaultOpts();
+      opts.getToken = vi
+        .fn()
+        .mockResolvedValueOnce({ token: "token", conversationId: "conv-1" })
+        .mockRejectedValueOnce(new ApiError(429, "Too many requests"))
+        .mockResolvedValue({ token: "token-2", conversationId: "conv-1" });
+      const { result } = await startAndDropConnection(opts);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000 + 2000);
+      });
+
+      expect(mockTransport.connect).toHaveBeenCalledTimes(2);
+      expect(mockTransport.connect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ token: "token-2" }),
+      );
+      expect(result.current.connectionStatus).toBe("connected");
+    });
+
+    it("stops when the refreshed token is for another conversation", async () => {
+      const opts = defaultOpts();
+      opts.getToken = vi
+        .fn()
+        .mockResolvedValueOnce({ token: "token", conversationId: "conv-1" })
+        .mockResolvedValue({ token: "token-2", conversationId: "conv-2" });
+      const { result } = await startAndDropConnection(opts);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(mockTransport.connect).toHaveBeenCalledTimes(1);
+      expect(result.current.status).toBe("not_started");
+      expect(result.current.error?.fatal).toBe(true);
+    });
+
+    it("refreshes a session token passed with the session through the session's getToken", async () => {
+      const opts = defaultOpts();
+      opts.getToken = vi.fn().mockResolvedValue("provider-token");
+      const sessionGetToken = vi.fn().mockResolvedValue("session-token-2");
+      await startAndDropConnection(opts, {
+        agentId: "agent-1",
+        conversationId: "conv-1",
+        token: "session-token-1",
+        getToken: sessionGetToken,
+      });
+      expect(mockTransport.connect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ token: "session-token-1" }),
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(sessionGetToken).toHaveBeenCalledTimes(1);
+      expect(opts.getToken).not.toHaveBeenCalled();
+      expect(mockTransport.connect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ token: "session-token-2" }),
+      );
+    });
   });
 
   it("paused close code 4005 sets status to paused, keeps the conversation id, and does not reconnect", async () => {

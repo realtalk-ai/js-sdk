@@ -26,6 +26,7 @@ import {
 } from "@realtalk-ai/core";
 import type { UseConversationOptions } from "@realtalk-ai/react";
 import { EmbedApp } from "../src/EmbedApp.js";
+import { ResumeRejectedError } from "../src/session.js";
 import { HUMAN_AGENT_JOINED_SOUND, MESSAGE_SOUND } from "../src/sounds.js";
 import packageJson from "../package.json";
 
@@ -440,6 +441,24 @@ describe("EmbedApp", () => {
       ).toBeTruthy();
       expect(conversation.sendMessage).toHaveBeenCalledWith("Hej igen");
       expect(sessionStorage.getItem(STORAGE_KEY)).toBe("conv-new");
+    });
+
+    it("tells the visitor the chat ended when it can no longer be resumed while reconnecting", async () => {
+      await renderWidget({ status: "active" });
+      openPanel();
+      expect(screen.queryByText(/Your previous conversation ended/)).toBeNull();
+
+      act(() => {
+        conversationOptions.current.onError?.({
+          error: new ResumeRejectedError(403),
+          fatal: true,
+          timestamp: 0,
+        });
+      });
+
+      expect(
+        await screen.findByText(/Your previous conversation ended/),
+      ).toBeTruthy();
     });
   });
 

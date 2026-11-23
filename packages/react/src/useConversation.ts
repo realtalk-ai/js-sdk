@@ -12,6 +12,7 @@ import type {
   Message,
   ConversationEvent,
   TimelineItem,
+  TokenResponse,
   UserState,
 } from "@realtalk-ai/core";
 import { buildTimeline } from "@realtalk-ai/core";
@@ -33,6 +34,7 @@ export interface UseConversationSessionOptions {
   mode?: ConversationMode;
   audioDeviceId?: string;
   token?: string;
+  getToken?: () => Promise<TokenResponse>;
 }
 
 export interface UseConversationOptions {

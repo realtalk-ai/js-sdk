@@ -93,6 +93,9 @@ function Widget({
     },
     onMessage: (message) => soundsRef.current?.onMessage(message),
     onAnnotation: (item) => soundsRef.current?.onAnnotation(item),
+    onError: ({ error }) => {
+      if (error instanceof ResumeRejectedError) setPreviousChatEnded(true);
+    },
   });
   const conversationRef = useRef(conversation);
   conversationRef.current = conversation;

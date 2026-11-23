@@ -21,9 +21,9 @@ export interface SessionMinter {
   readonly conversationId: string | undefined;
 }
 
-export class ResumeRejectedError extends Error {
-  constructor() {
-    super("The stored conversation can no longer be resumed");
+export class ResumeRejectedError extends ApiError {
+  constructor(statusCode: number) {
+    super(statusCode, "The stored conversation can no longer be resumed");
     this.name = "ResumeRejectedError";
   }
 }
@@ -147,7 +147,7 @@ export function createSessionMinter(
       if (resumeRejected) {
         conversationId = undefined;
         clearStoredConversationId(agentId);
-        throw new ResumeRejectedError();
+        throw new ResumeRejectedError(response.status);
       }
 
       if (!response.ok) {
