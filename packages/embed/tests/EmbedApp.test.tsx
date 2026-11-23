@@ -370,6 +370,88 @@ describe("EmbedApp", () => {
       expect(conversation.startConversation).not.toHaveBeenCalled();
     });
 
+    describe("after the connection was given up", () => {
+      let visibilityState: MockInstance<() => DocumentVisibilityState>;
+
+      function setTabVisibility(state: DocumentVisibilityState) {
+        visibilityState.mockReturnValue(state);
+        fireEvent(document, new Event("visibilitychange"));
+      }
+
+      beforeEach(() => {
+        visibilityState = vi
+          .spyOn(document, "visibilityState", "get")
+          .mockReturnValue("visible");
+      });
+
+      async function renderWithGivenUpConnection() {
+        sessionStorage.setItem(STORAGE_KEY, "conv-1");
+        const rendered = await renderWidget();
+        await vi.waitFor(() =>
+          expect(conversation.startConversation).toHaveBeenCalledTimes(1),
+        );
+        await act(async () => {});
+        return rendered;
+      }
+
+      afterEach(() => {
+        visibilityState.mockRestore();
+      });
+
+      it("resumes the stored conversation again when the browser is back online", async () => {
+        await renderWithGivenUpConnection();
+
+        await act(async () => {
+          fireEvent(window, new Event("online"));
+        });
+
+        expect(conversation.startConversation).toHaveBeenCalledTimes(2);
+      });
+
+      it("resumes the stored conversation again when the tab becomes visible, not when it is hidden", async () => {
+        await renderWithGivenUpConnection();
+
+        await act(async () => {
+          setTabVisibility("hidden");
+        });
+        expect(conversation.startConversation).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+          setTabVisibility("visible");
+        });
+        expect(conversation.startConversation).toHaveBeenCalledTimes(2);
+      });
+
+      it("resumes once when the browser comes online and the tab becomes visible together", async () => {
+        await renderWithGivenUpConnection();
+        let finishResume!: () => void;
+        conversation.startConversation.mockImplementationOnce(
+          () => new Promise<void>((resolve) => (finishResume = resolve)),
+        );
+
+        await act(async () => {
+          fireEvent(window, new Event("online"));
+          setTabVisibility("visible");
+        });
+        expect(conversation.startConversation).toHaveBeenCalledTimes(2);
+
+        await act(async () => {
+          finishResume();
+        });
+      });
+
+      it("leaves a connected conversation alone when the browser is back online", async () => {
+        const { update } = await renderWithGivenUpConnection();
+        update({ status: "active" });
+
+        await act(async () => {
+          fireEvent(window, new Event("online"));
+        });
+
+        expect(conversation.startConversation).toHaveBeenCalledTimes(1);
+      });
+    });
+
     it("forgets a conversation that can no longer be resumed instead of starting a new one", async () => {
       sessionStorage.setItem(STORAGE_KEY, "conv-old");
       const fetchMock = vi.mocked(fetch);

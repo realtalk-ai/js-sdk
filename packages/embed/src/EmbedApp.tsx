@@ -111,35 +111,49 @@ function Widget({
     isMicEnabled: micOn,
   } = conversation;
 
-  const resumeHandledRef = useRef(false);
-  useEffect(() => {
-    if (resumeHandledRef.current) return;
-    resumeHandledRef.current = true;
-
+  const resumingRef = useRef(false);
+  const resumeStoredConversation = async () => {
     const hasConversationToResume =
       minter.conversationId !== undefined && status === "not_started";
-    if (!hasConversationToResume) return;
+    if (!hasConversationToResume || resumingRef.current) return;
 
-    const resumeConversation = async () => {
-      setStarting(true);
-      try {
-        await conversationRef.current.startConversation({
-          agentId,
-          mode: startMode,
-        });
-      } catch (error) {
-        if (error instanceof ResumeRejectedError) {
-          setPreviousChatEnded(true);
-          return;
-        }
-        console.error("[realtalk-embed] failed to resume conversation", error);
-        setNotice("Your previous conversation could not be restored.");
-      } finally {
-        setStarting(false);
+    resumingRef.current = true;
+    setStarting(true);
+    try {
+      await conversationRef.current.startConversation({
+        agentId,
+        mode: startMode,
+      });
+      setNotice(null);
+    } catch (error) {
+      if (error instanceof ResumeRejectedError) {
+        setPreviousChatEnded(true);
+        return;
       }
+      console.error("[realtalk-embed] failed to resume conversation", error);
+      setNotice("Your previous conversation could not be restored.");
+    } finally {
+      resumingRef.current = false;
+      setStarting(false);
+    }
+  };
+  const resumeStoredConversationRef = useRef(resumeStoredConversation);
+  resumeStoredConversationRef.current = resumeStoredConversation;
+
+  useEffect(() => {
+    const resume = () => void resumeStoredConversationRef.current();
+    const resumeWhenVisible = () => {
+      if (document.visibilityState === "visible") resume();
     };
-    void resumeConversation();
-  }, [status, agentId, minter, startMode]);
+
+    resume();
+    window.addEventListener("online", resume);
+    document.addEventListener("visibilitychange", resumeWhenVisible);
+    return () => {
+      window.removeEventListener("online", resume);
+      document.removeEventListener("visibilitychange", resumeWhenVisible);
+    };
+  }, []);
 
   useEffect(() => {
     if (status === "finished") minter.reset();
