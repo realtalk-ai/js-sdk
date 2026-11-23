@@ -94,6 +94,21 @@ describe("createSoundPlayer", () => {
     expect(context.createBufferSource).not.toHaveBeenCalled();
   });
 
+  it("is unlocked only once the audio context is running", () => {
+    const context = stubAudioContext({ state: "suspended" });
+    const player = createSoundPlayer();
+    expect(player.isUnlocked()).toBe(false);
+
+    player.unlock();
+    expect(player.isUnlocked()).toBe(false);
+
+    context.state = "running";
+    expect(player.isUnlocked()).toBe(true);
+
+    player.close();
+    expect(player.isUnlocked()).toBe(false);
+  });
+
   it("closes the audio context, and a later unlock creates a new one", async () => {
     const context = stubAudioContext();
     const player = createSoundPlayer();

@@ -100,6 +100,7 @@ vi.mock("@realtalk-ai/react", async (importOriginal) => {
 
 const soundPlayer = vi.hoisted(() => ({
   unlock: vi.fn(),
+  isUnlocked: vi.fn(() => false),
   play: vi.fn(() => Promise.resolve()),
   close: vi.fn(),
 }));
@@ -1074,13 +1075,19 @@ describe("EmbedApp", () => {
       hasFocus.mockRestore();
     });
 
-    it("unlocks sound on the first click or key press anywhere on the page", async () => {
+    it("unlocks sound on clicks and key presses anywhere on the page until it is unlocked", async () => {
       await renderWidget();
 
-      fireEvent.pointerDown(document.body);
+      fireEvent.click(document.body);
       expect(soundPlayer.unlock).toHaveBeenCalledTimes(1);
 
       fireEvent.keyDown(document.body, { key: "a" });
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(2);
+
+      soundPlayer.isUnlocked.mockReturnValue(true);
+      fireEvent.click(document.body);
+      soundPlayer.isUnlocked.mockReturnValue(false);
+      fireEvent.click(document.body);
       expect(soundPlayer.unlock).toHaveBeenCalledTimes(2);
     });
 
@@ -1231,12 +1238,13 @@ describe("EmbedApp", () => {
       expect(soundPlayer.unlock).not.toHaveBeenCalled();
 
       openPanel();
-      expect(soundPlayer.unlock).toHaveBeenCalledTimes(1);
+      expect(soundPlayer.unlock).toHaveBeenCalled();
+      soundPlayer.unlock.mockClear();
 
       const textarea = screen.getByPlaceholderText("Type a message…");
       fireEvent.change(textarea, { target: { value: "Hello" } });
       fireEvent.submit(textarea.closest("form") as HTMLFormElement);
-      expect(soundPlayer.unlock).toHaveBeenCalledTimes(2);
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(1);
       await vi.waitFor(() =>
         expect(conversation.sendMessage).toHaveBeenCalledWith("Hello"),
       );
