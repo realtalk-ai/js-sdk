@@ -29,7 +29,8 @@ import type {
 import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
-const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+const RECONNECT_DELAYS = [1000, 2000, 4000, 5000];
+const GIVE_UP_RECONNECTING_AFTER_MS = 5 * 60 * 1000;
 
 function reconnectDelay(attempt: number): number {
   return RECONNECT_DELAYS[Math.min(attempt, RECONNECT_DELAYS.length - 1)];
@@ -118,6 +119,7 @@ export function useConnection(opts: {
   const sessionOptionsRef = useRef<UseConversationSessionOptions | null>(null);
   const sessionTokenRef = useRef<string | null>(null);
   const reconnectAttemptRef = useRef(0);
+  const reconnectStartedAtRef = useRef<number | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -168,6 +170,7 @@ export function useConnection(opts: {
     sessionOptionsRef.current = null;
     sessionTokenRef.current = null;
     reconnectAttemptRef.current = 0;
+    reconnectStartedAtRef.current = null;
   }, [setConversationIdBoth, onCleanup]);
 
   const handleConversationEvent = useCallback(
@@ -319,6 +322,7 @@ export function useConnection(opts: {
       });
 
       reconnectAttemptRef.current = 0;
+      reconnectStartedAtRef.current = null;
       setError(null);
       updateConnectionStatus("connected");
 
@@ -380,6 +384,18 @@ export function useConnection(opts: {
 
   const scheduleReconnect = useCallback(() => {
     if (intentionalDisconnectRef.current) {
+      return;
+    }
+
+    reconnectStartedAtRef.current ??= Date.now();
+    const reconnectingForMs = Date.now() - reconnectStartedAtRef.current;
+    if (reconnectingForMs >= GIVE_UP_RECONNECTING_AFTER_MS) {
+      stopReconnecting(
+        new ConnectionError(
+          "websocket_failed",
+          "All reconnection attempts exhausted",
+        ),
+      );
       return;
     }
 

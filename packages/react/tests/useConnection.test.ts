@@ -906,7 +906,7 @@ describe("useConnection", () => {
       vi.useRealTimers();
     });
 
-    it("keeps retrying every 30 seconds after the first attempts fail", async () => {
+    it("keeps retrying every 5 seconds after the first attempts fail", async () => {
       const opts = defaultOpts();
       opts.getToken = vi.fn().mockResolvedValue({
         token: "token",
@@ -916,14 +916,46 @@ describe("useConnection", () => {
       mockTransport.connect.mockRejectedValue(new Error("unreachable"));
 
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(
-          1000 + 2000 + 4000 + 8000 + 16000 + 30000 * 3,
-        );
+        await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000 + 5000 * 3);
       });
 
-      expect(mockTransport.connect).toHaveBeenCalledTimes(1 + 8);
+      expect(mockTransport.connect).toHaveBeenCalledTimes(1 + 6);
       expect(result.current.connectionStatus).toBe("reconnecting");
       expect(result.current.error).toBeNull();
+    });
+
+    it("gives up and reports a fatal error after 5 minutes of reconnecting", async () => {
+      const opts = defaultOpts();
+      const onError = vi.fn();
+      opts.optionsRef.current = { onError };
+      opts.getToken = vi.fn().mockResolvedValue({
+        token: "token",
+        conversationId: "conv-1",
+      });
+      const { result } = await startAndDropConnection(opts);
+      mockTransport.connect.mockRejectedValue(new Error("unreachable"));
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5 * 60 * 1000 - 1);
+      });
+      expect(result.current.connectionStatus).toBe("reconnecting");
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      const attemptsWhenGivingUp = mockTransport.connect.mock.calls.length;
+
+      expect(result.current.status).toBe("not_started");
+      expect(result.current.connectionStatus).toBe("disconnected");
+      expect(result.current.error?.fatal).toBe(true);
+      expect(onError).toHaveBeenCalledWith(
+        expect.objectContaining({ fatal: true }),
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60000);
+      });
+      expect(mockTransport.connect).toHaveBeenCalledTimes(attemptsWhenGivingUp);
     });
 
     it("stops and reports the error when the token is refused", async () => {
