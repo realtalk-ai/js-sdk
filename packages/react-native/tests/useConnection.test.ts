@@ -86,6 +86,13 @@ vi.mock("../src/audio/recorder.js", () => ({
   AudioRecorder: vi.fn(() => ({ ...mockRecorder })),
 }));
 
+function sessionToken(expiresInMs: number, name = "token"): string {
+  const base64Url = (value: string) =>
+    btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const exp = Math.floor((Date.now() + expiresInMs) / 1000);
+  return `${base64Url('{"alg":"HS256"}')}.${base64Url(JSON.stringify({ exp, name }))}.sig`;
+}
+
 function defaultOpts() {
   return {
     baseUrl: "wss://test.example.com",
@@ -991,6 +998,79 @@ describe("useConnection", () => {
         await vi.advanceTimersByTimeAsync(1);
       });
       expect(opts.getToken).toHaveBeenCalledTimes(2);
+    });
+
+    it("reconnects with the token it has while it is valid for more than a minute", async () => {
+      const opts = defaultOpts();
+      const token = sessionToken(30 * 60 * 1000);
+      opts.getToken = vi
+        .fn()
+        .mockResolvedValue({ token, conversationId: "conv-1" });
+      const { result } = await startAndDropConnection(opts);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(opts.getToken).toHaveBeenCalledTimes(1);
+      expect(mockTransport.connect).toHaveBeenCalledTimes(2);
+      expect(mockTransport.connect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ token }),
+      );
+      expect(result.current.connectionStatus).toBe("connected");
+    });
+
+    it("fetches a new token when the one it has expires within a minute", async () => {
+      const opts = defaultOpts();
+      const renewed = sessionToken(30 * 60 * 1000, "renewed");
+      opts.getToken = vi
+        .fn()
+        .mockResolvedValueOnce({
+          token: sessionToken(30 * 1000),
+          conversationId: "conv-1",
+        })
+        .mockResolvedValue({ token: renewed, conversationId: "conv-1" });
+      await startAndDropConnection(opts);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(opts.getToken).toHaveBeenCalledTimes(2);
+      expect(mockTransport.connect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ token: renewed }),
+      );
+    });
+
+    it("fetches a new token after an attempt with the one it has fails", async () => {
+      const opts = defaultOpts();
+      const first = sessionToken(30 * 60 * 1000, "first");
+      const renewed = sessionToken(30 * 60 * 1000, "renewed");
+      opts.getToken = vi
+        .fn()
+        .mockResolvedValueOnce({ token: first, conversationId: "conv-1" })
+        .mockResolvedValue({ token: renewed, conversationId: "conv-1" });
+      const { result } = await startAndDropConnection(opts);
+      mockTransport.connect.mockRejectedValueOnce(
+        new Error("handshake refused"),
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(opts.getToken).toHaveBeenCalledTimes(1);
+      expect(mockTransport.connect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ token: first }),
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(opts.getToken).toHaveBeenCalledTimes(2);
+      expect(mockTransport.connect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ token: renewed }),
+      );
+      expect(result.current.connectionStatus).toBe("connected");
     });
 
     it("keeps retrying every 5 seconds after the first attempts fail", async () => {

@@ -49,6 +49,8 @@ export { hasPendingSubTasks } from "./messages.js";
 
 export { pcmToBase64, base64ToPcm } from "./audio.js";
 
+export { sessionTokenExpiresAt } from "./session-token.js";
+
 export { DEFAULT_WS_URL } from "./constants.js";
 
 export {

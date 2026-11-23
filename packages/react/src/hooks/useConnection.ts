@@ -21,6 +21,7 @@ import {
   ApiError,
   ProtocolError,
   ValidationError,
+  sessionTokenExpiresAt,
 } from "@realtalk-ai/core";
 import type {
   UseConversationOptions,
@@ -31,6 +32,7 @@ import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 5000];
 const GIVE_UP_RECONNECTING_AFTER_MS = 5 * 60 * 1000;
+const MIN_TOKEN_LIFETIME_LEFT_MS = 60 * 1000;
 
 function reconnectDelay(attempt: number): number {
   const plannedDelay =
@@ -49,6 +51,18 @@ function tokenWasRefused(error: unknown): error is ApiError {
 interface FetchedToken {
   token: string;
   conversationId?: string;
+}
+
+type TokenRenewal = "renewed" | "stopped" | "failed";
+
+function canReuseToken(
+  token: string | null,
+  failedToConnect: boolean,
+): boolean {
+  if (!token || failedToConnect) return false;
+  const expiresAt = sessionTokenExpiresAt(token);
+  if (expiresAt === undefined) return false;
+  return expiresAt - Date.now() > MIN_TOKEN_LIFETIME_LEFT_MS;
 }
 
 export const DEFAULT_CONVERSATION_MODE: ConversationMode = {
@@ -123,6 +137,7 @@ export function useConnection(opts: {
   const sessionTokenRef = useRef<string | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectStartedAtRef = useRef<number | null>(null);
+  const tokenFailedToConnectRef = useRef(false);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -174,6 +189,7 @@ export function useConnection(opts: {
     sessionTokenRef.current = null;
     reconnectAttemptRef.current = 0;
     reconnectStartedAtRef.current = null;
+    tokenFailedToConnectRef.current = false;
   }, [setConversationIdBoth, onCleanup]);
 
   const handleConversationEvent = useCallback(
@@ -326,6 +342,7 @@ export function useConnection(opts: {
 
       reconnectAttemptRef.current = 0;
       reconnectStartedAtRef.current = null;
+      tokenFailedToConnectRef.current = false;
       setError(null);
       updateConnectionStatus("connected");
 
@@ -385,6 +402,41 @@ export function useConnection(opts: {
     [cleanup, optionsRef, updateConnectionStatus, updateConversationStatus],
   );
 
+  const renewToken = useCallback(
+    async (
+      sessionOptions: UseConversationSessionOptions,
+    ): Promise<TokenRenewal> => {
+      let fetched: FetchedToken | null;
+      try {
+        fetched = await fetchToken(sessionOptions);
+      } catch (error) {
+        if (!tokenWasRefused(error)) return "failed";
+        stopReconnecting(error);
+        return "stopped";
+      }
+
+      const isForAnotherConversation =
+        fetched?.conversationId !== undefined &&
+        fetched.conversationId !== conversationIdRef.current;
+      if (isForAnotherConversation) {
+        stopReconnecting(
+          new ConnectionError(
+            "websocket_failed",
+            "The refreshed session token is for another conversation",
+          ),
+        );
+        return "stopped";
+      }
+
+      if (fetched) {
+        sessionTokenRef.current = fetched.token;
+        tokenFailedToConnectRef.current = false;
+      }
+      return "renewed";
+    },
+    [fetchToken, stopReconnecting],
+  );
+
   const scheduleReconnect = useCallback(() => {
     if (intentionalDisconnectRef.current) {
       return;
@@ -412,42 +464,28 @@ export function useConnection(opts: {
 
       reconnectAttemptRef.current++;
 
-      let fetched: FetchedToken | null;
-      try {
-        fetched = await fetchToken(sessionOptions);
-      } catch (error) {
-        if (tokenWasRefused(error)) {
-          stopReconnecting(error);
-          return;
-        }
+      const reusesToken = canReuseToken(
+        sessionTokenRef.current,
+        tokenFailedToConnectRef.current,
+      );
+      const renewal = reusesToken
+        ? "renewed"
+        : await renewToken(sessionOptions);
+      if (renewal === "stopped") return;
+      if (renewal === "failed") {
         scheduleReconnect();
         return;
-      }
-
-      const isForAnotherConversation =
-        fetched?.conversationId !== undefined &&
-        fetched.conversationId !== conversationIdRef.current;
-      if (isForAnotherConversation) {
-        stopReconnecting(
-          new ConnectionError(
-            "websocket_failed",
-            "The refreshed session token is for another conversation",
-          ),
-        );
-        return;
-      }
-      if (fetched) {
-        sessionTokenRef.current = fetched.token;
       }
 
       try {
         await connect(sessionOptions);
       } catch {
+        tokenFailedToConnectRef.current = true;
         updateConnectionStatus("reconnecting");
         scheduleReconnect();
       }
     }, delay);
-  }, [connect, fetchToken, stopReconnecting, updateConnectionStatus]);
+  }, [connect, renewToken, stopReconnecting, updateConnectionStatus]);
 
   const resolveToken = useCallback(
     async (
