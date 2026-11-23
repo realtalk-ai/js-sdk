@@ -1060,6 +1060,62 @@ describe("useConnection", () => {
       expect(mockTransport.connect).toHaveBeenCalledTimes(attemptsWhenGivingUp);
     });
 
+    it("stays disconnected when the conversation is ended while a reconnect attempt is connecting and that attempt fails", async () => {
+      const opts = defaultOpts();
+      opts.getToken = vi.fn().mockResolvedValue({
+        token: "token",
+        conversationId: "conv-1",
+      });
+      const { result } = await startAndDropConnection(opts);
+      let failAttempt!: (error: Error) => void;
+      mockTransport.connect.mockImplementationOnce(
+        () => new Promise((_, reject) => (failAttempt = reject)),
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      await act(async () => {
+        await result.current.endConversation();
+      });
+      await act(async () => {
+        failAttempt(new Error("timed out"));
+        await vi.advanceTimersByTimeAsync(60000);
+      });
+
+      expect(result.current.status).toBe("finished");
+      expect(result.current.connectionStatus).toBe("disconnected");
+      expect(mockTransport.connect).toHaveBeenCalledTimes(2);
+    });
+
+    it("opens no connection when the conversation is ended while a new token is fetched", async () => {
+      const opts = defaultOpts();
+      let deliverToken!: (token: unknown) => void;
+      opts.getToken = vi
+        .fn()
+        .mockResolvedValueOnce({ token: "token", conversationId: "conv-1" })
+        .mockImplementationOnce(
+          () => new Promise((resolve) => (deliverToken = resolve)),
+        );
+      const { result } = await startAndDropConnection(opts);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(opts.getToken).toHaveBeenCalledTimes(2);
+
+      await act(async () => {
+        await result.current.endConversation();
+      });
+      await act(async () => {
+        deliverToken({ token: "token-2", conversationId: "conv-1" });
+        await vi.advanceTimersByTimeAsync(60000);
+      });
+
+      expect(mockTransport.connect).toHaveBeenCalledTimes(1);
+      expect(result.current.status).toBe("finished");
+      expect(result.current.connectionStatus).toBe("disconnected");
+    });
+
     it("stops and reports the error when the token is refused", async () => {
       const opts = defaultOpts();
       const onError = vi.fn();

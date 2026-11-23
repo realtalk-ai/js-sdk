@@ -402,6 +402,13 @@ export function useConnection(opts: {
     [cleanup, optionsRef, updateConnectionStatus, updateConversationStatus],
   );
 
+  const isNoLongerReconnecting = useCallback(
+    (sessionOptions: UseConversationSessionOptions) =>
+      intentionalDisconnectRef.current ||
+      sessionOptionsRef.current !== sessionOptions,
+    [],
+  );
+
   const renewToken = useCallback(
     async (
       sessionOptions: UseConversationSessionOptions,
@@ -410,10 +417,12 @@ export function useConnection(opts: {
       try {
         fetched = await fetchToken(sessionOptions);
       } catch (error) {
+        if (isNoLongerReconnecting(sessionOptions)) return "stopped";
         if (!tokenWasRefused(error)) return "failed";
         stopReconnecting(error);
         return "stopped";
       }
+      if (isNoLongerReconnecting(sessionOptions)) return "stopped";
 
       const isForAnotherConversation =
         fetched?.conversationId !== undefined &&
@@ -434,7 +443,7 @@ export function useConnection(opts: {
       }
       return "renewed";
     },
-    [fetchToken, stopReconnecting],
+    [fetchToken, stopReconnecting, isNoLongerReconnecting],
   );
 
   const scheduleReconnect = useCallback(() => {
@@ -480,12 +489,19 @@ export function useConnection(opts: {
       try {
         await connect(sessionOptions);
       } catch {
+        if (isNoLongerReconnecting(sessionOptions)) return;
         tokenFailedToConnectRef.current = true;
         updateConnectionStatus("reconnecting");
         scheduleReconnect();
       }
     }, delay);
-  }, [connect, renewToken, stopReconnecting, updateConnectionStatus]);
+  }, [
+    connect,
+    renewToken,
+    stopReconnecting,
+    updateConnectionStatus,
+    isNoLongerReconnecting,
+  ]);
 
   const resolveToken = useCallback(
     async (
