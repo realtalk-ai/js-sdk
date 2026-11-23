@@ -173,7 +173,7 @@ The server may pause an idle conversation by closing the connection; `status` th
 
 ### Reconnecting
 
-When the connection drops, for example while the server restarts or the network is away, `connectionStatus` becomes `"reconnecting"` and the SDK tries again after 1, 2 and 4 seconds and then every 5 seconds. After 5 minutes without a connection it gives up: `status` becomes `"not_started"` and `onError` receives a fatal error. It fetches a new session token before each attempt. A `getToken` passed to `startConversation` is used for that before the provider's, so you can pass it together with `token` when you already have a token for the first connection:
+When the connection drops, for example while the server restarts or the network is away, `connectionStatus` becomes `"reconnecting"` and the SDK tries again after about 1, 2 and 4 seconds and then about every 5 seconds, with a random spread so that many clients do not reconnect at the same moment. After 5 minutes without a connection it gives up: `status` becomes `"not_started"` and `onError` receives a fatal error. It fetches a new session token before each attempt. A `getToken` passed to `startConversation` is used for that before the provider's, so you can pass it together with `token` when you already have a token for the first connection:
 
 ```ts
 startConversation({

@@ -32,7 +32,10 @@ const RECONNECT_DELAYS = [1000, 2000, 4000, 5000];
 const GIVE_UP_RECONNECTING_AFTER_MS = 5 * 60 * 1000;
 
 function reconnectDelay(attempt: number): number {
-  return RECONNECT_DELAYS[Math.min(attempt, RECONNECT_DELAYS.length - 1)];
+  const plannedDelay =
+    RECONNECT_DELAYS[Math.min(attempt, RECONNECT_DELAYS.length - 1)];
+  const jitter = 0.5 + Math.random() * 0.5;
+  return plannedDelay * jitter;
 }
 
 function tokenWasRefused(error: unknown): error is ApiError {

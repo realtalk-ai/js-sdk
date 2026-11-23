@@ -965,10 +965,32 @@ describe("useConnection", () => {
 
     beforeEach(() => {
       vi.useFakeTimers();
+      vi.spyOn(Math, "random").mockReturnValue(1);
     });
 
     afterEach(() => {
       vi.useRealTimers();
+      vi.mocked(Math.random).mockRestore();
+    });
+
+    it("waits a random part of the planned delay, at least half of it", async () => {
+      vi.mocked(Math.random).mockReturnValue(0);
+      const opts = defaultOpts();
+      opts.getToken = vi.fn().mockResolvedValue({
+        token: "token",
+        conversationId: "conv-1",
+      });
+      await startAndDropConnection(opts);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(499);
+      });
+      expect(opts.getToken).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(opts.getToken).toHaveBeenCalledTimes(2);
     });
 
     it("keeps retrying every 5 seconds after the first attempts fail", async () => {
