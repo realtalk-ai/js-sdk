@@ -26,6 +26,7 @@ import {
 } from "@realtalk-ai/core";
 import type { UseConversationOptions } from "@realtalk-ai/react";
 import { EmbedApp } from "../src/EmbedApp.js";
+import { ResumeRejectedError } from "../src/session.js";
 import { HUMAN_AGENT_JOINED_SOUND, MESSAGE_SOUND } from "../src/sounds.js";
 import packageJson from "../package.json";
 
@@ -46,6 +47,7 @@ const HUMAN_AGENT_JOINED: AnnotationItem = {
 };
 
 const conversation = {
+  conversationId: null as string | null,
   status: "not_started" as ConversationStatus,
   connectionStatus: "disconnected" as const,
   messages: [] as Message[],
@@ -99,6 +101,7 @@ vi.mock("@realtalk-ai/react", async (importOriginal) => {
 
 const soundPlayer = vi.hoisted(() => ({
   unlock: vi.fn(),
+  isUnlocked: vi.fn(() => false),
   play: vi.fn(() => Promise.resolve()),
   close: vi.fn(),
 }));
@@ -206,6 +209,7 @@ describe("EmbedApp", () => {
     sessionStorage.clear();
     mockFetch();
     Object.assign(conversation, {
+      conversationId: null,
       status: "not_started",
       connectionStatus: "disconnected",
       messages: [],
@@ -257,6 +261,286 @@ describe("EmbedApp", () => {
       });
 
       expect(launcherLabel()).toBe("Open chat");
+    });
+
+    it("counts the agent messages that arrive while the widget is minimized", async () => {
+      const seen = message("m1", "Hello", "2024-01-01T00:00:00Z");
+      const { update } = await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [seen],
+      });
+
+      update({
+        messages: [
+          seen,
+          message("m2", "Are you there?", "2024-01-01T00:01:00Z"),
+          {
+            ...message("m3", "Yes", "2024-01-01T00:02:00Z"),
+            role: "user",
+          },
+        ],
+      });
+      expect(launcherLabel()).toBe("Open chat, 1 new message");
+      expect(screen.getByText("1")).toBeTruthy();
+    });
+
+    it("counts the agent replies that came while the page was closed", async () => {
+      sessionStorage.setItem(
+        "realtalk-embed:last-seen:conv-1",
+        String(Date.parse("2024-01-01T00:00:00Z")),
+      );
+
+      await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [
+          message("m1", "Hello", "2024-01-01T00:00:00Z"),
+          message("m2", "A colleague will answer", "2024-01-01T00:01:00Z"),
+          message("m3", "Hi, I'm Filip", "2024-01-01T00:02:00Z"),
+        ],
+      });
+
+      expect(launcherLabel()).toBe("Open chat, 2 new messages");
+    });
+
+    it("shows no new messages after a reload when the visitor had seen them all", async () => {
+      sessionStorage.setItem(
+        "realtalk-embed:last-seen:conv-1",
+        String(Date.parse("2024-01-01T00:01:00Z")),
+      );
+
+      await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [
+          message("m1", "Hello", "2024-01-01T00:00:00Z"),
+          message("m2", "Hi, I'm Filip", "2024-01-01T00:01:00Z"),
+        ],
+      });
+
+      expect(launcherLabel()).toBe("Open chat, conversation in progress");
+    });
+
+    it("treats the history as seen when nothing was seen before", async () => {
+      await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [message("m1", "Hello", "2024-01-01T00:00:00Z")],
+      });
+
+      expect(launcherLabel()).toBe("Open chat, conversation in progress");
+    });
+
+    it("clears the new messages once the widget is opened", async () => {
+      const seen = message("m1", "Hello", "2024-01-01T00:00:00Z");
+      const { update } = await renderWidget({
+        status: "active",
+        conversationId: "conv-1",
+        messages: [seen],
+      });
+      update({
+        messages: [seen, message("m2", "Hi", "2024-01-01T00:01:00Z")],
+      });
+      expect(launcherLabel()).toBe("Open chat, 1 new message");
+
+      openPanel();
+      fireEvent.click(screen.getByRole("button", { name: "Minimize chat" }));
+
+      expect(launcherLabel()).toBe("Open chat, conversation in progress");
+    });
+  });
+
+  describe("resume", () => {
+    const STORAGE_KEY = `realtalk-embed:conversation:${AGENT_ID}`;
+
+    it("resumes a stored conversation when the page loads, before the widget is opened", async () => {
+      sessionStorage.setItem(STORAGE_KEY, "conv-1");
+
+      await renderWidget();
+
+      expect(conversation.startConversation).toHaveBeenCalledWith(
+        expect.objectContaining({ agentId: AGENT_ID }),
+      );
+    });
+
+    it("does not start a conversation on page load when none is stored", async () => {
+      await renderWidget();
+
+      expect(conversation.startConversation).not.toHaveBeenCalled();
+    });
+
+    describe("after the connection was given up", () => {
+      let visibilityState: MockInstance<() => DocumentVisibilityState>;
+
+      function setTabVisibility(state: DocumentVisibilityState) {
+        visibilityState.mockReturnValue(state);
+        fireEvent(document, new Event("visibilitychange"));
+      }
+
+      beforeEach(() => {
+        visibilityState = vi
+          .spyOn(document, "visibilityState", "get")
+          .mockReturnValue("visible");
+      });
+
+      async function renderWithGivenUpConnection() {
+        sessionStorage.setItem(STORAGE_KEY, "conv-1");
+        const rendered = await renderWidget();
+        await vi.waitFor(() =>
+          expect(conversation.startConversation).toHaveBeenCalledTimes(1),
+        );
+        await act(async () => {});
+        return rendered;
+      }
+
+      afterEach(() => {
+        visibilityState.mockRestore();
+      });
+
+      it("resumes the stored conversation again when the browser is back online", async () => {
+        await renderWithGivenUpConnection();
+
+        await act(async () => {
+          fireEvent(window, new Event("online"));
+        });
+
+        expect(conversation.startConversation).toHaveBeenCalledTimes(2);
+      });
+
+      it("resumes the stored conversation again when the tab becomes visible, not when it is hidden", async () => {
+        await renderWithGivenUpConnection();
+
+        await act(async () => {
+          setTabVisibility("hidden");
+        });
+        expect(conversation.startConversation).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+          setTabVisibility("visible");
+        });
+        expect(conversation.startConversation).toHaveBeenCalledTimes(2);
+      });
+
+      it("resumes once when the browser comes online and the tab becomes visible together", async () => {
+        await renderWithGivenUpConnection();
+        let finishResume!: () => void;
+        conversation.startConversation.mockImplementationOnce(
+          () => new Promise<void>((resolve) => (finishResume = resolve)),
+        );
+
+        await act(async () => {
+          fireEvent(window, new Event("online"));
+          setTabVisibility("visible");
+        });
+        expect(conversation.startConversation).toHaveBeenCalledTimes(2);
+
+        await act(async () => {
+          finishResume();
+        });
+      });
+
+      it("leaves a connected conversation alone when the browser is back online", async () => {
+        const { update } = await renderWithGivenUpConnection();
+        update({ status: "active" });
+
+        await act(async () => {
+          fireEvent(window, new Event("online"));
+        });
+
+        expect(conversation.startConversation).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("forgets a conversation that can no longer be resumed instead of starting a new one", async () => {
+      sessionStorage.setItem(STORAGE_KEY, "conv-old");
+      const fetchMock = vi.mocked(fetch);
+      fetchMock.mockImplementation((url) =>
+        Promise.resolve(
+          String(url).includes("/embed-configs/")
+            ? jsonResponse({
+                display_name: "Support",
+                greeting: "Hi there!",
+                idle_pause_seconds: IDLE_PAUSE_SECONDS,
+                idle_end_seconds: IDLE_END_SECONDS,
+                voice_enabled: true,
+              })
+            : new Response("{}", { status: 403 }),
+        ),
+      );
+      conversation.startConversation.mockImplementationOnce(async () => {
+        await (providerProps.current.getToken as () => Promise<unknown>)();
+      });
+
+      await renderWidget();
+      openPanel();
+
+      expect(
+        await screen.findByText(/Your previous conversation ended/),
+      ).toBeTruthy();
+      const sessionMints = fetchMock.mock.calls.filter(([url]) =>
+        String(url).includes("/embed-sessions/"),
+      );
+      expect(sessionMints).toHaveLength(1);
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+    });
+
+    it("starts a new chat when the visitor writes after the stored one ended", async () => {
+      sessionStorage.setItem(STORAGE_KEY, "conv-old");
+      const mintStatuses = [429, 403, 201];
+      vi.mocked(fetch).mockImplementation((url) => {
+        if (String(url).includes("/embed-configs/")) {
+          return Promise.resolve(
+            jsonResponse({
+              display_name: "Support",
+              greeting: "Hi there!",
+              idle_pause_seconds: IDLE_PAUSE_SECONDS,
+              idle_end_seconds: IDLE_END_SECONDS,
+              voice_enabled: true,
+            }),
+          );
+        }
+        const status = mintStatuses.shift() ?? 201;
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ token: "token", conversation_id: "conv-new" }),
+            { status },
+          ),
+        );
+      });
+      conversation.startConversation.mockImplementation(async () => {
+        await (providerProps.current.getToken as () => Promise<unknown>)();
+      });
+
+      await renderWidget();
+      openPanel();
+      const textarea = screen.getByPlaceholderText("Type a message…");
+      fireEvent.change(textarea, { target: { value: "Hej igen" } });
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+
+      expect(
+        await screen.findByText(/Your previous conversation ended/),
+      ).toBeTruthy();
+      expect(conversation.sendMessage).toHaveBeenCalledWith("Hej igen");
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBe("conv-new");
+    });
+
+    it("tells the visitor the chat ended when it can no longer be resumed while reconnecting", async () => {
+      await renderWidget({ status: "active" });
+      openPanel();
+      expect(screen.queryByText(/Your previous conversation ended/)).toBeNull();
+
+      act(() => {
+        conversationOptions.current.onError?.({
+          error: new ResumeRejectedError(403),
+          fatal: true,
+          timestamp: 0,
+        });
+      });
+
+      expect(
+        await screen.findByText(/Your previous conversation ended/),
+      ).toBeTruthy();
     });
   });
 
@@ -892,6 +1176,22 @@ describe("EmbedApp", () => {
       hasFocus.mockRestore();
     });
 
+    it("unlocks sound on clicks and key presses anywhere on the page until it is unlocked", async () => {
+      await renderWidget();
+
+      fireEvent.click(document.body);
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(1);
+
+      fireEvent.keyDown(document.body, { key: "a" });
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(2);
+
+      soundPlayer.isUnlocked.mockReturnValue(true);
+      fireEvent.click(document.body);
+      soundPlayer.isUnlocked.mockReturnValue(false);
+      fireEvent.click(document.body);
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(2);
+    });
+
     it("plays no message sound while the visitor watches the open widget", async () => {
       await renderWidget({ status: "active" });
       openPanel();
@@ -1039,12 +1339,13 @@ describe("EmbedApp", () => {
       expect(soundPlayer.unlock).not.toHaveBeenCalled();
 
       openPanel();
-      expect(soundPlayer.unlock).toHaveBeenCalledTimes(1);
+      expect(soundPlayer.unlock).toHaveBeenCalled();
+      soundPlayer.unlock.mockClear();
 
       const textarea = screen.getByPlaceholderText("Type a message…");
       fireEvent.change(textarea, { target: { value: "Hello" } });
       fireEvent.submit(textarea.closest("form") as HTMLFormElement);
-      expect(soundPlayer.unlock).toHaveBeenCalledTimes(2);
+      expect(soundPlayer.unlock).toHaveBeenCalledTimes(1);
       await vi.waitFor(() =>
         expect(conversation.sendMessage).toHaveBeenCalledWith("Hello"),
       );

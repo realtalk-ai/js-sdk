@@ -4,6 +4,7 @@
 export interface SoundPlayer {
   // Call inside the visitor's own gesture: Safari only starts audio there.
   unlock: () => void;
+  isUnlocked: () => boolean;
   // Caches each decode by array identity, so pass the same array each time.
   play: (sound: Uint8Array) => Promise<void>;
   close: () => void;
@@ -39,6 +40,10 @@ export function createSoundPlayer(): SoundPlayer {
         }
       }
       context.resume().catch(() => {});
+    },
+
+    isUnlocked() {
+      return context?.state === "running";
     },
 
     async play(sound) {
