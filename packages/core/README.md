@@ -47,6 +47,38 @@ transport.sendEvent({ type: "start" });
 
 Always pass `protocol: 2` to `connect`. Connecting without it is deprecated and logs a warning.
 
+## Conversation client
+
+`ConversationClient` runs a whole conversation without any UI framework: it fetches the session token, connects, keeps the messages, and reconnects when the connection drops. The React and React Native SDKs are built on it.
+
+```ts
+import { ConversationClient } from "@realtalk-ai/core";
+
+const client = new ConversationClient({
+  baseUrl: "wss://api.realtalk.ml/api/v1",
+  sdkInfo: { name: "my-app", version: "1.0.0", context: "web_chat" },
+  getToken: async () => {
+    const response = await fetch("/api/realtalk-token");
+    const data = await response.json();
+    return { token: data.token, conversationId: data.conversation_id };
+  },
+  callbacks: {
+    onMessage: (message) => console.log(message.role, message.text),
+  },
+});
+
+client.subscribe(() => {
+  const { status, connectionStatus, messages } = client.getSnapshot();
+  render(status, connectionStatus, messages);
+});
+
+await client.start({ agentId: "your-agent-id" });
+client.sendMessage("Hello");
+await client.end();
+```
+
+`getSnapshot()` returns the current state (`status`, `connectionStatus`, `conversationId`, `error`, `mode`, `messages`, `annotations`, `userState`, `thinkingMessageId`) and returns a new object whenever something changes. When the connection drops, the client fetches a new session token and reconnects, waiting longer after each failed attempt and giving up after six. Pass a `reconnectPolicy` to change that.
+
 ## Reconnection
 
 Opt into automatic reconnection by passing a policy:
@@ -146,6 +178,7 @@ Events you can send to the server:
 | `buildTimeline`               | Merge messages and annotations into one `TimelineItem[]`, in time order        |
 | `sortChronological`           | Sort messages or annotations by `createdAt`                                    |
 | `pcmToBase64` / `base64ToPcm` | PCM audio encoding utilities                                                   |
+| `ConversationClient`          | Runs a conversation: tokens, connection, messages, and reconnecting            |
 | `DefaultReconnectPolicy`      | Configurable retry-delay policy                                                |
 | `RealtalkError`               | Base error class for all SDK errors                                            |
 | `ConnectionError`             | WebSocket connection or reconnection failures                                  |

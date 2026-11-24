@@ -66,3 +66,17 @@ export type { LogLevel, Logger } from "./logger.js";
 
 export { DefaultReconnectPolicy } from "./reconnect.js";
 export type { ReconnectPolicy, ReconnectContext } from "./reconnect.js";
+
+export {
+  ConversationClient,
+  DEFAULT_CONVERSATION_MODE,
+} from "./conversation-client.js";
+export type {
+  ConversationClientCallbacks,
+  ConversationClientOptions,
+  ConversationSnapshot,
+  StartConversationOptions,
+} from "./conversation-client.js";
+
+export { applyMessageEvent, EMPTY_MESSAGE_STATE } from "./message-state.js";
+export type { MessageState, MessageStateChange } from "./message-state.js";

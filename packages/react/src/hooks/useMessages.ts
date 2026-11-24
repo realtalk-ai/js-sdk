@@ -1,12 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type {
   AnnotationItem,
   Message,
   ConversationEvent,
+  MessageState,
   UserState,
 } from "@realtalk-ai/core";
-import { EventType, sortChronological } from "@realtalk-ai/core";
+import { applyMessageEvent, EMPTY_MESSAGE_STATE } from "@realtalk-ai/core";
 
 export interface UseMessagesCallbacks {
   onMessage?: (message: Message) => void;
@@ -23,83 +24,48 @@ export interface UseMessagesReturn {
   handleMessageEvent: (event: ConversationEvent) => void;
 }
 
-const upsertById = <T extends { id: string }>(
-  items: T[],
-  item: T,
-  merge: (existing: T) => T = () => item,
-): T[] => {
-  const idx = items.findIndex((existing) => existing.id === item.id);
-  if (idx !== -1) {
-    const updated = [...items];
-    updated[idx] = merge(updated[idx]);
-    return updated;
-  }
-  return [...items, item];
-};
-
 export function useMessages(callbacksRef: {
   readonly current: UseMessagesCallbacks;
 }): UseMessagesReturn {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [annotations, setAnnotations] = useState<AnnotationItem[]>([]);
-  const [userState, setUserState] = useState<UserState>("idle");
-  const [thinkingMessageId, setThinkingMessageId] = useState<string | null>(
-    null,
-  );
+  const [state, setState] = useState<MessageState>(EMPTY_MESSAGE_STATE);
+  const stateRef = useRef(state);
+
+  const replaceState = useCallback((next: MessageState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
 
   const handleMessageEvent = useCallback(
     (event: ConversationEvent) => {
-      switch (event.type) {
-        case EventType.ExistingMessages: {
-          setMessages(event.data);
-          setAnnotations(event.annotations ?? []);
-          break;
-        }
-        case EventType.MessageCreated:
-        case EventType.MessageUpdated: {
-          const msg = event.data;
-          const isEmpty = msg.role === "agent" && !msg.text?.trim();
-
-          if (isEmpty && event.type === EventType.MessageCreated) {
-            setThinkingMessageId(msg.id);
-            break;
-          }
-
-          if (!isEmpty) {
-            setThinkingMessageId((prev) => (prev === msg.id ? null : prev));
-          }
-
-          setMessages((prev) =>
-            upsertById(prev, msg, (existing) => ({ ...existing, ...msg })),
-          );
-          callbacksRef.current.onMessage?.(msg);
-          break;
-        }
-        case EventType.AnnotationCreated: {
-          const item = event.data;
-          setAnnotations((prev) => sortChronological(upsertById(prev, item)));
-          callbacksRef.current.onAnnotation?.(item);
-          break;
-        }
-        case EventType.Vad: {
-          setUserState(event.data.state === "speech" ? "speaking" : "idle");
-          break;
-        }
+      const change = applyMessageEvent(stateRef.current, event);
+      replaceState(change.state);
+      if (change.message) callbacksRef.current.onMessage?.(change.message);
+      if (change.annotation) {
+        callbacksRef.current.onAnnotation?.(change.annotation);
       }
     },
-    [callbacksRef],
+    [callbacksRef, replaceState],
+  );
+
+  const setMessages = useCallback<Dispatch<SetStateAction<Message[]>>>(
+    (action) => {
+      const current = stateRef.current;
+      const messages =
+        typeof action === "function" ? action(current.messages) : action;
+      replaceState({ ...current, messages });
+    },
+    [replaceState],
   );
 
   const clearMessages = useCallback(() => {
-    setMessages([]);
-    setAnnotations([]);
-  }, []);
+    replaceState({ ...stateRef.current, messages: [], annotations: [] });
+  }, [replaceState]);
 
   return {
-    messages,
-    annotations,
-    userState,
-    thinkingMessageId,
+    messages: state.messages,
+    annotations: state.annotations,
+    userState: state.userState,
+    thinkingMessageId: state.thinkingMessageId,
     setMessages,
     clearMessages,
     handleMessageEvent,
