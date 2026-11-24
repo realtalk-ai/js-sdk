@@ -9,6 +9,7 @@ import type {
   DTMFDigit,
   Message,
   ConversationEvent,
+  TokenResponse,
   UserState,
 } from "@realtalk-ai/core";
 import { WebSocketTransport } from "@realtalk-ai/core";
@@ -28,6 +29,7 @@ export interface UseConversationSessionOptions {
   conversationId?: string;
   mode?: ConversationMode;
   token?: string;
+  getToken?: () => Promise<TokenResponse>;
   volume?: number;
 }
 
