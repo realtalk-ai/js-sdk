@@ -75,7 +75,7 @@ client.sendMessage("Hello");
 await client.end();
 ```
 
-When the connection drops, the client fetches a new session token and reconnects, waiting longer after each failed attempt and giving up after six. Pass a `reconnectPolicy` to change that.
+When the connection drops, the client reconnects about every 5 seconds for up to 5 minutes, reusing the session token while it is still valid. Pass a `reconnectPolicy` to change that.
 
 ### Options
 
@@ -223,6 +223,7 @@ Events you can send to the server:
 | `pcmToBase64` / `base64ToPcm` | PCM audio encoding utilities                                                   |
 | `ConversationClient`          | Runs a conversation: tokens, connection, messages, and reconnecting            |
 | `DefaultReconnectPolicy`      | Configurable retry-delay policy                                                |
+| `ConversationReconnectPolicy` | Retries with jitter until a time limit, used by `ConversationClient`           |
 | `RealtalkError`               | Base error class for all SDK errors                                            |
 | `ConnectionError`             | WebSocket connection or reconnection failures                                  |
 | `ApiError`                    | HTTP errors from token endpoints                                               |

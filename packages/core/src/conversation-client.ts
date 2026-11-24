@@ -28,7 +28,11 @@ import {
   ProtocolError,
   ValidationError,
 } from "./errors.js";
-import { DefaultReconnectPolicy, type ReconnectPolicy } from "./reconnect.js";
+import { sessionTokenExpiresAt } from "./session-token.js";
+import {
+  ConversationReconnectPolicy,
+  type ReconnectPolicy,
+} from "./reconnect.js";
 import { DEFAULT_WS_URL } from "./constants.js";
 import { SDK_NAME, SDK_VERSION } from "./version.js";
 import { buildTimeline } from "./events.js";
@@ -38,7 +42,7 @@ import {
   type MessageState,
 } from "./message-state.js";
 
-const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 16000, 30000];
+const MIN_TOKEN_LIFETIME_LEFT_MS = 60 * 1000;
 
 const DEFAULT_SDK_INFO: SdkInfo = {
   name: SDK_NAME,
@@ -64,6 +68,7 @@ export interface StartConversationOptions {
   conversationId?: string;
   mode?: ConversationMode;
   token?: string;
+  getToken?: () => Promise<TokenResponse>;
 }
 
 export interface ConversationClientCallbacks {
@@ -110,8 +115,27 @@ interface FetchedToken {
   conversationId?: string;
 }
 
+type TokenRenewal = "renewed" | "stopped" | "failed";
+
 function isSameMode(a: ConversationMode, b: ConversationMode): boolean {
   return a.userAudio === b.userAudio && a.agentAudio === b.agentAudio;
+}
+
+function tokenWasRefused(error: unknown): error is ApiError {
+  if (!(error instanceof ApiError)) return false;
+  const isClientError = error.statusCode >= 400 && error.statusCode < 500;
+  const isRateLimited = error.statusCode === 429;
+  return isClientError && !isRateLimited;
+}
+
+function canReuseToken(
+  token: string | null,
+  failedToConnect: boolean,
+): boolean {
+  if (!token || failedToConnect) return false;
+  const expiresAt = sessionTokenExpiresAt(token);
+  if (expiresAt === undefined) return false;
+  return expiresAt - Date.now() > MIN_TOKEN_LIFETIME_LEFT_MS;
 }
 
 export class ConversationClient {
@@ -136,6 +160,7 @@ export class ConversationClient {
   private requestedMode: ConversationMode | null = null;
   private reconnectAttempt = 0;
   private reconnectStartedAt: number | null = null;
+  private tokenFailedToConnect = false;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private intentionalDisconnect = false;
 
@@ -332,6 +357,7 @@ export class ConversationClient {
     this.sessionToken = null;
     this.reconnectAttempt = 0;
     this.reconnectStartedAt = null;
+    this.tokenFailedToConnect = false;
   }
 
   private handleEvent(event: ConversationEvent): void {
@@ -461,14 +487,17 @@ export class ConversationClient {
 
     this.reconnectAttempt = 0;
     this.reconnectStartedAt = null;
+    this.tokenFailedToConnect = false;
     this.update({ error: null });
     this.setConnectionStatus("connected");
 
     transport.sendEvent({ type: "start", agent_id: sessionOptions.agentId });
   }
 
-  private async fetchToken(): Promise<FetchedToken | null> {
-    const tokenSource = this.options.getToken;
+  private async fetchToken(
+    sessionOptions: StartConversationOptions,
+  ): Promise<FetchedToken | null> {
+    const tokenSource = sessionOptions.getToken ?? this.options.getToken;
     if (tokenSource) {
       const tokenResult = await tokenSource();
       return typeof tokenResult === "string"
@@ -500,7 +529,7 @@ export class ConversationClient {
       return undefined;
     }
 
-    const fetched = await this.fetchToken();
+    const fetched = await this.fetchToken(sessionOptions);
     if (!fetched) return undefined;
     this.sessionToken = fetched.token;
     return fetched.conversationId;
@@ -513,13 +542,52 @@ export class ConversationClient {
     this.setConnectionStatus("disconnected");
   }
 
+  private isNoLongerReconnecting(
+    sessionOptions: StartConversationOptions,
+  ): boolean {
+    return this.intentionalDisconnect || this.sessionOptions !== sessionOptions;
+  }
+
+  private async renewToken(
+    sessionOptions: StartConversationOptions,
+  ): Promise<TokenRenewal> {
+    let fetched: FetchedToken | null;
+    try {
+      fetched = await this.fetchToken(sessionOptions);
+    } catch (error) {
+      if (this.isNoLongerReconnecting(sessionOptions)) return "stopped";
+      if (!tokenWasRefused(error)) return "failed";
+      this.stopReconnecting(error);
+      return "stopped";
+    }
+    if (this.isNoLongerReconnecting(sessionOptions)) return "stopped";
+
+    const isForAnotherConversation =
+      fetched?.conversationId !== undefined &&
+      fetched.conversationId !== this.state.conversationId;
+    if (isForAnotherConversation) {
+      this.stopReconnecting(
+        new ConnectionError(
+          "websocket_failed",
+          "The refreshed session token is for another conversation",
+        ),
+      );
+      return "stopped";
+    }
+
+    if (fetched) {
+      this.sessionToken = fetched.token;
+      this.tokenFailedToConnect = false;
+    }
+    return "renewed";
+  }
+
   private scheduleReconnect(): void {
     if (this.intentionalDisconnect) return;
 
     this.reconnectStartedAt ??= Date.now();
     const policy =
-      this.options.reconnectPolicy ??
-      new DefaultReconnectPolicy(RECONNECT_DELAYS_MS);
+      this.options.reconnectPolicy ?? new ConversationReconnectPolicy();
     const delay = policy.nextRetryDelayMs({
       retryCount: this.reconnectAttempt,
       elapsedMs: Date.now() - this.reconnectStartedAt,
@@ -543,11 +611,25 @@ export class ConversationClient {
 
     this.reconnectAttempt++;
 
+    const reusesToken = canReuseToken(
+      this.sessionToken,
+      this.tokenFailedToConnect,
+    );
+    const renewal = reusesToken
+      ? "renewed"
+      : await this.renewToken(sessionOptions);
+    if (renewal === "stopped") return;
+    if (renewal === "failed") {
+      this.scheduleReconnect();
+      return;
+    }
+
     try {
-      const fetched = await this.fetchToken();
-      if (fetched) this.sessionToken = fetched.token;
       await this.connect(sessionOptions);
     } catch {
+      if (this.isNoLongerReconnecting(sessionOptions)) return;
+      this.tokenFailedToConnect = true;
+      this.setConnectionStatus("reconnecting");
       this.scheduleReconnect();
     }
   }

@@ -180,6 +180,21 @@ await setMode({ userAudio: true, agentAudio: true }); // and talk to it
 
 The server may pause an idle conversation by closing the connection; `status` then becomes `"paused"` while `conversationId` is kept. This is not an error and the SDK does not auto-reconnect. Call `startConversation` again (with a token for the same conversation id) to resume, and the server replays the conversation's messages on connect.
 
+### Reconnecting
+
+When the connection drops, for example while the server restarts or the network is away, `connectionStatus` becomes `"reconnecting"` and the SDK tries again after about 1, 2 and 4 seconds and then about every 5 seconds, with a random spread so that many clients do not reconnect at the same moment. After 5 minutes without a connection it gives up: `status` becomes `"not_started"` and `onError` receives a fatal error. It reconnects with the session token it already has while that token is valid for more than a minute, and fetches a new one when it is about to expire or after an attempt with it failed. A `getToken` passed to `startConversation` is used for that before the provider's, so you can pass it together with `token` when you already have a token for the first connection:
+
+```ts
+startConversation({
+  agentId: "your-agent-id",
+  conversationId,
+  token,
+  getToken: () => fetchTokenFor(conversationId),
+});
+```
+
+The SDK stops reconnecting and reports a fatal error when the token request is refused (a 4xx response other than 429), or when the new token is for another conversation.
+
 ### Timeline
 
 `timeline` holds the messages and annotations in one list, each item `{ type: "message", message }` or `{ type: "annotation", annotation }`. Messages keep the order they have in `messages`, and each annotation comes before the first message created after it. `buildTimeline(messages, annotations)` from `@realtalk-ai/core` builds the same list from your own messages and annotations, for example ones loaded over REST.

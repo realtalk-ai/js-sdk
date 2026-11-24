@@ -166,6 +166,21 @@ startConversation({
 
 `conversationId` resumes a conversation instead of using the one from the token, `token` uses a session token you already have instead of fetching one through the provider, and `volume` sets the playback volume.
 
+### Reconnecting
+
+When the connection drops, for example while the server restarts or the network is away, `connectionStatus` becomes `"reconnecting"` and the SDK tries again after about 1, 2 and 4 seconds and then about every 5 seconds, with a random spread so that many clients do not reconnect at the same moment. After 5 minutes without a connection it gives up: `status` becomes `"not_started"` and `onError` receives a fatal error. It reconnects with the session token it already has while that token is valid for more than a minute, and fetches a new one when it is about to expire or after an attempt with it failed. A `getToken` passed to `startConversation` is used for that before the provider's, so you can pass it together with `token` when you already have a token for the first connection:
+
+```ts
+startConversation({
+  agentId: "your-agent-id",
+  conversationId,
+  token,
+  getToken: () => fetchTokenFor(conversationId),
+});
+```
+
+The SDK stops reconnecting and reports a fatal error when the token request is refused (a 4xx response other than 429), or when the new token is for another conversation.
+
 ### Callbacks
 
 ```ts
