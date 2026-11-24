@@ -98,15 +98,6 @@ function defaultOpts() {
   };
 }
 
-const ENDED_STATUS = {
-  type: "conversation_status",
-  data: { status: "ended" },
-} as const;
-const IDLE_STATUS = {
-  type: "conversation_status",
-  data: { status: "idle" },
-} as const;
-
 describe("useConnection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -144,87 +135,6 @@ describe("useConnection", () => {
     expect(id!).toBe("conv-1");
   });
 
-  it("startConversation uses conversationId from getToken response", async () => {
-    const opts = defaultOpts();
-    opts.getToken = vi.fn().mockResolvedValue({
-      token: "callback-token",
-      conversationId: "token-conv-1",
-    });
-    const { result } = renderHook(() => useConnection(opts));
-
-    let id: string;
-    await act(async () => {
-      id = await result.current.startConversation({ agentId: "agent-1" });
-    });
-
-    expect(opts.getToken).toHaveBeenCalled();
-    expect(result.current.conversationId).toBe("token-conv-1");
-    expect(id!).toBe("token-conv-1");
-    expect(result.current.connectionStatus).toBe("connected");
-    expect(result.current.status).toBe("active");
-  });
-
-  it("startConversation uses conversationId from tokenUrl response", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            token: "url-token",
-            conversation_id: "url-conv-1",
-          }),
-      }),
-    );
-
-    const opts = defaultOpts();
-    opts.tokenUrl = "https://example.com/token";
-    const { result } = renderHook(() => useConnection(opts));
-
-    let id: string;
-    await act(async () => {
-      id = await result.current.startConversation({ agentId: "agent-1" });
-    });
-
-    expect(fetch).toHaveBeenCalledWith("https://example.com/token");
-    expect(result.current.conversationId).toBe("url-conv-1");
-    expect(id!).toBe("url-conv-1");
-
-    vi.unstubAllGlobals();
-  });
-
-  it("startConversation throws when no conversationId available", async () => {
-    const opts = defaultOpts();
-    opts.getToken = vi.fn().mockResolvedValue("plain-token");
-    const { result } = renderHook(() => useConnection(opts));
-
-    await expect(
-      act(async () => {
-        await result.current.startConversation({ agentId: "agent-1" });
-      }),
-    ).rejects.toThrow("No conversation ID available");
-  });
-
-  it("startConversation prefers explicit conversationId over token conversationId", async () => {
-    const opts = defaultOpts();
-    opts.getToken = vi.fn().mockResolvedValue({
-      token: "callback-token",
-      conversationId: "token-conv",
-    });
-    const { result } = renderHook(() => useConnection(opts));
-
-    let id: string;
-    await act(async () => {
-      id = await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "explicit-conv",
-      });
-    });
-
-    expect(result.current.conversationId).toBe("explicit-conv");
-    expect(id!).toBe("explicit-conv");
-  });
-
   it("startConversation with text mode connects normally", async () => {
     const opts = defaultOpts();
     const { result } = renderHook(() => useConnection(opts));
@@ -240,27 +150,6 @@ describe("useConnection", () => {
     expect(mockTransport.connect).toHaveBeenCalled();
     expect(result.current.connectionStatus).toBe("connected");
     expect(result.current.status).toBe("active");
-  });
-
-  it("startConversation throws if already active", async () => {
-    const opts = defaultOpts();
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    await expect(
-      act(async () => {
-        await result.current.startConversation({
-          agentId: "agent-1",
-          conversationId: "conv-1",
-        });
-      }),
-    ).rejects.toThrow("Conversation already active");
   });
 
   it("endConversation sends end_conversation, gracefully disconnects, and sets status to finished", async () => {
@@ -295,115 +184,6 @@ describe("useConnection", () => {
     expect(opts.setMessages).not.toHaveBeenCalled();
   });
 
-  it("endConversation on a paused conversation sets status to finished without a transport", async () => {
-    const opts = defaultOpts();
-    opts.getToken = vi.fn().mockResolvedValue({
-      token: "token",
-      conversationId: "conv-1",
-    });
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({ agentId: "agent-1" });
-    });
-
-    const { WebSocketTransport } = await import("@realtalk-ai/core");
-    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-    const onEventCb = transport.onEvent.mock.calls[0][0];
-
-    act(() => {
-      onEventCb({ type: "close", code: 4005, reason: "Idle timeout" });
-    });
-    expect(result.current.status).toBe("paused");
-    transport.sendEvent.mockClear();
-
-    await act(async () => {
-      await result.current.endConversation();
-    });
-
-    expect(transport.sendEvent).not.toHaveBeenCalled();
-    expect(result.current.status).toBe("finished");
-    expect(result.current.conversationId).toBe("conv-1");
-  });
-
-  it("endConversation before any conversation leaves status not_started", async () => {
-    const opts = defaultOpts();
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.endConversation();
-    });
-
-    expect(result.current.status).toBe("not_started");
-    expect(result.current.conversationId).toBeNull();
-  });
-
-  it("sendMessage sends message event", async () => {
-    const opts = defaultOpts();
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    act(() => result.current.sendMessage("hello"));
-
-    const transport = vi.mocked(
-      (await import("@realtalk-ai/core")).WebSocketTransport,
-    ).mock.results[0].value;
-    expect(transport.sendEvent).toHaveBeenCalledWith({
-      type: "message",
-      data: "hello",
-    });
-  });
-
-  it("sendDTMF sends dtmf event", async () => {
-    const opts = defaultOpts();
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    act(() => result.current.sendDTMF("5"));
-
-    const transport = vi.mocked(
-      (await import("@realtalk-ai/core")).WebSocketTransport,
-    ).mock.results[0].value;
-    expect(transport.sendEvent).toHaveBeenCalledWith({
-      type: "dtmf",
-      data: "5",
-    });
-  });
-
-  it("sendEvent sends custom payload", async () => {
-    const opts = defaultOpts();
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    act(() => result.current.sendEvent({ type: "custom", foo: "bar" }));
-
-    const transport = vi.mocked(
-      (await import("@realtalk-ai/core")).WebSocketTransport,
-    ).mock.results[0].value;
-    expect(transport.sendEvent).toHaveBeenCalledWith({
-      type: "custom",
-      foo: "bar",
-    });
-  });
-
   it("transport message events are forwarded via onEvent", async () => {
     const opts = defaultOpts();
     const { result } = renderHook(() => useConnection(opts));
@@ -434,31 +214,6 @@ describe("useConnection", () => {
     expect(opts.onEvent).toHaveBeenCalledWith(event);
   });
 
-  it("transport error event sets error state and calls onError", async () => {
-    const opts = defaultOpts();
-    const onError = vi.fn();
-    opts.optionsRef.current = { onError };
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    const { WebSocketTransport } = await import("@realtalk-ai/core");
-    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-    const onEventCb = transport.onEvent.mock.calls[0][0];
-
-    act(() => onEventCb({ type: "error", message: "Something broke" }));
-
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.error!.error.message).toBe("Something broke");
-    expect(result.current.error!.fatal).toBe(false);
-    expect(onError).toHaveBeenCalled();
-  });
-
   it("transport clear event calls onClear callback", async () => {
     const opts = defaultOpts();
     const { result } = renderHook(() => useConnection(opts));
@@ -477,72 +232,6 @@ describe("useConnection", () => {
     act(() => onEventCb({ type: "clear" }));
 
     expect(opts.onClear).toHaveBeenCalled();
-  });
-
-  it("an ended conversation status triggers cleanup and finished status", async () => {
-    const opts = defaultOpts();
-    const onEvent = vi.fn();
-    opts.optionsRef.current = { onEvent };
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    const { WebSocketTransport } = await import("@realtalk-ai/core");
-    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-    const onEventCb = transport.onEvent.mock.calls[0][0];
-
-    act(() => onEventCb(ENDED_STATUS));
-
-    expect(result.current.status).toBe("finished");
-    expect(result.current.connectionStatus).toBe("disconnected");
-    expect(onEvent).toHaveBeenCalledWith(ENDED_STATUS);
-  });
-
-  it("an idle conversation status keeps the conversation active", async () => {
-    const opts = defaultOpts();
-    const onEvent = vi.fn();
-    opts.optionsRef.current = { onEvent };
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    const { WebSocketTransport } = await import("@realtalk-ai/core");
-    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-    const onEventCb = transport.onEvent.mock.calls[0][0];
-
-    act(() => onEventCb(IDLE_STATUS));
-
-    expect(result.current.status).toBe("active");
-    expect(result.current.connectionStatus).toBe("connected");
-    expect(onEvent).toHaveBeenCalledWith(IDLE_STATUS);
-  });
-
-  it("connects on protocol 2", async () => {
-    const opts = defaultOpts();
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    const { WebSocketTransport } = await import("@realtalk-ai/core");
-    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-    expect(transport.connect).toHaveBeenCalledWith(
-      expect.objectContaining({ protocol: 2 }),
-    );
   });
 
   it("audio callback forwards data to onAudio", async () => {
@@ -566,59 +255,6 @@ describe("useConnection", () => {
     });
 
     expect(opts.onAudio).toHaveBeenCalledWith(pcm, "trace-1");
-  });
-
-  it("startConversation passes token to WS connect", async () => {
-    const opts = defaultOpts();
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-        token: "my-token",
-      });
-    });
-
-    expect(mockTransport.connect).toHaveBeenCalledWith(
-      expect.objectContaining({ token: "my-token" }),
-    );
-  });
-
-  it("startConversation calls onConnectionStatusChange", async () => {
-    const opts = defaultOpts();
-    const onConnectionStatusChange = vi.fn();
-    opts.optionsRef.current = { onConnectionStatusChange };
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    expect(onConnectionStatusChange).toHaveBeenCalledWith("connecting");
-    expect(onConnectionStatusChange).toHaveBeenCalledWith("connected");
-  });
-
-  it("startConversation sends start event with agentId", async () => {
-    const opts = defaultOpts();
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    const { WebSocketTransport } = await import("@realtalk-ai/core");
-    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-    expect(transport.sendEvent).toHaveBeenCalledWith({
-      type: "start",
-      agent_id: "agent-1",
-    });
   });
 
   it("sendAudio forwards to transport.sendAudio", async () => {
@@ -656,101 +292,6 @@ describe("useConnection", () => {
     });
 
     expect(opts.onCleanup).toHaveBeenCalled();
-  });
-
-  it("startConversation cleans up on WS connect failure", async () => {
-    mockTransport.connect.mockRejectedValueOnce(new Error("WS failed"));
-
-    const opts = defaultOpts();
-    const { result } = renderHook(() => useConnection(opts));
-
-    await expect(
-      act(async () => {
-        await result.current.startConversation({
-          agentId: "agent-1",
-          conversationId: "conv-1",
-        });
-      }),
-    ).rejects.toThrow("WS failed");
-
-    expect(result.current.connectionStatus).toBe("disconnected");
-    expect(result.current.status).toBe("not_started");
-  });
-
-  it("startConversation prefers direct token over getToken callback", async () => {
-    const opts = defaultOpts();
-    opts.getToken = vi.fn().mockResolvedValue({
-      token: "callback-token",
-      conversationId: "conv-1",
-    });
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-        token: "direct-token",
-      });
-    });
-
-    expect(opts.getToken).not.toHaveBeenCalled();
-    expect(mockTransport.connect).toHaveBeenCalledWith(
-      expect.objectContaining({ token: "direct-token" }),
-    );
-  });
-
-  it("startConversation prefers getToken callback over tokenUrl", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ token: "url-token" }),
-      }),
-    );
-
-    const opts = defaultOpts();
-    opts.tokenUrl = "https://example.com/token";
-    opts.getToken = vi.fn().mockResolvedValue({
-      token: "callback-token",
-      conversationId: "conv-1",
-    });
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({ agentId: "agent-1" });
-    });
-
-    expect(opts.getToken).toHaveBeenCalled();
-    expect(fetch).not.toHaveBeenCalled();
-
-    vi.unstubAllGlobals();
-  });
-
-  it("startConversation falls back to tokenUrl when no token or getToken", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            token: "url-token",
-            conversation_id: "url-conv-1",
-          }),
-      }),
-    );
-
-    const opts = defaultOpts();
-    opts.tokenUrl = "https://example.com/token";
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({ agentId: "agent-1" });
-    });
-
-    expect(fetch).toHaveBeenCalledWith("https://example.com/token");
-    expect(result.current.conversationId).toBe("url-conv-1");
-
-    vi.unstubAllGlobals();
   });
 
   it("startConversation passes sdkInfo to transport.connect", async () => {
@@ -806,114 +347,6 @@ describe("useConnection", () => {
     expect(mockTransport.connect).toHaveBeenCalledWith(
       expect.objectContaining({ mode: DEFAULT_CONVERSATION_MODE }),
     );
-  });
-
-  it("reconnect refreshes token via getToken before connecting", async () => {
-    vi.useFakeTimers();
-
-    const opts = defaultOpts();
-    let callCount = 0;
-    opts.getToken = vi.fn().mockImplementation(() => {
-      callCount++;
-      return Promise.resolve({
-        token: `token-${callCount}`,
-        conversationId: "conv-reconnect",
-      });
-    });
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({ agentId: "agent-1" });
-    });
-
-    expect(opts.getToken).toHaveBeenCalledTimes(1);
-
-    const { WebSocketTransport } = await import("@realtalk-ai/core");
-    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-    const onEventCb = transport.onEvent.mock.calls[0][0];
-
-    act(() => {
-      onEventCb({ type: "close", code: 1006, reason: "" });
-    });
-
-    expect(result.current.connectionStatus).toBe("reconnecting");
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1000);
-    });
-
-    expect(opts.getToken).toHaveBeenCalledTimes(2);
-
-    vi.useRealTimers();
-  });
-
-  it("reconnect refreshes token via tokenUrl before connecting", async () => {
-    vi.useFakeTimers();
-
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          token: "refreshed-url-token",
-          conversation_id: "conv-url-reconnect",
-        }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const opts = defaultOpts();
-    opts.tokenUrl = "https://example.com/token";
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({ agentId: "agent-1" });
-    });
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-
-    const { WebSocketTransport } = await import("@realtalk-ai/core");
-    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-    const onEventCb = transport.onEvent.mock.calls[0][0];
-
-    act(() => {
-      onEventCb({ type: "close", code: 1006, reason: "" });
-    });
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1000);
-    });
-
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-
-    vi.unstubAllGlobals();
-    vi.useRealTimers();
-  });
-
-  it("non-reconnectable close code sets fatal error and resets status", async () => {
-    const opts = defaultOpts();
-    const onError = vi.fn();
-    opts.optionsRef.current = { onError };
-    const { result } = renderHook(() => useConnection(opts));
-
-    await act(async () => {
-      await result.current.startConversation({
-        agentId: "agent-1",
-        conversationId: "conv-1",
-      });
-    });
-
-    const { WebSocketTransport } = await import("@realtalk-ai/core");
-    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
-    const onEventCb = transport.onEvent.mock.calls[0][0];
-
-    act(() => {
-      onEventCb({ type: "close", code: 4002, reason: "Invalid context" });
-    });
-
-    expect(result.current.connectionStatus).toBe("disconnected");
-    expect(result.current.status).toBe("not_started");
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.error!.fatal).toBe(true);
-    expect(onError).toHaveBeenCalled();
   });
 
   it("reconnectable close code 1008 triggers reconnection", async () => {

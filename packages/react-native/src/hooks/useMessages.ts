@@ -1,7 +1,12 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { Message, ConversationEvent, UserState } from "@realtalk-ai/core";
-import { EventType } from "@realtalk-ai/core";
+import type {
+  Message,
+  ConversationEvent,
+  MessageState,
+  UserState,
+} from "@realtalk-ai/core";
+import { applyMessageEvent, EMPTY_MESSAGE_STATE } from "@realtalk-ai/core";
 
 export interface UseMessagesCallbacks {
   onMessage?: (message: Message) => void;
@@ -18,58 +23,37 @@ export interface UseMessagesReturn {
 export function useMessages(callbacksRef: {
   readonly current: UseMessagesCallbacks;
 }): UseMessagesReturn {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [userState, setUserState] = useState<UserState>("idle");
-  const [thinkingMessageId, setThinkingMessageId] = useState<string | null>(
-    null,
-  );
+  const [state, setState] = useState<MessageState>(EMPTY_MESSAGE_STATE);
+  const stateRef = useRef(state);
+
+  const replaceState = useCallback((next: MessageState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
 
   const handleMessageEvent = useCallback(
     (event: ConversationEvent) => {
-      switch (event.type) {
-        case EventType.ExistingMessages: {
-          setMessages(event.data);
-          break;
-        }
-        case EventType.MessageCreated:
-        case EventType.MessageUpdated: {
-          const msg = event.data;
-          const isEmpty = msg.role === "agent" && !msg.text?.trim();
-
-          if (isEmpty && event.type === EventType.MessageCreated) {
-            setThinkingMessageId(msg.id);
-            break;
-          }
-
-          if (!isEmpty) {
-            setThinkingMessageId((prev) => (prev === msg.id ? null : prev));
-          }
-
-          setMessages((prev) => {
-            const idx = prev.findIndex((m) => m.id === msg.id);
-            if (idx !== -1) {
-              const updated = [...prev];
-              updated[idx] = { ...updated[idx], ...msg };
-              return updated;
-            }
-            return [...prev, msg];
-          });
-          callbacksRef.current.onMessage?.(msg);
-          break;
-        }
-        case EventType.Vad: {
-          setUserState(event.data.state === "speech" ? "speaking" : "idle");
-          break;
-        }
-      }
+      const change = applyMessageEvent(stateRef.current, event);
+      replaceState(change.state);
+      if (change.message) callbacksRef.current.onMessage?.(change.message);
     },
-    [callbacksRef],
+    [callbacksRef, replaceState],
+  );
+
+  const setMessages = useCallback<Dispatch<SetStateAction<Message[]>>>(
+    (action) => {
+      const current = stateRef.current;
+      const messages =
+        typeof action === "function" ? action(current.messages) : action;
+      replaceState({ ...current, messages });
+    },
+    [replaceState],
   );
 
   return {
-    messages,
-    userState,
-    thinkingMessageId,
+    messages: state.messages,
+    userState: state.userState,
+    thinkingMessageId: state.thinkingMessageId,
     setMessages,
     handleMessageEvent,
   };
