@@ -229,6 +229,7 @@ export class ConversationClient {
   disconnect(): void {
     this.intentionalDisconnect = true;
     this.cleanup();
+    this.update({ status: "not_started", connectionStatus: "disconnected" });
   }
 
   sendMessage(text: string): void {
