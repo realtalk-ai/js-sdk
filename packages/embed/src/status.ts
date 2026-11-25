@@ -12,6 +12,7 @@ export interface WidgetStatus {
 }
 
 export function deriveWidgetStatus(state: {
+  offline: boolean;
   starting: boolean;
   connectionStatus: ConnectionStatus;
   ended: boolean;
@@ -24,6 +25,7 @@ export function deriveWidgetStatus(state: {
   annotations: AnnotationItem[];
 }): WidgetStatus {
   const {
+    offline,
     starting,
     connectionStatus,
     ended,
@@ -36,6 +38,9 @@ export function deriveWidgetStatus(state: {
     annotations,
   } = state;
 
+  if (offline) {
+    return { tone: "offline", label: "Offline" };
+  }
   if (starting || connectionStatus === "connecting") {
     return { tone: "connecting", label: "Connecting" };
   }

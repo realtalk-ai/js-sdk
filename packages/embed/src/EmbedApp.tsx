@@ -13,12 +13,14 @@ import { useEmbedConfig } from "./hooks/useEmbedConfig.js";
 import { useConversationExpiry } from "./hooks/useConversationExpiry.js";
 import { useSounds, type WidgetSounds } from "./hooks/useSounds.js";
 import { useUnreadMessages } from "./hooks/useUnreadMessages.js";
+import { useOnline } from "./hooks/useOnline.js";
 import { deriveWidgetStatus } from "./status.js";
 import { wait } from "./wait.js";
 import { AboutPage } from "./components/AboutPage.js";
 import { Composer } from "./components/Composer.js";
 import { Header } from "./components/Header.js";
 import { Launcher } from "./components/Launcher.js";
+import { WifiOffIcon } from "./components/icons.js";
 import { MessageList } from "./components/MessageList.js";
 import { NewConversation } from "./components/NewConversation.js";
 import { SDK_INFO } from "./version.js";
@@ -77,6 +79,7 @@ function Widget({
   soundsDisabled: boolean;
 }): JSX.Element | null {
   const config = useEmbedConfig(server, agentId);
+  const online = useOnline();
   const [open, setOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -211,11 +214,14 @@ function Widget({
   const audioOn = !ended && mode.agentAudio;
   const voiceOn = micOn || audioOn;
   const reconnecting = active && !starting && connectionStatus !== "connected";
-  const connectionNote = resuming
-    ? "Connecting to your conversation…"
-    : reconnecting
-      ? "Reconnecting…"
-      : null;
+  const offline = !online;
+  const connectionNote = offline
+    ? "You're offline. Check your connection"
+    : resuming
+      ? "Connecting to your conversation…"
+      : reconnecting
+        ? "Reconnecting…"
+        : null;
   const conversationInProgress = (active || paused) && !expired;
 
   const start = async (mode: ConversationMode = startMode) => {
@@ -311,6 +317,7 @@ function Widget({
     applyMode(voiceOn ? TEXT_ONLY : AUDIO_BOTH_WAYS);
 
   const widgetStatus = deriveWidgetStatus({
+    offline,
     starting,
     connectionStatus,
     ended,
@@ -374,8 +381,15 @@ function Widget({
               connecting={resuming}
             />
             {connectionNote && (
-              <div className="connection-bar" role="status">
-                <span className="connecting-spinner" />
+              <div
+                className={`connection-bar${offline ? " offline" : ""}`}
+                role="status"
+              >
+                {offline ? (
+                  <WifiOffIcon />
+                ) : (
+                  <span className="connecting-spinner" />
+                )}
                 {connectionNote}
               </div>
             )}
@@ -383,7 +397,7 @@ function Widget({
               <NewConversation onStartNew={handleStartNew} />
             ) : (
               <Composer
-                disabled={starting || reconnecting}
+                disabled={starting || reconnecting || offline}
                 showVoice={showVoice}
                 voiceOn={voiceOn}
                 onSend={handleSend}

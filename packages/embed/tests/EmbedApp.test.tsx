@@ -383,6 +383,32 @@ describe("EmbedApp", () => {
       expect(textarea().disabled).toBe(false);
     });
 
+    it("says the visitor is offline and disables the input until the internet is back", async () => {
+      const onLine = vi
+        .spyOn(navigator, "onLine", "get")
+        .mockReturnValue(false);
+      await renderWidget({ status: "active" });
+      act(() => {
+        window.dispatchEvent(new Event("offline"));
+      });
+      openPanel();
+
+      expect(screen.getByRole("status").textContent).toContain(
+        "You're offline. Check your connection",
+      );
+      expect(screen.getByText("Offline")).toBeTruthy();
+      expect(textarea().disabled).toBe(true);
+
+      onLine.mockReturnValue(true);
+      act(() => {
+        window.dispatchEvent(new Event("online"));
+      });
+
+      expect(screen.queryByRole("status")).toBeNull();
+      expect(textarea().disabled).toBe(false);
+      onLine.mockRestore();
+    });
+
     it("keeps the message in the input when it could not be sent", async () => {
       await renderWidget({ status: "active" });
       openPanel();
