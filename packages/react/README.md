@@ -145,6 +145,14 @@ startConversation({
 });
 ```
 
+| Option           | Description                                                                    |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `agentId`        | The agent to talk to                                                           |
+| `conversationId` | Resume this conversation instead of using the one from the token               |
+| `token`          | A session token you already have, instead of fetching one through the provider |
+| `mode`           | Which audio the conversation carries, text only by default                     |
+| `audioDeviceId`  | The microphone to use                                                          |
+
 ### Conversation modes
 
 The mode is two independent flags that say which audio the conversation carries. Text always goes both ways.

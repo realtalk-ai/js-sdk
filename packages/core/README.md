@@ -55,8 +55,6 @@ Always pass `protocol: 2` to `connect`. Connecting without it is deprecated and 
 import { ConversationClient } from "@realtalk-ai/core";
 
 const client = new ConversationClient({
-  baseUrl: "wss://api.realtalk.ml/api/v1",
-  sdkInfo: { name: "my-app", version: "1.0.0", context: "web_chat" },
   getToken: async () => {
     const response = await fetch("/api/realtalk-token");
     const data = await response.json();
@@ -77,11 +75,56 @@ client.sendMessage("Hello");
 await client.end();
 ```
 
-`getSnapshot()` returns the current state (`status`, `connectionStatus`, `conversationId`, `error`, `mode`, `messages`, `annotations`, `userState`, `thinkingMessageId`) and returns a new object whenever something changes. When the connection drops, the client fetches a new session token and reconnects, waiting longer after each failed attempt and giving up after six. Pass a `reconnectPolicy` to change that.
+When the connection drops, the client fetches a new session token and reconnects, waiting longer after each failed attempt and giving up after six. Pass a `reconnectPolicy` to change that.
 
-## Reconnection
+### Options
 
-Opt into automatic reconnection by passing a policy:
+| Option            | Default          | Description                                                                      |
+| ----------------- | ---------------- | -------------------------------------------------------------------------------- |
+| `getToken`        | —                | Async function returning a session token string or `{ token, conversationId }`   |
+| `tokenUrl`        | —                | URL to fetch a session token from instead (returns `{ token, conversation_id }`) |
+| `baseUrl`         | `DEFAULT_WS_URL` | WebSocket server URL                                                             |
+| `sdkInfo`         | core's own       | Name, version and context reported to the server                                 |
+| `callbacks`       | —                | Functions called as the conversation changes, see below                          |
+| `reconnectPolicy` | six attempts     | When and how often to reconnect, any `ReconnectPolicy`                           |
+| `createTransport` | WebSocket        | Returns the `AudioTransport` to connect with, for example a mock in tests        |
+
+### Methods
+
+| Method                | Description                                                                                                                                                                              |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `start(options)`      | Start or resume a conversation: `agentId`, and optionally `conversationId`, `token` and `mode`                                                                                           |
+| `end()`               | End the conversation                                                                                                                                                                     |
+| `disconnect()`        | Close the connection without ending the conversation, for example when your UI unmounts. Fires no callbacks                                                                              |
+| `sendMessage(text)`   | Send a text message                                                                                                                                                                      |
+| `sendDTMF(digit)`     | Send a keypad digit                                                                                                                                                                      |
+| `sendEvent(event)`    | Send any client event                                                                                                                                                                    |
+| `sendAudio(pcm)`      | Send 16 kHz PCM audio from the user's microphone                                                                                                                                         |
+| `requestMode(mode)`   | Ask the server to switch between text and audio                                                                                                                                          |
+| `clearMessages()`     | Empty the messages and annotations                                                                                                                                                       |
+| `getSnapshot()`       | The current state: `status`, `connectionStatus`, `conversationId`, `error`, `mode`, `messages`, `annotations`, `userState`, `thinkingMessageId`. A new object whenever something changes |
+| `subscribe(listener)` | Call `listener` on every change. Returns a function that stops it                                                                                                                        |
+| `getMode()`           | The current mode, the same as `getSnapshot().mode`                                                                                                                                       |
+| `configure(options)`  | Change options, for example a new `getToken`, on a running client                                                                                                                        |
+
+### Callbacks
+
+| Callback                   | Called when                                                                                  |
+| -------------------------- | -------------------------------------------------------------------------------------------- |
+| `onMessage`                | A message is created or updated                                                              |
+| `onAnnotation`             | An annotation arrives, for example a human agent joining                                     |
+| `onStatusChange`           | `status` changes                                                                             |
+| `onConnectionStatusChange` | `connectionStatus` changes                                                                   |
+| `onError`                  | Something goes wrong. `fatal` says whether the conversation stopped                          |
+| `onModeRefused`            | The server did not accept a requested mode                                                   |
+| `onEvent`                  | Any event arrives from the server                                                            |
+| `onAudio`                  | Agent audio arrives, as PCM with a trace id and source                                       |
+| `onClear`                  | Audio still playing should stop, for example when the user interrupts                        |
+| `onCleanup`                | The connection is torn down: on end, pause, a fatal error or `disconnect()`. Stop audio here |
+
+## Reconnecting a bare transport
+
+`ConversationClient` reconnects by itself, so this is only for using `WebSocketTransport` directly. Opt into automatic reconnection by passing a policy:
 
 ```ts
 import { WebSocketTransport, DefaultReconnectPolicy } from "@realtalk-ai/core";
@@ -92,7 +135,7 @@ const transport = new WebSocketTransport({
 });
 ```
 
-You can write your own policy by implementing the `ReconnectPolicy` interface.
+You can write your own policy by implementing the `ReconnectPolicy` interface. `DefaultReconnectPolicy` tries a fixed list of delays and then stops.
 
 ## Error handling
 

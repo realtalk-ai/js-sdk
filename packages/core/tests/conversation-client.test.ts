@@ -6,6 +6,8 @@ import {
   type ConversationClientCallbacks,
 } from "../src/conversation-client.js";
 import type { ReconnectPolicy } from "../src/reconnect.js";
+import { DEFAULT_WS_URL } from "../src/constants.js";
+import { SDK_NAME, SDK_VERSION } from "../src/version.js";
 
 const SDK_INFO = {
   name: "test",
@@ -77,6 +79,25 @@ describe("ConversationClient", () => {
       messages: [],
       annotations: [],
     });
+  });
+
+  it("connects to the default server as the core SDK when no baseUrl or sdkInfo is given", async () => {
+    const created = fakeTransport();
+    const client = new ConversationClient({
+      getToken: vi
+        .fn()
+        .mockResolvedValue({ token: "token", conversationId: "c1" }),
+      createTransport: () => created.transport,
+    });
+
+    await client.start({ agentId: "agent-1" });
+
+    expect(created.transport.connect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: `${DEFAULT_WS_URL}/ws/conversations/audio/c1/`,
+        sdkInfo: { name: SDK_NAME, version: SDK_VERSION, context: "web_chat" },
+      }),
+    );
   });
 
   it("notifies subscribers with a new snapshot when it connects, until they unsubscribe", async () => {

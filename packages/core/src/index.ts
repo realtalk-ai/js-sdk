@@ -29,7 +29,12 @@ export type {
 
 export { EventType } from "./types.js";
 
-export type { SdkContext, SdkInfo } from "./transport.js";
+export type {
+  AudioTransport,
+  ConnectOptions,
+  SdkContext,
+  SdkInfo,
+} from "./transport.js";
 
 export {
   WebSocketTransport,
@@ -67,10 +72,7 @@ export type { LogLevel, Logger } from "./logger.js";
 export { DefaultReconnectPolicy } from "./reconnect.js";
 export type { ReconnectPolicy, ReconnectContext } from "./reconnect.js";
 
-export {
-  ConversationClient,
-  DEFAULT_CONVERSATION_MODE,
-} from "./conversation-client.js";
+export { ConversationClient } from "./conversation-client.js";
 export type {
   ConversationClientCallbacks,
   ConversationClientOptions,
