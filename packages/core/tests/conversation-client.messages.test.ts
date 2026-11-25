@@ -1,8 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import type { UseMessagesCallbacks } from "../src/hooks/useMessages.js";
-import { useMessages } from "../src/hooks/useMessages.js";
-import type { ConversationEvent } from "@realtalk-ai/core";
+import type {
+  ConversationEvent,
+  Message,
+  AnnotationItem,
+} from "../src/types.js";
+import { ConversationClient } from "../src/conversation-client.js";
+
+interface MessageCallbacks {
+  onMessage?: (message: Message) => void;
+  onAnnotation?: (item: AnnotationItem) => void;
+}
 
 function makeMessage(overrides: Record<string, unknown> = {}) {
   return {
@@ -23,22 +30,67 @@ function makeAnnotation(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function setup(callbacks: UseMessagesCallbacks = {}) {
-  const callbacksRef = { current: callbacks };
-  return renderHook(() => useMessages(callbacksRef));
+async function setup(callbacks: MessageCallbacks = {}) {
+  let emit: (event: ConversationEvent) => void = () => {};
+  const client = new ConversationClient({
+    baseUrl: "wss://test.example.com",
+    sdkInfo: { name: "test", version: "0.0.0", context: "web_chat" },
+    createTransport: () =>
+      ({
+        status: "disconnected",
+        connect: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn(),
+        gracefulDisconnect: vi.fn().mockResolvedValue(undefined),
+        sendAudio: vi.fn(),
+        sendEvent: vi.fn(),
+        onAudio: vi.fn(),
+        onEvent: (callback: (event: ConversationEvent) => void) => {
+          emit = callback;
+        },
+        onStatusChange: vi.fn(),
+        removeAllListeners: vi.fn(),
+      }) as never,
+    callbacks,
+  });
+  await client.start({
+    agentId: "agent-1",
+    conversationId: "conv-1",
+    token: "token",
+  });
+  const view = {
+    get messages() {
+      return client.getSnapshot().messages;
+    },
+    get annotations() {
+      return client.getSnapshot().annotations;
+    },
+    get userState() {
+      return client.getSnapshot().userState;
+    },
+    get thinkingMessageId() {
+      return client.getSnapshot().thinkingMessageId;
+    },
+    handleMessageEvent: (event: ConversationEvent) => emit(event),
+    clearMessages: () => client.clearMessages(),
+  };
+  return { result: { current: view } };
 }
 
-describe("useMessages", () => {
-  it("starts with empty messages, userState=idle", () => {
-    const { result } = setup();
+function act<T>(run: () => T): T {
+  return run();
+}
+
+describe("ConversationClient, with the cases of the former messages hook", () => {
+  it("starts with empty messages, userState=idle", async () => {
+    const { result } = await setup();
 
     expect(result.current.messages).toEqual([]);
     expect(result.current.userState).toBe("idle");
     expect(result.current.thinkingMessageId).toBeNull();
   });
 
-  it("existing_messages event sets messages as-is", () => {
-    const { result } = setup();
+  it("existing_messages event sets messages as-is", async () => {
+    const { result } = await setup();
 
     const event: ConversationEvent = {
       type: "existing_messages",
@@ -63,9 +115,9 @@ describe("useMessages", () => {
     expect(result.current.messages[0].role).toBe("agent");
   });
 
-  it("message_created event adds message, calls onMessage", () => {
+  it("message_created event adds message, calls onMessage", async () => {
     const onMessage = vi.fn();
-    const { result } = setup({ onMessage });
+    const { result } = await setup({ onMessage });
 
     const event: ConversationEvent = {
       type: "message_created",
@@ -79,8 +131,8 @@ describe("useMessages", () => {
     expect(onMessage).toHaveBeenCalledTimes(1);
   });
 
-  it("message_updated event merges with existing message", () => {
-    const { result } = setup();
+  it("message_updated event merges with existing message", async () => {
+    const { result } = await setup();
 
     act(() =>
       result.current.handleMessageEvent({
@@ -100,8 +152,8 @@ describe("useMessages", () => {
     expect(result.current.messages[0].text).toBe("Hello world");
   });
 
-  it("empty agent message on create sets thinkingMessageId", () => {
-    const { result } = setup();
+  it("empty agent message on create sets thinkingMessageId", async () => {
+    const { result } = await setup();
 
     act(() =>
       result.current.handleMessageEvent({
@@ -118,8 +170,8 @@ describe("useMessages", () => {
     expect(result.current.messages).toHaveLength(0);
   });
 
-  it("non-empty update for thinking message clears thinkingMessageId", () => {
-    const { result } = setup();
+  it("non-empty update for thinking message clears thinkingMessageId", async () => {
+    const { result } = await setup();
 
     act(() =>
       result.current.handleMessageEvent({
@@ -150,8 +202,8 @@ describe("useMessages", () => {
     expect(result.current.messages[0].text).toBe("Thought complete");
   });
 
-  it("vad event with state speech sets userState to speaking", () => {
-    const { result } = setup();
+  it("vad event with state speech sets userState to speaking", async () => {
+    const { result } = await setup();
 
     act(() =>
       result.current.handleMessageEvent({
@@ -163,8 +215,8 @@ describe("useMessages", () => {
     expect(result.current.userState).toBe("speaking");
   });
 
-  it("vad event with silence sets userState to idle", () => {
-    const { result } = setup();
+  it("vad event with silence sets userState to idle", async () => {
+    const { result } = await setup();
 
     act(() =>
       result.current.handleMessageEvent({
@@ -183,8 +235,8 @@ describe("useMessages", () => {
     expect(result.current.userState).toBe("idle");
   });
 
-  it("existing_messages event replaces the annotations", () => {
-    const { result } = setup();
+  it("existing_messages event replaces the annotations", async () => {
+    const { result } = await setup();
 
     act(() =>
       result.current.handleMessageEvent({
@@ -210,8 +262,8 @@ describe("useMessages", () => {
     expect(result.current.annotations).toEqual([joined]);
   });
 
-  it("existing_messages event without annotations empties them", () => {
-    const { result } = setup();
+  it("existing_messages event without annotations empties them", async () => {
+    const { result } = await setup();
 
     act(() =>
       result.current.handleMessageEvent({
@@ -232,8 +284,8 @@ describe("useMessages", () => {
     expect(result.current.annotations).toEqual([]);
   });
 
-  it("clearMessages empties the messages and the annotations", () => {
-    const { result } = setup();
+  it("clearMessages empties the messages and the annotations", async () => {
+    const { result } = await setup();
 
     act(() =>
       result.current.handleMessageEvent({
@@ -249,8 +301,8 @@ describe("useMessages", () => {
     expect(result.current.annotations).toEqual([]);
   });
 
-  it("annotation_created event adds an annotation once per id", () => {
-    const { result } = setup();
+  it("annotation_created event adds an annotation once per id", async () => {
+    const { result } = await setup();
 
     const requested = makeAnnotation({ id: "annotation-1" });
     const joined = makeAnnotation({
@@ -283,8 +335,8 @@ describe("useMessages", () => {
     expect(result.current.annotations).toEqual([requested, joined]);
   });
 
-  it("annotation_created event keeps the annotations sorted by createdAt", () => {
-    const { result } = setup();
+  it("annotation_created event keeps the annotations sorted by createdAt", async () => {
+    const { result } = await setup();
 
     const requested = makeAnnotation({
       id: "annotation-1",
@@ -314,9 +366,9 @@ describe("useMessages", () => {
     expect(result.current.annotations).toEqual([requested, joined]);
   });
 
-  it("annotation_created event calls onAnnotation with the annotation", () => {
+  it("annotation_created event calls onAnnotation with the annotation", async () => {
     const onAnnotation = vi.fn();
-    const { result } = setup({ onAnnotation });
+    const { result } = await setup({ onAnnotation });
 
     const joined = makeAnnotation({
       id: "annotation-2",
@@ -334,9 +386,9 @@ describe("useMessages", () => {
     expect(onAnnotation).toHaveBeenCalledWith(joined);
   });
 
-  it("existing_messages event does not call onAnnotation", () => {
+  it("existing_messages event does not call onAnnotation", async () => {
     const onAnnotation = vi.fn();
-    const { result } = setup({ onAnnotation });
+    const { result } = await setup({ onAnnotation });
 
     act(() =>
       result.current.handleMessageEvent({

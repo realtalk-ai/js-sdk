@@ -433,4 +433,70 @@ describe("useConversation", () => {
       value: 42,
     });
   });
+
+  describe("wiring the conversation client", () => {
+    async function startAndGetTransport(
+      result: { current: ReturnType<typeof useConversation> },
+      mode = { userAudio: false, agentAudio: true },
+    ) {
+      await act(async () => {
+        await result.current.startConversation({
+          agentId: "agent-1",
+          conversationId: "conv-1",
+          mode,
+        });
+      });
+      const { WebSocketTransport } = await import("@realtalk-ai/core");
+      return vi.mocked(WebSocketTransport).mock.results[0].value;
+    }
+
+    it("connects as the React Native SDK in the mobile app context", async () => {
+      const { result } = renderHook(() => useConversation(), { wrapper });
+      await startAndGetTransport(result);
+
+      expect(mockTransport.connect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sdkInfo: {
+            name: "react-native",
+            version: expect.any(String),
+            context: "mobile_app",
+          },
+        }),
+      );
+    });
+
+    it("plays the agent's audio with its trace id", async () => {
+      const { result } = renderHook(() => useConversation(), { wrapper });
+      const transport = await startAndGetTransport(result);
+      const pcm = new Int16Array([1, 2, 3]);
+
+      act(() => transport.onAudio.mock.calls[0][0](pcm, "trace-1", "agent"));
+
+      expect(mockPlayer.play).toHaveBeenCalledWith(pcm, "trace-1");
+    });
+
+    it("clears the playback when the server asks for it", async () => {
+      const { result } = renderHook(() => useConversation(), { wrapper });
+      const transport = await startAndGetTransport(result);
+
+      act(() => transport.onEvent.mock.calls[0][0]({ type: "clear" }));
+
+      expect(mockPlayer.clear).toHaveBeenCalled();
+    });
+
+    it("sends the microphone's audio and stops the player and the microphone when the conversation ends", async () => {
+      const { result } = renderHook(() => useConversation(), { wrapper });
+      await startAndGetTransport(result, { userAudio: true, agentAudio: true });
+      const pcm = new Int16Array([4, 5, 6]);
+
+      mockRecorder.start.mock.calls[0][0](pcm);
+      expect(mockTransport.sendAudio).toHaveBeenCalledWith(pcm);
+
+      await act(async () => {
+        await result.current.endConversation();
+      });
+      expect(mockPlayer.stop).toHaveBeenCalled();
+      expect(mockRecorder.stop).toHaveBeenCalled();
+    });
+  });
 });
