@@ -75,7 +75,7 @@ client.sendMessage("Hello");
 await client.end();
 ```
 
-When the connection drops, the client reconnects about every 5 seconds for up to 5 minutes, reusing the session token while it is still valid. Pass a `reconnectPolicy` to change that.
+When the connection drops, the client reconnects every few seconds for up to 5 minutes, reusing the session token while it is still valid. Pass a `reconnectPolicy` to change that.
 
 ### Options
 

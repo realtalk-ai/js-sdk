@@ -43,6 +43,7 @@ import {
 } from "./message-state.js";
 
 const MIN_TOKEN_LIFETIME_LEFT_MS = 60 * 1000;
+const INVALID_TOKEN_CLOSE_CODE = 4001;
 
 const DEFAULT_SDK_INFO: SdkInfo = {
   name: SDK_NAME,
@@ -128,11 +129,8 @@ function tokenWasRefused(error: unknown): error is ApiError {
   return isClientError && !isRateLimited;
 }
 
-function canReuseToken(
-  token: string | null,
-  failedToConnect: boolean,
-): boolean {
-  if (!token || failedToConnect) return false;
+function isValidForAWhile(token: string | null): boolean {
+  if (!token) return false;
   const expiresAt = sessionTokenExpiresAt(token);
   if (expiresAt === undefined) return false;
   return expiresAt - Date.now() > MIN_TOKEN_LIFETIME_LEFT_MS;
@@ -160,7 +158,7 @@ export class ConversationClient {
   private requestedMode: ConversationMode | null = null;
   private reconnectAttempt = 0;
   private reconnectStartedAt: number | null = null;
-  private tokenFailedToConnect = false;
+  private tokenRenewedSinceDrop = false;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private intentionalDisconnect = false;
 
@@ -201,6 +199,12 @@ export class ConversationClient {
     this.clearMessages();
 
     const tokenConversationId = await this.resolveToken(sessionOptions);
+    if (this.wasStoppedOrReplaced(resolvedOptions)) {
+      throw new ConnectionError(
+        "websocket_failed",
+        "The conversation was stopped before it connected",
+      );
+    }
 
     this.setConnectionStatus("connecting");
     this.setStatus("active");
@@ -357,7 +361,7 @@ export class ConversationClient {
     this.sessionToken = null;
     this.reconnectAttempt = 0;
     this.reconnectStartedAt = null;
-    this.tokenFailedToConnect = false;
+    this.tokenRenewedSinceDrop = false;
   }
 
   private handleEvent(event: ConversationEvent): void {
@@ -441,6 +445,8 @@ export class ConversationClient {
     }
 
     if (RECONNECTABLE_CLOSE_CODES.has(code)) {
+      const tokenWasRejected = code === INVALID_TOKEN_CLOSE_CODE;
+      if (tokenWasRejected) this.sessionToken = null;
       this.setConnectionStatus("reconnecting");
       this.scheduleReconnect();
       return;
@@ -487,7 +493,7 @@ export class ConversationClient {
 
     this.reconnectAttempt = 0;
     this.reconnectStartedAt = null;
-    this.tokenFailedToConnect = false;
+    this.tokenRenewedSinceDrop = false;
     this.update({ error: null });
     this.setConnectionStatus("connected");
 
@@ -542,7 +548,7 @@ export class ConversationClient {
     this.setConnectionStatus("disconnected");
   }
 
-  private isNoLongerReconnecting(
+  private wasStoppedOrReplaced(
     sessionOptions: StartConversationOptions,
   ): boolean {
     return this.intentionalDisconnect || this.sessionOptions !== sessionOptions;
@@ -555,12 +561,12 @@ export class ConversationClient {
     try {
       fetched = await this.fetchToken(sessionOptions);
     } catch (error) {
-      if (this.isNoLongerReconnecting(sessionOptions)) return "stopped";
+      if (this.wasStoppedOrReplaced(sessionOptions)) return "stopped";
       if (!tokenWasRefused(error)) return "failed";
       this.stopReconnecting(error);
       return "stopped";
     }
-    if (this.isNoLongerReconnecting(sessionOptions)) return "stopped";
+    if (this.wasStoppedOrReplaced(sessionOptions)) return "stopped";
 
     const isForAnotherConversation =
       fetched?.conversationId !== undefined &&
@@ -577,7 +583,7 @@ export class ConversationClient {
 
     if (fetched) {
       this.sessionToken = fetched.token;
-      this.tokenFailedToConnect = false;
+      this.tokenRenewedSinceDrop = true;
     }
     return "renewed";
   }
@@ -611,10 +617,10 @@ export class ConversationClient {
 
     this.reconnectAttempt++;
 
-    const reusesToken = canReuseToken(
-      this.sessionToken,
-      this.tokenFailedToConnect,
-    );
+    const isFirstAttempt = this.reconnectAttempt === 1;
+    const reusesToken =
+      isValidForAWhile(this.sessionToken) &&
+      (isFirstAttempt || this.tokenRenewedSinceDrop);
     const renewal = reusesToken
       ? "renewed"
       : await this.renewToken(sessionOptions);
@@ -627,8 +633,7 @@ export class ConversationClient {
     try {
       await this.connect(sessionOptions);
     } catch {
-      if (this.isNoLongerReconnecting(sessionOptions)) return;
-      this.tokenFailedToConnect = true;
+      if (this.wasStoppedOrReplaced(sessionOptions)) return;
       this.setConnectionStatus("reconnecting");
       this.scheduleReconnect();
     }
