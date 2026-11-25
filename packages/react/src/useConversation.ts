@@ -14,10 +14,13 @@ import type {
   TimelineItem,
   UserState,
 } from "@realtalk-ai/core";
-import { buildTimeline } from "@realtalk-ai/core";
+import { buildTimeline, WebSocketTransport } from "@realtalk-ai/core";
 import { useRealTalkConfig } from "./provider.js";
-import { useMessages } from "./hooks/useMessages.js";
-import { useConnection } from "./hooks/useConnection.js";
+import {
+  useConversationClient,
+  useSnapshotField,
+} from "./hooks/useConversationClient.js";
+import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "./version.js";
 import { useAudioControls } from "./hooks/useAudioControls.js";
 import { AudioPlayer } from "./audio/player.js";
 import { AudioRecorder } from "./audio/recorder.js";
@@ -131,47 +134,74 @@ export function useConversation(
     [],
   );
 
-  const {
-    messages,
-    annotations,
-    userState,
-    thinkingMessageId,
-    clearMessages,
-    handleMessageEvent,
-  } = useMessages(optionsRef);
+  const client = useConversationClient({
+    baseUrl,
+    tokenUrl,
+    getToken,
+    sdkInfo: sdkInfo ?? {
+      name: SDK_NAME,
+      version: SDK_VERSION,
+      context: SDK_CONTEXT,
+    },
+    createTransport: () => new WebSocketTransport(),
+    callbacks: {
+      onEvent: (event) => optionsRef.current.onEvent?.(event),
+      onMessage: (message) => optionsRef.current.onMessage?.(message),
+      onAnnotation: (item) => optionsRef.current.onAnnotation?.(item),
+      onError: (error) => optionsRef.current.onError?.(error),
+      onStatusChange: (status) => optionsRef.current.onStatusChange?.(status),
+      onConnectionStatusChange: (status) =>
+        optionsRef.current.onConnectionStatusChange?.(status),
+      onModeRefused: handleModeRefused,
+      onAudio: handleAudio,
+      onClear: handleClear,
+      onCleanup: handleAudioCleanup,
+    },
+  });
+
+  const connectionStatus = useSnapshotField(client, "connectionStatus");
+  const status = useSnapshotField(client, "status");
+  const conversationId = useSnapshotField(client, "conversationId");
+  const error = useSnapshotField(client, "error");
+  const mode = useSnapshotField(client, "mode");
+  const messages = useSnapshotField(client, "messages");
+  const annotations = useSnapshotField(client, "annotations");
+  const userState = useSnapshotField(client, "userState");
+  const thinkingMessageId = useSnapshotField(client, "thinkingMessageId");
+
+  const connectionStart = useCallback(
+    (sessionOptions: UseConversationSessionOptions) =>
+      client.start(sessionOptions),
+    [client],
+  );
+  const endConversation = useCallback(() => client.end(), [client]);
+  const sendMessage = useCallback(
+    (text: string) => client.sendMessage(text),
+    [client],
+  );
+  const sendDTMF = useCallback(
+    (digit: DTMFDigit) => client.sendDTMF(digit),
+    [client],
+  );
+  const sendEvent = useCallback(
+    (payload: ClientEvent) => client.sendEvent(payload),
+    [client],
+  );
+  const sendAudio = useCallback(
+    (pcm: Int16Array) => client.sendAudio(pcm),
+    [client],
+  );
+  const requestMode = useCallback(
+    (newMode: ConversationMode) => client.requestMode(newMode),
+    [client],
+  );
+  const getMode = client.getMode;
+  const clearMessages = useCallback(() => client.clearMessages(), [client]);
 
   const timeline = useMemo(
     () => buildTimeline(messages, annotations),
     [messages, annotations],
   );
-
-  const {
-    connectionStatus,
-    status,
-    conversationId,
-    error,
-    mode,
-    startConversation: connectionStart,
-    endConversation,
-    sendMessage,
-    sendDTMF,
-    sendEvent,
-    sendAudio,
-    requestMode,
-    getMode,
-  } = useConnection({
-    baseUrl,
-    tokenUrl,
-    getToken,
-    sdkInfo,
-    optionsRef,
-    onEvent: handleMessageEvent,
-    onConversationStart: clearMessages,
-    onAudio: handleAudio,
-    onClear: handleClear,
-    onCleanup: handleAudioCleanup,
-    onModeRefused: handleModeRefused,
-  });
 
   sendEventRef.current = sendEvent;
 

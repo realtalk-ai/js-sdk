@@ -77,6 +77,3 @@ export type {
   ConversationSnapshot,
   StartConversationOptions,
 } from "./conversation-client.js";
-
-export { applyMessageEvent, EMPTY_MESSAGE_STATE } from "./message-state.js";
-export type { MessageState, MessageStateChange } from "./message-state.js";

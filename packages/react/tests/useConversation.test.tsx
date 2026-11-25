@@ -858,4 +858,53 @@ describe("useConversation", () => {
       expect(transport.sendEvent).not.toHaveBeenCalled();
     });
   });
+
+  describe("reporting the SDK", () => {
+    it("connects as the React SDK in the web chat context by default", async () => {
+      const { result } = renderHook(() => useConversation(), { wrapper });
+
+      await act(async () => {
+        await result.current.startConversation({
+          agentId: "agent-1",
+          conversationId: "conv-1",
+        });
+      });
+
+      expect(mockTransport.connect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sdkInfo: {
+            name: "react",
+            version: expect.any(String),
+            context: "web_chat",
+          },
+        }),
+      );
+    });
+
+    it("connects with the sdkInfo given to the provider", async () => {
+      const sdkInfo = {
+        name: "embed",
+        version: "9.9.9",
+        context: "embed_widget" as const,
+      };
+      const { result } = renderHook(() => useConversation(), {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <RealTalkProvider baseUrl="wss://test.example.com" sdkInfo={sdkInfo}>
+            {children}
+          </RealTalkProvider>
+        ),
+      });
+
+      await act(async () => {
+        await result.current.startConversation({
+          agentId: "agent-1",
+          conversationId: "conv-1",
+        });
+      });
+
+      expect(mockTransport.connect).toHaveBeenCalledWith(
+        expect.objectContaining({ sdkInfo }),
+      );
+    });
+  });
 });

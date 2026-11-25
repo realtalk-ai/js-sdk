@@ -56,7 +56,6 @@ export interface StartConversationOptions {
 
 export interface ConversationClientCallbacks {
   onEvent?: (event: ConversationEvent) => void;
-  onMessageEvent?: (event: ConversationEvent) => void;
   onMessage?: (message: Message) => void;
   onAnnotation?: (item: AnnotationItem) => void;
   onError?: (error: ConversationError) => void;
@@ -68,7 +67,6 @@ export interface ConversationClientCallbacks {
   ) => void;
   onAudio?: (pcm: Int16Array, traceId: string, source: AudioSource) => void;
   onClear?: () => void;
-  onConversationStart?: () => void;
   onCleanup?: () => void;
 }
 
@@ -154,7 +152,6 @@ export class ConversationClient {
     this.requestedMode = null;
     this.setMode(sessionOptions.mode ?? DEFAULT_CONVERSATION_MODE);
     this.clearMessages();
-    this.callbacks.onConversationStart?.();
 
     const tokenConversationId = await this.resolveToken(sessionOptions);
 
@@ -327,7 +324,6 @@ export class ConversationClient {
   private handleMessageEvent(event: ConversationEvent): void {
     const change = applyMessageEvent(this.snapshot, event);
     this.update(change.state);
-    this.callbacks.onMessageEvent?.(event);
     if (change.message) this.callbacks.onMessage?.(change.message);
     if (change.annotation) this.callbacks.onAnnotation?.(change.annotation);
   }

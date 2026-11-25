@@ -102,6 +102,26 @@ describe("ConversationClient", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
+  it("starts a new conversation without the previous one's messages", async () => {
+    const { client, transports } = createClient();
+    await client.start({ agentId: "agent-1" });
+    transports[0].emit({
+      type: "message_created",
+      data: {
+        id: "m1",
+        role: "agent",
+        text: "Hej",
+        createdAt: "2026-01-01T00:00:00Z",
+      },
+    });
+    await client.end();
+
+    await client.start({ agentId: "agent-1" });
+
+    expect(client.getSnapshot().messages).toEqual([]);
+    expect(client.getSnapshot().annotations).toEqual([]);
+  });
+
   it("keeps messages in the snapshot and reports each new one", async () => {
     const onMessage = vi.fn();
     const { client, transports } = createClient({ callbacks: { onMessage } });
