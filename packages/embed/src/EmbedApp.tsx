@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RealTalkProvider, useConversation } from "@realtalk-ai/react";
+import { ConversationReconnectPolicy } from "@realtalk-ai/core";
 import type { ConversationMode } from "@realtalk-ai/core";
 import {
   createSessionMinter,
@@ -59,12 +60,6 @@ export function EmbedApp({
       />
     </RealTalkProvider>
   );
-}
-
-const RESUME_RETRY_DELAYS_MS = [2000, 5000, 15000, 30000];
-
-function jittered(delayMs: number): number {
-  return delayMs * (0.5 + Math.random() * 0.5);
 }
 
 function wait(delayMs: number): Promise<void> {
@@ -132,10 +127,11 @@ function Widget({
     startingRef.current = true;
     setStarting(true);
     setResuming(true);
+    const retryPolicy = new ConversationReconnectPolicy();
+    const startedAt = Date.now();
     let lastError: unknown;
     try {
-      for (const retryDelay of [0, ...RESUME_RETRY_DELAYS_MS]) {
-        if (retryDelay > 0) await wait(jittered(retryDelay));
+      for (let retryCount = 0; ; retryCount++) {
         if (unmountedRef.current) return;
         try {
           await conversationRef.current.startConversation({
@@ -151,6 +147,12 @@ function Widget({
           }
           lastError = error;
         }
+        const retryDelay = retryPolicy.nextRetryDelayMs({
+          retryCount,
+          elapsedMs: Date.now() - startedAt,
+        });
+        if (retryDelay === null) break;
+        await wait(retryDelay);
       }
       console.error(
         "[realtalk-embed] failed to resume conversation",
