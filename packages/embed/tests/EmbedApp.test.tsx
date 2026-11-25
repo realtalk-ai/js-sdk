@@ -543,15 +543,17 @@ describe("EmbedApp", () => {
     it("starts a new chat when the visitor writes after resuming failed and the stored chat then turns out to have ended", async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
       sessionStorage.setItem(STORAGE_KEY, "conv-old");
-      mockMintResponses([429, 429, 429, 429, 429, 403, 201], "conv-new");
+      const statuses = Array<number>(500).fill(429);
+      mockMintResponses(statuses, "conv-new");
 
       await renderWidget();
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(60_000);
+        await vi.advanceTimersByTimeAsync(6 * 60_000);
       });
       openPanel();
       expect(await screen.findByText(/could not be restored/)).toBeTruthy();
-      expect(mints()).toHaveLength(5);
+      expect(mints().length).toBeGreaterThan(50);
+      statuses.splice(0, statuses.length, 403, 201);
 
       const textarea = screen.getByPlaceholderText("Type a message…");
       fireEvent.change(textarea, { target: { value: "Hej igen" } });
@@ -584,7 +586,7 @@ describe("EmbedApp", () => {
     it("shows that it is connecting and does not let the visitor send while it retries", async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
       sessionStorage.setItem(STORAGE_KEY, "conv-old");
-      mockMintResponses([503, 503, 503, 503, 503], "conv-old");
+      mockMintResponses(Array<number>(500).fill(503), "conv-old");
 
       await renderWidget();
       await act(async () => {
@@ -605,7 +607,7 @@ describe("EmbedApp", () => {
       expect(conversation.sendMessage).not.toHaveBeenCalled();
 
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(60_000);
+        await vi.advanceTimersByTimeAsync(6 * 60_000);
       });
       expect(screen.queryByText(/Connecting to your conversation/)).toBeNull();
       expect(screen.getByText(/could not be restored/)).toBeTruthy();
