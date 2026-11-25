@@ -603,16 +603,12 @@ button {
   gap: 8px;
   margin: 0 auto 18px;
   padding: 6px 14px;
-  border: 1px solid color-mix(in srgb, var(--rt-warn) 70%, var(--rt-bg));
+  border: 1px solid var(--rt-border);
   border-radius: var(--rt-radius);
   background: var(--rt-bg);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   font-size: 12.5px;
   color: var(--rt-fg);
-}
-
-.connection-bar.offline {
-  border-color: color-mix(in srgb, var(--rt-danger) 55%, var(--rt-bg));
 }
 
 .connection-bar.offline svg {
