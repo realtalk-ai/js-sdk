@@ -180,12 +180,12 @@ The `onEvent` callback receives server events like `message_created`, `message_u
 
 ## Lower-level hooks
 
-| Hook                | Description                                              |
-| ------------------- | -------------------------------------------------------- |
-| `useConnection`     | WebSocket transport, session lifecycle, and reconnection |
-| `useMessages`       | Message array and user/agent state tracking              |
-| `useAudioControls`  | Microphone mute and volume control                       |
-| `useRealTalkConfig` | Access provider configuration from context               |
+For control beyond `useConversation`, use `ConversationClient` from `@realtalk-ai/core`: it runs the connection, session tokens, reconnecting and the message list without React, and `useConversation` is built on it.
+
+| Hook                | Description                                |
+| ------------------- | ------------------------------------------ |
+| `useAudioControls`  | Microphone mute and volume control         |
+| `useRealTalkConfig` | Access provider configuration from context |
 
 ## Audio
 

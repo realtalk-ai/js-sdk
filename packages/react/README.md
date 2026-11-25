@@ -198,14 +198,14 @@ The `onEvent` callback receives server events like `message_created`, `message_u
 
 ## Lower-level hooks
 
-If you need finer control, the individual hooks are also exported:
+For control beyond `useConversation`, use `ConversationClient` from `@realtalk-ai/core`: it runs the connection, session tokens, reconnecting and the message list without React, and `useConversation` is built on it.
 
-| Hook                | Description                                                 |
-| ------------------- | ----------------------------------------------------------- |
-| `useConnection`     | WebSocket transport, session lifecycle, and reconnection    |
-| `useMessages`       | Message and annotation arrays and user/agent state tracking |
-| `useAudioControls`  | Microphone mute and volume control                          |
-| `useRealTalkConfig` | Access provider configuration from context                  |
+These smaller hooks are also exported:
+
+| Hook                | Description                                |
+| ------------------- | ------------------------------------------ |
+| `useAudioControls`  | Microphone mute and volume control         |
+| `useRealTalkConfig` | Access provider configuration from context |
 
 ## Audio
 
@@ -289,8 +289,6 @@ const Messages = ({ messages }: { messages: Message[] }) => (
 | ------------------- | ------------------------------------------------------------ |
 | `RealTalkProvider`  | Context provider for shared configuration                    |
 | `useConversation`   | All-in-one hook for conversation state, audio, and messaging |
-| `useConnection`     | WebSocket connection and session lifecycle                   |
-| `useMessages`       | Message, annotation and user/agent state management          |
 | `useAudioControls`  | Microphone mute and volume control                           |
 | `useRealTalkConfig` | Access provider configuration                                |
 | `AudioPlayer`       | PCM audio playback with queue management                     |
