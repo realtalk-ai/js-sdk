@@ -8,6 +8,7 @@ import type {
   DTMFDigit,
   Message,
   ConversationClientOptions,
+  ConversationSnapshot,
   ConversationEvent,
 } from "@realtalk-ai/core";
 import { ConversationClient, WebSocketTransport } from "@realtalk-ai/core";
@@ -19,6 +20,14 @@ import type { TokenResponse } from "../provider.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "../version.js";
 
 export { DEFAULT_CONVERSATION_MODE } from "@realtalk-ai/core";
+
+function useSnapshotField<K extends keyof ConversationSnapshot>(
+  client: ConversationClient,
+  field: K,
+): ConversationSnapshot[K] {
+  const read = () => client.getSnapshot()[field];
+  return useSyncExternalStore(client.subscribe, read, read);
+}
 
 export interface UseConnectionReturn {
   connectionStatus: ConnectionStatus;
@@ -80,11 +89,10 @@ export function useConnection(opts: {
   const [client] = useState(() => new ConversationClient(clientOptions));
   client.configure(clientOptions);
 
-  const snapshot = useSyncExternalStore(
-    client.subscribe,
-    client.getSnapshot,
-    client.getSnapshot,
-  );
+  const connectionStatus = useSnapshotField(client, "connectionStatus");
+  const status = useSnapshotField(client, "status");
+  const conversationId = useSnapshotField(client, "conversationId");
+  const error = useSnapshotField(client, "error");
 
   useEffect(() => () => client.disconnect(), [client]);
 
@@ -112,10 +120,10 @@ export function useConnection(opts: {
   );
 
   return {
-    connectionStatus: snapshot.connectionStatus,
-    status: snapshot.status,
-    conversationId: snapshot.conversationId,
-    error: snapshot.error,
+    connectionStatus,
+    status,
+    conversationId,
+    error,
     startConversation,
     endConversation,
     sendMessage,

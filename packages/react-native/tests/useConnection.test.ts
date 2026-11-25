@@ -184,6 +184,40 @@ describe("useConnection", () => {
     expect(opts.setMessages).not.toHaveBeenCalled();
   });
 
+  it("does not render again for a message event, since none of its fields change", async () => {
+    const opts = defaultOpts();
+    let renders = 0;
+    const { result } = renderHook(() => {
+      renders++;
+      return useConnection(opts);
+    });
+
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+    const rendersBefore = renders;
+
+    act(() =>
+      onEventCb({
+        type: "message_created",
+        data: {
+          id: "msg-1",
+          role: "agent",
+          text: "hi",
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+      }),
+    );
+
+    expect(renders).toBe(rendersBefore);
+  });
+
   it("transport message events are forwarded via onEvent", async () => {
     const opts = defaultOpts();
     const { result } = renderHook(() => useConnection(opts));
