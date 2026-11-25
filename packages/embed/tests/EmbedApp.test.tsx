@@ -351,6 +351,93 @@ describe("EmbedApp", () => {
     });
   });
 
+  describe("loading the config", () => {
+    const configBody = {
+      display_name: "Support",
+      greeting: "Hi there!",
+      idle_pause_seconds: IDLE_PAUSE_SECONDS,
+      idle_end_seconds: IDLE_END_SECONDS,
+      voice_enabled: true,
+    };
+
+    function mockConfigResponses(responses: Array<number | "network error">) {
+      vi.mocked(fetch).mockImplementation((url) => {
+        if (!String(url).includes("/embed-configs/")) {
+          return Promise.resolve(
+            jsonResponse({ token: "token", conversation_id: "conv-1" }),
+          );
+        }
+        const next = responses.shift() ?? 200;
+        if (next === "network error") {
+          return Promise.reject(new TypeError("Failed to fetch"));
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify(configBody), { status: next }),
+        );
+      });
+    }
+
+    const configRequests = () =>
+      vi
+        .mocked(fetch)
+        .mock.calls.filter(([url]) => String(url).includes("/embed-configs/"));
+    const launcher = () => screen.queryByRole("button", { name: /Open chat/ });
+
+    it("shows the widget once the config loads after the server failed temporarily", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      mockConfigResponses([503, "network error", 200]);
+
+      render(widget());
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      expect(launcher()).toBeNull();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000);
+      });
+      expect(launcher()).not.toBeNull();
+      expect(configRequests()).toHaveLength(3);
+    });
+
+    it("stays hidden without retrying when the widget is not allowed on this site", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      mockConfigResponses([404]);
+
+      render(widget());
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+
+      expect(launcher()).toBeNull();
+      expect(configRequests()).toHaveLength(1);
+    });
+
+    it("loads the config when the browser comes back online after it gave up", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const responses: Array<number | "network error"> = Array(500).fill(503);
+      mockConfigResponses(responses);
+
+      render(widget());
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(6 * 60_000);
+      });
+      expect(launcher()).toBeNull();
+      const requestsWhenGivingUp = configRequests().length;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(configRequests()).toHaveLength(requestsWhenGivingUp);
+
+      responses.splice(0, responses.length);
+      await act(async () => {
+        fireEvent(window, new Event("online"));
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      expect(launcher()).not.toBeNull();
+    });
+  });
+
   describe("resume", () => {
     const STORAGE_KEY = `realtalk-embed:conversation:${AGENT_ID}`;
 
