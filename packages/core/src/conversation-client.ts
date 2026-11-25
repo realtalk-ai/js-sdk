@@ -11,8 +11,8 @@ import type {
   DTMFDigit,
   Message,
   SessionToken,
+  GetToken,
   TimelineItem,
-  TokenResponse,
   UserState,
 } from "./types.js";
 import { EventType } from "./types.js";
@@ -69,7 +69,7 @@ export interface StartConversationOptions {
   conversationId?: string;
   mode?: ConversationMode;
   token?: string;
-  getToken?: () => Promise<TokenResponse>;
+  getToken?: GetToken;
 }
 
 export interface ConversationClientCallbacks {
@@ -92,7 +92,7 @@ export interface ConversationClientOptions {
   baseUrl?: string;
   sdkInfo?: SdkInfo;
   tokenUrl?: string | null;
-  getToken?: (() => Promise<TokenResponse>) | null;
+  getToken?: GetToken | null;
   reconnectPolicy?: ReconnectPolicy;
   createTransport?: () => AudioTransport;
   callbacks?: ConversationClientCallbacks;
@@ -127,6 +127,12 @@ function tokenWasRefused(error: unknown): error is ApiError {
   const isClientError = error.statusCode >= 400 && error.statusCode < 500;
   const isRateLimited = error.statusCode === 429;
   return isClientError && !isRateLimited;
+}
+
+function isStillValid(token: string | null): boolean {
+  if (!token) return false;
+  const expiresAt = sessionTokenExpiresAt(token);
+  return expiresAt !== undefined && expiresAt > Date.now();
 }
 
 function isValidForAWhile(token: string | null): boolean {
@@ -198,7 +204,7 @@ export class ConversationClient {
     this.setMode(sessionOptions.mode ?? DEFAULT_CONVERSATION_MODE);
     this.clearMessages();
 
-    const tokenConversationId = await this.resolveToken(sessionOptions);
+    const resolved = await this.resolveToken(sessionOptions);
     if (this.wasStoppedOrReplaced(resolvedOptions)) {
       throw new ConnectionError(
         "websocket_failed",
@@ -206,20 +212,22 @@ export class ConversationClient {
       );
     }
 
-    this.setConnectionStatus("connecting");
-    this.setStatus("active");
-
-    const id = sessionOptions.conversationId ?? tokenConversationId;
+    const id = sessionOptions.conversationId ?? resolved?.conversationId;
     if (!id) {
       throw new ValidationError(
         "No conversation ID available. Pass a conversationId when starting or use a token endpoint that returns conversation_id.",
       );
     }
+    if (resolved) this.sessionToken = resolved.token;
+
+    this.setConnectionStatus("connecting");
+    this.setStatus("active");
     this.update({ conversationId: id });
 
     try {
       await this.connect(resolvedOptions);
     } catch (error) {
+      if (this.wasStoppedOrReplaced(resolvedOptions)) throw error;
       this.cleanup();
       this.setConnectionStatus("disconnected");
       this.setStatus("not_started");
@@ -471,7 +479,8 @@ export class ConversationClient {
   private async connect(
     sessionOptions: StartConversationOptions,
   ): Promise<void> {
-    this.setConnectionStatus("connecting");
+    const isReconnecting = this.state.connectionStatus === "reconnecting";
+    if (!isReconnecting) this.setConnectionStatus("connecting");
 
     const id = this.state.conversationId;
     if (!id) {
@@ -480,6 +489,8 @@ export class ConversationClient {
 
     const createTransport =
       this.options.createTransport ?? (() => new WebSocketTransport());
+    this.transport?.removeAllListeners();
+    this.transport?.disconnect();
     const transport = createTransport();
     this.transport = transport;
     transport.onAudio((pcm, traceId, source) =>
@@ -506,10 +517,11 @@ export class ConversationClient {
 
   private async fetchToken(
     sessionOptions: StartConversationOptions,
+    conversationId?: string,
   ): Promise<FetchedToken | null> {
     const tokenSource = sessionOptions.getToken ?? this.options.getToken;
     if (tokenSource) {
-      const tokenResult = await tokenSource();
+      const tokenResult = await tokenSource({ conversationId });
       return typeof tokenResult === "string"
         ? { token: tokenResult }
         : tokenResult;
@@ -517,7 +529,11 @@ export class ConversationClient {
 
     const { tokenUrl } = this.options;
     if (!tokenUrl) return null;
-    const response = await fetch(tokenUrl);
+    const separator = tokenUrl.includes("?") ? "&" : "?";
+    const url = conversationId
+      ? `${tokenUrl}${separator}conversation_id=${encodeURIComponent(conversationId)}`
+      : tokenUrl;
+    const response = await fetch(url);
     if (!response.ok) {
       throw new ApiError(
         response.status,
@@ -533,16 +549,9 @@ export class ConversationClient {
 
   private async resolveToken(
     sessionOptions: StartConversationOptions,
-  ): Promise<string | undefined> {
-    if (sessionOptions.token) {
-      this.sessionToken = sessionOptions.token;
-      return undefined;
-    }
-
-    const fetched = await this.fetchToken(sessionOptions);
-    if (!fetched) return undefined;
-    this.sessionToken = fetched.token;
-    return fetched.conversationId;
+  ): Promise<FetchedToken | null> {
+    if (sessionOptions.token) return { token: sessionOptions.token };
+    return this.fetchToken(sessionOptions);
   }
 
   private stopReconnecting(error: Error): void {
@@ -563,7 +572,10 @@ export class ConversationClient {
   ): Promise<TokenRenewal> {
     let fetched: FetchedToken | null;
     try {
-      fetched = await this.fetchToken(sessionOptions);
+      fetched = await this.fetchToken(
+        sessionOptions,
+        this.state.conversationId ?? undefined,
+      );
     } catch (error) {
       if (this.wasStoppedOrReplaced(sessionOptions)) return "stopped";
       if (!tokenWasRefused(error)) return "failed";
@@ -575,6 +587,11 @@ export class ConversationClient {
     const isForAnotherConversation =
       fetched?.conversationId !== undefined &&
       fetched.conversationId !== this.state.conversationId;
+    const currentTokenStillWorks = isStillValid(this.sessionToken);
+    if (isForAnotherConversation && currentTokenStillWorks) {
+      this.tokenRenewedSinceDrop = true;
+      return "renewed";
+    }
     if (isForAnotherConversation) {
       this.stopReconnecting(
         new ConnectionError(
@@ -638,7 +655,6 @@ export class ConversationClient {
       await this.connect(sessionOptions);
     } catch {
       if (this.wasStoppedOrReplaced(sessionOptions)) return;
-      this.setConnectionStatus("reconnecting");
       this.scheduleReconnect();
     }
   }

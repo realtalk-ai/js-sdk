@@ -182,18 +182,18 @@ The server may pause an idle conversation by closing the connection; `status` th
 
 ### Reconnecting
 
-When the connection drops, for example while the server restarts or the network is away, `connectionStatus` becomes `"reconnecting"` and the SDK tries again within a few seconds and then every few seconds, with a random spread so that many clients do not reconnect at the same moment. After 5 minutes without a connection it gives up: `status` becomes `"not_started"` and `onError` receives a fatal error. It reconnects with the session token it already has while that token is valid for more than a minute, and fetches a new one when it is about to expire, when the server rejects it, or when the first attempt after a drop fails. A token fetched while reconnecting is kept for the following attempts. A `getToken` passed to `startConversation` is used for that before the provider's, so you can pass it together with `token` when you already have a token for the first connection:
+When the connection drops, for example while the server restarts or the network is away, `connectionStatus` becomes `"reconnecting"` and the SDK tries again within a few seconds and then every few seconds, with a random spread so that many clients do not reconnect at the same moment. After 5 minutes without a connection it gives up: `status` becomes `"not_started"` and `onError` receives a fatal error. While reconnecting it uses the session token it already has as long as that token is valid. It asks for a new one when the token is about to expire or when an attempt with it failed, and passes the conversation's id along: `getToken` receives `{ conversationId }` and `tokenUrl` gets a `conversation_id` query parameter. Return a token for that conversation if your backend can. A token endpoint that always starts a new conversation also works: the SDK then keeps using its current token while it is valid. To stop reconnecting because the conversation is gone, have `getToken` throw an `ApiError` (from `@realtalk-ai/core`) with a 4xx status other than 429; any other error is retried. A `getToken` passed to `startConversation` is used before the provider's, so you can pass it together with `token` when you already have a token for the first connection:
 
 ```ts
 startConversation({
   agentId: "your-agent-id",
   conversationId,
   token,
-  getToken: () => fetchTokenFor(conversationId),
+  getToken: ({ conversationId }) => fetchTokenFor(conversationId),
 });
 ```
 
-The SDK stops reconnecting and reports a fatal error when the token request is refused (a 4xx response other than 429), or when the new token is for another conversation.
+The SDK stops reconnecting and reports a fatal error when the token request is refused, or when the current token has expired and the new one is for another conversation.
 
 ### Timeline
 

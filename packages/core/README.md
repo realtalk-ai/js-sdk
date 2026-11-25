@@ -75,19 +75,19 @@ client.sendMessage("Hello");
 await client.end();
 ```
 
-When the connection drops, the client reconnects every few seconds for up to 5 minutes, reusing the session token while it is still valid. Pass a `reconnectPolicy` to change that.
+When the connection drops, the client reconnects every few seconds for up to 5 minutes. Pass a `reconnectPolicy` to change that. While reconnecting it uses the session token it already has as long as that token is valid. It asks for a new one when the token is about to expire or when an attempt with it failed, and passes the conversation's id along: `getToken` receives `{ conversationId }` and `tokenUrl` gets a `conversation_id` query parameter. Return a token for that conversation if your backend can. A token endpoint that always starts a new conversation also works: the client then keeps using its current token while it is valid. To stop reconnecting because the conversation is gone, have `getToken` throw an `ApiError` (from `@realtalk-ai/core`) with a 4xx status other than 429; any other error is retried.
 
 ### Options
 
-| Option            | Default          | Description                                                                      |
-| ----------------- | ---------------- | -------------------------------------------------------------------------------- |
-| `getToken`        | —                | Async function returning a session token string or `{ token, conversationId }`   |
-| `tokenUrl`        | —                | URL to fetch a session token from instead (returns `{ token, conversation_id }`) |
-| `baseUrl`         | `DEFAULT_WS_URL` | WebSocket server URL                                                             |
-| `sdkInfo`         | core's own       | Name, version and context reported to the server                                 |
-| `callbacks`       | —                | Functions called as the conversation changes, see below                          |
-| `reconnectPolicy` | six attempts     | When and how often to reconnect, any `ReconnectPolicy`                           |
-| `createTransport` | WebSocket        | Returns the `AudioTransport` to connect with, for example a mock in tests        |
+| Option            | Default                       | Description                                                                                                                         |
+| ----------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `getToken`        | —                             | Async function returning a session token string or `{ token, conversationId }`. Receives `{ conversationId }` when renewing a token |
+| `tokenUrl`        | —                             | URL to fetch a session token from instead (returns `{ token, conversation_id }`)                                                    |
+| `baseUrl`         | `DEFAULT_WS_URL`              | WebSocket server URL                                                                                                                |
+| `sdkInfo`         | core's own                    | Name, version and context reported to the server                                                                                    |
+| `callbacks`       | —                             | Functions called as the conversation changes, see below                                                                             |
+| `reconnectPolicy` | `ConversationReconnectPolicy` | When and how often to reconnect, any `ReconnectPolicy`                                                                              |
+| `createTransport` | WebSocket                     | Returns the `AudioTransport` to connect with, for example a mock in tests                                                           |
 
 ### Methods
 
