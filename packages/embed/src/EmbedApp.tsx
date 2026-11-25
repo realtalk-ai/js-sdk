@@ -61,6 +61,16 @@ export function EmbedApp({
   );
 }
 
+const RESUME_RETRY_DELAYS_MS = [2000, 5000, 15000, 30000];
+
+function jittered(delayMs: number): number {
+  return delayMs * (0.5 + Math.random() * 0.5);
+}
+
+function wait(delayMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
 function Widget({
   agentId,
   server,
@@ -78,6 +88,7 @@ function Widget({
   const [open, setOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [resuming, setResuming] = useState(false);
   const [previousChatEnded, setPreviousChatEnded] = useState(false);
   const [expired, setExpired] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -112,6 +123,7 @@ function Widget({
   } = conversation;
 
   const startingRef = useRef(false);
+  const unmountedRef = useRef(false);
   const resumeStoredConversation = async () => {
     const hasConversationToResume =
       minter.conversationId !== undefined && status === "not_started";
@@ -119,22 +131,36 @@ function Widget({
 
     startingRef.current = true;
     setStarting(true);
+    setResuming(true);
+    let lastError: unknown;
     try {
-      await conversationRef.current.startConversation({
-        agentId,
-        mode: startMode,
-      });
-      setNotice(null);
-    } catch (error) {
-      if (error instanceof ResumeRejectedError) {
-        setPreviousChatEnded(true);
-        return;
+      for (const retryDelay of [0, ...RESUME_RETRY_DELAYS_MS]) {
+        if (retryDelay > 0) await wait(jittered(retryDelay));
+        if (unmountedRef.current) return;
+        try {
+          await conversationRef.current.startConversation({
+            agentId,
+            mode: startMode,
+          });
+          setNotice(null);
+          return;
+        } catch (error) {
+          if (error instanceof ResumeRejectedError) {
+            setPreviousChatEnded(true);
+            return;
+          }
+          lastError = error;
+        }
       }
-      console.error("[realtalk-embed] failed to resume conversation", error);
+      console.error(
+        "[realtalk-embed] failed to resume conversation",
+        lastError,
+      );
       setNotice("Your previous conversation could not be restored.");
     } finally {
       startingRef.current = false;
       setStarting(false);
+      setResuming(false);
     }
   };
   const resumeStoredConversationRef = useRef(resumeStoredConversation);
@@ -146,10 +172,12 @@ function Widget({
       if (document.visibilityState === "visible") resume();
     };
 
+    unmountedRef.current = false;
     resume();
     window.addEventListener("online", resume);
     document.addEventListener("visibilitychange", resumeWhenVisible);
     return () => {
+      unmountedRef.current = true;
       window.removeEventListener("online", resume);
       document.removeEventListener("visibilitychange", resumeWhenVisible);
     };
@@ -337,6 +365,7 @@ function Widget({
               previousChatEnded={previousChatEnded}
               agentState={agentState}
               notice={notice}
+              connecting={resuming}
             />
             {ended ? (
               <NewConversation onStartNew={handleStartNew} />

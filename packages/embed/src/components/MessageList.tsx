@@ -21,6 +21,7 @@ export function MessageList({
   previousChatEnded,
   agentState,
   notice,
+  connecting,
 }: {
   messages: Message[];
   timeline: TimelineItem[];
@@ -28,6 +29,7 @@ export function MessageList({
   previousChatEnded: boolean;
   agentState: AgentState;
   notice: string | null;
+  connecting: boolean;
 }): JSX.Element {
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -46,7 +48,15 @@ export function MessageList({
         </div>
       )}
       <AiDisclaimer />
-      {messages.length === 0 && <div className="message agent">{greeting}</div>}
+      {connecting && (
+        <div className="connecting-note">
+          <span className="connecting-spinner" />
+          Connecting to your conversation…
+        </div>
+      )}
+      {messages.length === 0 && !connecting && (
+        <div className="message agent">{greeting}</div>
+      )}
       {timeline.map((item) => {
         switch (item.type) {
           case "message": {
