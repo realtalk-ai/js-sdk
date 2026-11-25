@@ -509,9 +509,7 @@ describe("EmbedApp", () => {
       expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
     });
 
-    it("starts a new chat when the visitor writes after the stored one ended", async () => {
-      sessionStorage.setItem(STORAGE_KEY, "conv-old");
-      const mintStatuses = [429, 403, 201];
+    function mockMintResponses(statuses: number[], conversationId: string) {
       vi.mocked(fetch).mockImplementation((url) => {
         if (String(url).includes("/embed-configs/")) {
           return Promise.resolve(
@@ -524,10 +522,10 @@ describe("EmbedApp", () => {
             }),
           );
         }
-        const status = mintStatuses.shift() ?? 201;
+        const status = statuses.shift() ?? 201;
         return Promise.resolve(
           new Response(
-            JSON.stringify({ token: "token", conversation_id: "conv-new" }),
+            JSON.stringify({ token: "token", conversation_id: conversationId }),
             { status },
           ),
         );
@@ -535,9 +533,26 @@ describe("EmbedApp", () => {
       conversation.startConversation.mockImplementation(async () => {
         await (providerProps.current.getToken as () => Promise<unknown>)();
       });
+    }
+
+    const mints = () =>
+      vi
+        .mocked(fetch)
+        .mock.calls.filter(([url]) => String(url).includes("/embed-sessions/"));
+
+    it("starts a new chat when the visitor writes after resuming failed and the stored chat then turns out to have ended", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      sessionStorage.setItem(STORAGE_KEY, "conv-old");
+      mockMintResponses([429, 429, 429, 429, 429, 403, 201], "conv-new");
 
       await renderWidget();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
       openPanel();
+      expect(await screen.findByText(/could not be restored/)).toBeTruthy();
+      expect(mints()).toHaveLength(5);
+
       const textarea = screen.getByPlaceholderText("Type a message…");
       fireEvent.change(textarea, { target: { value: "Hej igen" } });
       fireEvent.submit(textarea.closest("form") as HTMLFormElement);
@@ -547,6 +562,71 @@ describe("EmbedApp", () => {
       ).toBeTruthy();
       expect(conversation.sendMessage).toHaveBeenCalledWith("Hej igen");
       expect(sessionStorage.getItem(STORAGE_KEY)).toBe("conv-new");
+    });
+
+    it("retries a temporary failure quietly and shows no notice when a retry succeeds", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      sessionStorage.setItem(STORAGE_KEY, "conv-old");
+      mockMintResponses([503, 429, 201], "conv-old");
+
+      await renderWidget();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000);
+      });
+
+      expect(mints()).toHaveLength(3);
+      expect(conversation.startConversation).toHaveBeenCalledTimes(3);
+      openPanel();
+      expect(screen.queryByText(/could not be restored/)).toBeNull();
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBe("conv-old");
+    });
+
+    it("shows that it is connecting and does not let the visitor send while it retries", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      sessionStorage.setItem(STORAGE_KEY, "conv-old");
+      mockMintResponses([503, 503, 503, 503, 503], "conv-old");
+
+      await renderWidget();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      openPanel();
+      const textarea = screen.getByPlaceholderText("Type a message…");
+      fireEvent.change(textarea, { target: { value: "Hej" } });
+      const sendButton = () =>
+        screen.getByRole("button", {
+          name: "Send message",
+        }) as HTMLButtonElement;
+
+      expect(screen.getByText(/Connecting to your conversation/)).toBeTruthy();
+      expect(screen.queryByText("Hi there!")).toBeNull();
+      expect(sendButton().disabled).toBe(true);
+      fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+      expect(conversation.sendMessage).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(screen.queryByText(/Connecting to your conversation/)).toBeNull();
+      expect(screen.getByText(/could not be restored/)).toBeTruthy();
+      expect(sendButton().disabled).toBe(false);
+    });
+
+    it("stops retrying when the widget is removed", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      sessionStorage.setItem(STORAGE_KEY, "conv-old");
+      mockMintResponses([503, 201], "conv-old");
+
+      const { unmount } = await renderWidget();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      unmount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+
+      expect(conversation.startConversation).toHaveBeenCalledTimes(1);
     });
 
     it("tells the visitor the chat ended when it can no longer be resumed while reconnecting", async () => {

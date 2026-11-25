@@ -483,7 +483,8 @@ button {
   flex: none;
 }
 
-.subtask-spinner {
+.subtask-spinner,
+.connecting-spinner {
   box-sizing: border-box;
   width: 12px;
   height: 12px;
@@ -589,6 +590,16 @@ button {
   left: 0;
   right: 0;
   height: 10px;
+}
+
+.connecting-note {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--rt-muted);
+  padding: 4px 0;
 }
 
 .notice {
