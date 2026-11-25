@@ -440,6 +440,30 @@ describe("EmbedApp", () => {
         });
       });
 
+      it("does not resume while the visitor's own start is still in progress", async () => {
+        await renderWithGivenUpConnection();
+        let finishStart!: () => void;
+        conversation.startConversation.mockImplementationOnce(
+          () => new Promise<void>((resolve) => (finishStart = resolve)),
+        );
+        openPanel();
+        const textarea = screen.getByPlaceholderText("Type a message…");
+        fireEvent.change(textarea, { target: { value: "Hej" } });
+        fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+        await vi.waitFor(() =>
+          expect(conversation.startConversation).toHaveBeenCalledTimes(2),
+        );
+
+        await act(async () => {
+          fireEvent(window, new Event("online"));
+        });
+        expect(conversation.startConversation).toHaveBeenCalledTimes(2);
+
+        await act(async () => {
+          finishStart();
+        });
+      });
+
       it("leaves a connected conversation alone when the browser is back online", async () => {
         const { update } = await renderWithGivenUpConnection();
         update({ status: "active" });

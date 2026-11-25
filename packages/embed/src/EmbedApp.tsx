@@ -111,13 +111,13 @@ function Widget({
     isMicEnabled: micOn,
   } = conversation;
 
-  const resumingRef = useRef(false);
+  const startingRef = useRef(false);
   const resumeStoredConversation = async () => {
     const hasConversationToResume =
       minter.conversationId !== undefined && status === "not_started";
-    if (!hasConversationToResume || resumingRef.current) return;
+    if (!hasConversationToResume || startingRef.current) return;
 
-    resumingRef.current = true;
+    startingRef.current = true;
     setStarting(true);
     try {
       await conversationRef.current.startConversation({
@@ -133,7 +133,7 @@ function Widget({
       console.error("[realtalk-embed] failed to resume conversation", error);
       setNotice("Your previous conversation could not be restored.");
     } finally {
-      resumingRef.current = false;
+      startingRef.current = false;
       setStarting(false);
     }
   };
@@ -186,7 +186,8 @@ function Widget({
   const conversationInProgress = (active || paused) && !expired;
 
   const start = async (mode: ConversationMode = startMode) => {
-    if (starting || active) return;
+    if (startingRef.current || active) return;
+    startingRef.current = true;
     setStarting(true);
     try {
       try {
@@ -198,6 +199,7 @@ function Widget({
       }
       setExpired(false);
     } finally {
+      startingRef.current = false;
       setStarting(false);
     }
   };
