@@ -69,7 +69,7 @@ describe("ConversationClient", () => {
     vi.useRealTimers();
   });
 
-  it("starts with an empty, disconnected state", () => {
+  it("starts with an empty, disconnected snapshot", () => {
     const { client } = createClient();
 
     expect(client.getState()).toMatchObject({
@@ -100,7 +100,7 @@ describe("ConversationClient", () => {
     );
   });
 
-  it("notifies subscribers with a new state when it connects, until they unsubscribe", async () => {
+  it("notifies subscribers with a new snapshot when it connects, until they unsubscribe", async () => {
     const { client } = createClient();
     const listener = vi.fn();
     const unsubscribe = client.subscribe(listener);
@@ -143,7 +143,24 @@ describe("ConversationClient", () => {
     expect(client.getState().annotations).toEqual([]);
   });
 
-  it("keeps messages in the state and reports each new one", async () => {
+  it("sends a message only while connected and says whether it did", async () => {
+    const { client, transports } = createClient();
+    await client.start({ agentId: "agent-1" });
+
+    expect(client.sendMessage("Hej")).toBe(true);
+    transports[0].emit({ type: "close", code: 1006, reason: "" });
+    expect(client.sendMessage("Är du där?")).toBe(false);
+
+    expect(transports[0].transport.sendEvent).toHaveBeenCalledWith({
+      type: "message",
+      data: "Hej",
+    });
+    expect(transports[0].transport.sendEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: "Är du där?" }),
+    );
+  });
+
+  it("keeps messages in the snapshot and reports each new one", async () => {
     const onMessage = vi.fn();
     const { client, transports } = createClient({ callbacks: { onMessage } });
     await client.start({ agentId: "agent-1" });

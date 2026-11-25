@@ -357,6 +357,26 @@ describe("ConversationClient, with the cases of the former connection hook", () 
     });
   });
 
+  it("sendMessage returns false and sends nothing while the connection is down", async () => {
+    const opts = defaultOpts();
+    const { result } = renderClient(opts);
+    await act(async () => {
+      await result.current.startConversation({
+        agentId: "agent-1",
+        conversationId: "conv-1",
+      });
+    });
+    const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+    const onEventCb = transport.onEvent.mock.calls[0][0];
+    act(() => {
+      onEventCb({ type: "close", code: 1006, reason: "" });
+    });
+    transport.sendEvent.mockClear();
+
+    expect(result.current.sendMessage("hello")).toBe(false);
+    expect(transport.sendEvent).not.toHaveBeenCalled();
+  });
+
   it("sendDTMF sends dtmf event", async () => {
     const opts = defaultOpts();
     const { result } = renderClient(opts);
@@ -1007,11 +1027,10 @@ describe("ConversationClient, with the cases of the former connection hook", () 
         .fn()
         .mockResolvedValueOnce({ token: first, conversationId: "conv-1" })
         .mockResolvedValue({ token: renewed, conversationId: "conv-1" });
-      const { result } = renderHook(() => useConnection(opts));
+      const { result } = renderClient(opts);
       await act(async () => {
         await result.current.startConversation({ agentId: "agent-1" });
       });
-      const { WebSocketTransport } = await import("@realtalk-ai/core");
       const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
       const onEventCb = transport.onEvent.mock.calls[0][0];
 

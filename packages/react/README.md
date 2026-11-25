@@ -124,7 +124,7 @@ const conversation = useConversation(options);
 | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | `startConversation(options)` | Start a conversation session                                                                 |
 | `endConversation()`          | End the conversation and the current session                                                 |
-| `sendMessage(text)`          | Send a text message                                                                          |
+| `sendMessage(text)`          | Send a text message. Returns `false` and sends nothing while the connection is down          |
 | `sendDTMF(digit)`            | Send a DTMF tone                                                                             |
 | `sendEvent(payload)`         | Send an event to the server                                                                  |
 | `toggleMic()`                | Toggle microphone mute                                                                       |

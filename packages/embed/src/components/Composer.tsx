@@ -59,6 +59,7 @@ export function Composer({
           placeholder="Type a message…"
           autoComplete="off"
           value={draft}
+          disabled={disabled}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={sendOnEnter}
         />
