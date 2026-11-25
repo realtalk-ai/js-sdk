@@ -164,6 +164,8 @@ startConversation({
 
 `mode` says which audio the conversation carries. Both flags default to `false`, which is text only. `agentAudio` adds the agent's voice to the replies and `userAudio` enables the microphone.
 
+`conversationId` resumes a conversation instead of using the one from the token, `token` uses a session token you already have instead of fetching one through the provider, and `volume` sets the playback volume.
+
 ### Callbacks
 
 ```ts

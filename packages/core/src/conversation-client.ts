@@ -26,6 +26,8 @@ import {
   ValidationError,
 } from "./errors.js";
 import { DefaultReconnectPolicy, type ReconnectPolicy } from "./reconnect.js";
+import { DEFAULT_WS_URL } from "./constants.js";
+import { SDK_NAME, SDK_VERSION } from "./version.js";
 import {
   applyMessageEvent,
   EMPTY_MESSAGE_STATE,
@@ -33,6 +35,12 @@ import {
 } from "./message-state.js";
 
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 16000, 30000];
+
+const DEFAULT_SDK_INFO: SdkInfo = {
+  name: SDK_NAME,
+  version: SDK_VERSION,
+  context: "web_chat",
+};
 
 export const DEFAULT_CONVERSATION_MODE: ConversationMode = {
   userAudio: false,
@@ -71,8 +79,8 @@ export interface ConversationClientCallbacks {
 }
 
 export interface ConversationClientOptions {
-  baseUrl: string;
-  sdkInfo: SdkInfo;
+  baseUrl?: string;
+  sdkInfo?: SdkInfo;
   tokenUrl?: string | null;
   getToken?: (() => Promise<TokenResponse>) | null;
   reconnectPolicy?: ReconnectPolicy;
@@ -406,9 +414,9 @@ export class ConversationClient {
     transport.onEvent((event) => this.handleEvent(event));
 
     await transport.connect({
-      url: `${this.options.baseUrl}/ws/conversations/audio/${id}/`,
+      url: `${this.options.baseUrl ?? DEFAULT_WS_URL}/ws/conversations/audio/${id}/`,
       token: this.sessionToken ?? "",
-      sdkInfo: this.options.sdkInfo,
+      sdkInfo: this.options.sdkInfo ?? DEFAULT_SDK_INFO,
       mode: this.snapshot.mode,
       protocol: 2,
     });
