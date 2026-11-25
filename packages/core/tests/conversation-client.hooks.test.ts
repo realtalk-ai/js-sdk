@@ -977,6 +977,57 @@ describe("ConversationClient, with the cases of the former connection hook", () 
       expect(result.current.connectionStatus).toBe("connected");
     });
 
+    it("keeps the renewed token while attempts with it keep failing", async () => {
+      const opts = defaultOpts();
+      const first = sessionToken(30 * 60 * 1000, "first");
+      const renewed = sessionToken(30 * 60 * 1000, "renewed");
+      opts.getToken = vi
+        .fn()
+        .mockResolvedValueOnce({ token: first, conversationId: "conv-1" })
+        .mockResolvedValue({ token: renewed, conversationId: "conv-1" });
+      await startAndDropConnection(opts);
+      mockTransport.connect.mockRejectedValue(new Error("refused"));
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000 + 5000 * 3);
+      });
+
+      expect(mockTransport.connect).toHaveBeenCalledTimes(1 + 6);
+      expect(opts.getToken).toHaveBeenCalledTimes(2);
+      expect(mockTransport.connect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ token: renewed }),
+      );
+    });
+
+    it("fetches a new token when the server closes the connection because the token was rejected", async () => {
+      const opts = defaultOpts();
+      const first = sessionToken(30 * 60 * 1000, "first");
+      const renewed = sessionToken(30 * 60 * 1000, "renewed");
+      opts.getToken = vi
+        .fn()
+        .mockResolvedValueOnce({ token: first, conversationId: "conv-1" })
+        .mockResolvedValue({ token: renewed, conversationId: "conv-1" });
+      const { result } = renderHook(() => useConnection(opts));
+      await act(async () => {
+        await result.current.startConversation({ agentId: "agent-1" });
+      });
+      const { WebSocketTransport } = await import("@realtalk-ai/core");
+      const transport = vi.mocked(WebSocketTransport).mock.results[0].value;
+      const onEventCb = transport.onEvent.mock.calls[0][0];
+
+      act(() => {
+        onEventCb({ type: "close", code: 4001, reason: "Invalid token" });
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(opts.getToken).toHaveBeenCalledTimes(2);
+      expect(mockTransport.connect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ token: renewed }),
+      );
+    });
+
     it("keeps retrying every 5 seconds after the first attempts fail", async () => {
       const opts = defaultOpts();
       opts.getToken = vi.fn().mockResolvedValue({

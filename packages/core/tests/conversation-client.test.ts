@@ -192,6 +192,43 @@ describe("ConversationClient", () => {
     );
   });
 
+  it("does not connect when it is disconnected while waiting for the token", async () => {
+    let deliverToken!: (token: unknown) => void;
+    const { client, transports } = createClient();
+    client.configure({
+      getToken: () => new Promise((resolve) => (deliverToken = resolve)),
+    });
+
+    const starting = client.start({ agentId: "agent-1" });
+    client.disconnect();
+    deliverToken({ token: "token", conversationId: "c1" });
+
+    await expect(starting).rejects.toThrow("stopped before it connected");
+    expect(transports).toHaveLength(0);
+    expect(client.getState()).toMatchObject({
+      status: "not_started",
+      connectionStatus: "disconnected",
+    });
+  });
+
+  it("opens only one connection when a second start overlaps the first", async () => {
+    const deliveries: ((token: unknown) => void)[] = [];
+    const { client, transports } = createClient();
+    client.configure({
+      getToken: () => new Promise((resolve) => deliveries.push(resolve)),
+    });
+
+    const first = client.start({ agentId: "agent-1" });
+    const second = client.start({ agentId: "agent-1" });
+    deliveries.forEach((deliver) =>
+      deliver({ token: "token", conversationId: "c1" }),
+    );
+
+    await expect(first).rejects.toThrow("stopped before it connected");
+    await expect(second).resolves.toBe("c1");
+    expect(transports).toHaveLength(1);
+  });
+
   it("disconnects without ending the conversation, and can start again afterwards", async () => {
     const { client, transports } = createClient();
     await client.start({ agentId: "agent-1" });
