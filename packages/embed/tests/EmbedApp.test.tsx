@@ -20,6 +20,7 @@ import {
   buildTimeline,
   type AgentState,
   type AnnotationItem,
+  type ConnectionStatus,
   type ConversationStatus,
   type Message,
   type TimelineItem,
@@ -49,7 +50,7 @@ const HUMAN_AGENT_JOINED: AnnotationItem = {
 const conversation = {
   conversationId: null as string | null,
   status: "not_started" as ConversationStatus,
-  connectionStatus: "disconnected" as const,
+  connectionStatus: "disconnected" as ConnectionStatus,
   messages: [] as Message[],
   annotations: [] as AnnotationItem[],
   get timeline(): TimelineItem[] {
@@ -63,7 +64,7 @@ const conversation = {
   startConversation: vi.fn(),
   endConversation: vi.fn(),
   clearMessages: vi.fn(),
-  sendMessage: vi.fn(),
+  sendMessage: vi.fn(() => true),
   setMode: vi.fn(),
   setVolume: vi.fn(),
   enableMic: vi.fn(),
@@ -154,16 +155,26 @@ function widget(props: Partial<EmbedAppProps> = {}) {
   );
 }
 
+function withConnection(
+  patch: Partial<typeof conversation>,
+): Partial<typeof conversation> {
+  const isActiveWithoutStatus =
+    patch.status === "active" && patch.connectionStatus === undefined;
+  return isActiveWithoutStatus
+    ? { ...patch, connectionStatus: "connected" }
+    : patch;
+}
+
 async function renderWidget(
   patch: Partial<typeof conversation> = {},
   props: Partial<EmbedAppProps> = {},
 ) {
-  Object.assign(conversation, patch);
+  Object.assign(conversation, withConnection(patch));
   const rendered = render(widget(props));
   await screen.findByRole("button", { name: /Open chat/ });
 
   const update = (next: Partial<typeof conversation>) => {
-    Object.assign(conversation, next);
+    Object.assign(conversation, withConnection(next));
     rendered.rerender(widget(props));
   };
 
@@ -348,6 +359,42 @@ describe("EmbedApp", () => {
       fireEvent.click(screen.getByRole("button", { name: "Minimize chat" }));
 
       expect(launcherLabel()).toBe("Open chat, conversation in progress");
+    });
+  });
+
+  describe("losing the connection", () => {
+    const textarea = () =>
+      screen.getByPlaceholderText("Type a message…") as HTMLTextAreaElement;
+
+    it("shows that it is reconnecting above the input and disables the input until the connection is back", async () => {
+      const { update } = await renderWidget({
+        status: "active",
+        connectionStatus: "reconnecting",
+      });
+      openPanel();
+      fireEvent.change(textarea(), { target: { value: "Hej" } });
+
+      expect(screen.getByRole("status").textContent).toContain("Reconnecting…");
+      expect(textarea().disabled).toBe(true);
+
+      update({ connectionStatus: "connected" });
+
+      expect(screen.queryByRole("status")).toBeNull();
+      expect(textarea().disabled).toBe(false);
+    });
+
+    it("keeps the message in the input when it could not be sent", async () => {
+      await renderWidget({ status: "active" });
+      openPanel();
+      conversation.sendMessage.mockReturnValueOnce(false);
+
+      fireEvent.change(textarea(), { target: { value: "Hej" } });
+      fireEvent.submit(textarea().closest("form") as HTMLFormElement);
+
+      expect(
+        await screen.findByText("Your message was not sent. Please try again."),
+      ).toBeTruthy();
+      expect(textarea().value).toBe("Hej");
     });
   });
 

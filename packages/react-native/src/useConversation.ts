@@ -56,7 +56,7 @@ export interface UseConversationReturn {
     options: UseConversationSessionOptions,
   ) => Promise<string>;
   endConversation: () => Promise<void>;
-  sendMessage: (text: string) => void;
+  sendMessage: (text: string) => boolean;
   sendDTMF: (digit: DTMFDigit) => void;
   sendEvent: (payload: ClientEvent) => void;
   toggleMic: () => void;

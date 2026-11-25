@@ -48,12 +48,6 @@ export function MessageList({
         </div>
       )}
       <AiDisclaimer />
-      {connecting && (
-        <div className="connecting-note">
-          <span className="connecting-spinner" />
-          Connecting to your conversation…
-        </div>
-      )}
       {messages.length === 0 && !connecting && (
         <div className="message agent">{greeting}</div>
       )}

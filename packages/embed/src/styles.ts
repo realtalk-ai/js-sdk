@@ -592,14 +592,18 @@ button {
   height: 10px;
 }
 
-.connecting-note {
-  align-self: center;
+.connection-bar {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  font-size: 12px;
-  color: var(--rt-muted);
-  padding: 4px 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--rt-fg);
+  background: color-mix(in srgb, var(--rt-warn) 14%, var(--rt-bg));
+  border-top: 1px solid color-mix(in srgb, var(--rt-warn) 35%, var(--rt-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--rt-warn) 35%, var(--rt-bg));
+  margin-bottom: 20px;
 }
 
 .notice {

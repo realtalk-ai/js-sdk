@@ -210,6 +210,12 @@ function Widget({
   const ended = conversationOver && hasMessages;
   const audioOn = !ended && mode.agentAudio;
   const voiceOn = micOn || audioOn;
+  const reconnecting = active && !starting && connectionStatus !== "connected";
+  const connectionNote = resuming
+    ? "Connecting to your conversation…"
+    : reconnecting
+      ? "Reconnecting…"
+      : null;
   const conversationInProgress = (active || paused) && !expired;
 
   const start = async (mode: ConversationMode = startMode) => {
@@ -236,7 +242,8 @@ function Widget({
     setNotice(null);
     try {
       if (!active) await start();
-      conversationRef.current.sendMessage(text);
+      const sent = conversationRef.current.sendMessage(text);
+      if (!sent) throw new Error("The conversation is not connected");
     } catch (error) {
       console.error("[realtalk-embed] failed to send message", error);
       setNotice("Your message was not sent. Please try again.");
@@ -366,11 +373,17 @@ function Widget({
               notice={notice}
               connecting={resuming}
             />
+            {connectionNote && (
+              <div className="connection-bar" role="status">
+                <span className="connecting-spinner" />
+                {connectionNote}
+              </div>
+            )}
             {ended ? (
               <NewConversation onStartNew={handleStartNew} />
             ) : (
               <Composer
-                disabled={starting}
+                disabled={starting || reconnecting}
                 showVoice={showVoice}
                 voiceOn={voiceOn}
                 onSend={handleSend}

@@ -255,8 +255,12 @@ export class ConversationClient {
     this.update({ status: "not_started", connectionStatus: "disconnected" });
   }
 
-  sendMessage(text: string): void {
-    this.transport?.sendEvent({ type: "message", data: text });
+  sendMessage(text: string): boolean {
+    const transport = this.transport;
+    if (!transport) return false;
+    if (this.state.connectionStatus !== "connected") return false;
+    transport.sendEvent({ type: "message", data: text });
+    return true;
   }
 
   sendDTMF(digit: DTMFDigit): void {
