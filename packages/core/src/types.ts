@@ -152,6 +152,12 @@ export interface SessionToken {
 
 export type TokenResponse = string | { token: string; conversationId?: string };
 
+export interface TokenRequest {
+  conversationId?: string;
+}
+
+export type GetToken = (request: TokenRequest) => Promise<TokenResponse>;
+
 export type VadState = "speech" | "silence";
 
 export type AgentState = "idle" | "thinking" | "speaking";

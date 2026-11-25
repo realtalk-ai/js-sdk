@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { SdkInfo, TokenResponse } from "@realtalk-ai/core";
+import type { GetToken, SdkInfo, TokenResponse } from "@realtalk-ai/core";
 import { DEFAULT_WS_URL, ValidationError } from "@realtalk-ai/core";
 
 export type { TokenResponse };
@@ -7,7 +7,7 @@ export type { TokenResponse };
 export interface RealTalkConfig {
   baseUrl: string;
   tokenUrl: string | null;
-  getToken: (() => Promise<TokenResponse>) | null;
+  getToken: GetToken | null;
   /** @internal */
   sdkInfo?: SdkInfo;
 }
@@ -17,7 +17,7 @@ const RealTalkContext = createContext<RealTalkConfig | null>(null);
 export interface RealTalkProviderProps {
   baseUrl?: string;
   tokenUrl?: string;
-  getToken?: () => Promise<TokenResponse>;
+  getToken?: GetToken;
   /** @internal Overrides the sdkInfo reported when connecting. */
   sdkInfo?: SdkInfo;
   children: ReactNode;

@@ -16,6 +16,8 @@ export type {
   TimelineItem,
   SessionToken,
   TokenResponse,
+  TokenRequest,
+  GetToken,
   VadState,
   ConversationError,
   AgentState,

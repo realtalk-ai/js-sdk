@@ -12,7 +12,7 @@ import type {
   Message,
   ConversationEvent,
   TimelineItem,
-  TokenResponse,
+  GetToken,
   UserState,
 } from "@realtalk-ai/core";
 import { WebSocketTransport } from "@realtalk-ai/core";
@@ -37,7 +37,7 @@ export interface UseConversationSessionOptions {
   mode?: ConversationMode;
   audioDeviceId?: string;
   token?: string;
-  getToken?: () => Promise<TokenResponse>;
+  getToken?: GetToken;
 }
 
 export interface UseConversationOptions {

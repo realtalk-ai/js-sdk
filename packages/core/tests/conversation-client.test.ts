@@ -37,6 +37,33 @@ function fakeTransport() {
   };
 }
 
+function validToken(name: string): string {
+  const base64Url = (value: string) =>
+    btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const exp = Math.floor((Date.now() + 30 * 60 * 1000) / 1000);
+  return `${base64Url('{"alg":"HS256"}')}.${base64Url(JSON.stringify({ exp, name }))}.sig`;
+}
+
+function scriptedTransports(connectResults: Array<"ok" | "fail" | "hang">) {
+  const created: ReturnType<typeof fakeTransport>[] = [];
+  const hanging: Array<(error: Error) => void> = [];
+  const createTransport = () => {
+    const next = fakeTransport();
+    const result = connectResults[created.length] ?? "ok";
+    if (result === "fail") {
+      next.transport.connect.mockRejectedValue(new Error("refused"));
+    }
+    if (result === "hang") {
+      next.transport.connect.mockImplementation(
+        () => new Promise<void>((_, reject) => hanging.push(reject)),
+      );
+    }
+    created.push(next);
+    return next.transport;
+  };
+  return { created, hanging, createTransport };
+}
+
 function createClient(
   options: {
     callbacks?: ConversationClientCallbacks;
@@ -244,6 +271,155 @@ describe("ConversationClient", () => {
     await expect(first).rejects.toThrow("stopped before it connected");
     await expect(second).resolves.toBe("c1");
     expect(transports).toHaveLength(1);
+  });
+
+  it("can start again after a start that had no conversation id", async () => {
+    const getToken = vi.fn().mockResolvedValueOnce({ token: "token" });
+    const { createTransport } = scriptedTransports([]);
+    const client = new ConversationClient({ getToken, createTransport });
+
+    await expect(client.start({ agentId: "agent-1" })).rejects.toThrow(
+      "No conversation ID available",
+    );
+    expect(client.getState().status).toBe("not_started");
+
+    getToken.mockResolvedValue({ token: "token", conversationId: "c1" });
+    await expect(client.start({ agentId: "agent-1" })).resolves.toBe("c1");
+  });
+
+  it("leaves the next conversation alone when a start that was ended fails to connect later", async () => {
+    const { created, hanging, createTransport } = scriptedTransports([
+      "hang",
+      "ok",
+    ]);
+    const client = new ConversationClient({
+      getToken: vi.fn().mockResolvedValue({ token: "t", conversationId: "c1" }),
+      createTransport,
+    });
+
+    const first = client.start({ agentId: "agent-1" });
+    await vi.advanceTimersByTimeAsync(0);
+    await client.end();
+    await client.start({ agentId: "agent-1" });
+    hanging[0](new Error("timed out"));
+    await expect(first).rejects.toThrow("timed out");
+
+    expect(created[1].transport.disconnect).not.toHaveBeenCalled();
+    expect(client.getState()).toMatchObject({
+      status: "active",
+      connectionStatus: "connected",
+    });
+  });
+
+  it("keeps reporting reconnecting while its attempts fail", async () => {
+    const statuses: string[] = [];
+    const { created, createTransport } = scriptedTransports([
+      "ok",
+      "fail",
+      "fail",
+      "ok",
+    ]);
+    const client = new ConversationClient({
+      getToken: vi.fn().mockResolvedValue({ token: "t", conversationId: "c1" }),
+      createTransport,
+      callbacks: {
+        onConnectionStatusChange: (status) => statuses.push(status),
+      },
+    });
+    await client.start({ agentId: "agent-1" });
+    statuses.length = 0;
+
+    created[0].emit({ type: "close", code: 1006, reason: "" });
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(created).toHaveLength(4);
+    expect(statuses[0]).toBe("reconnecting");
+    expect(statuses).not.toContain("connecting");
+    expect(statuses.at(-1)).toBe("connected");
+  });
+
+  it("keeps the token of the start that won when two starts overlap", async () => {
+    const firstToken = validToken("first");
+    const secondToken = validToken("second");
+    const deliveries: Array<(token: unknown) => void> = [];
+    const { created, createTransport } = scriptedTransports([]);
+    const client = new ConversationClient({
+      getToken: () => new Promise((resolve) => deliveries.push(resolve)),
+      createTransport,
+    });
+
+    const first = client.start({ agentId: "agent-1" });
+    const second = client.start({ agentId: "agent-1" });
+    deliveries[1]({ token: secondToken, conversationId: "c2" });
+    await second;
+    deliveries[0]({ token: firstToken, conversationId: "c1" });
+    await expect(first).rejects.toThrow("stopped before it connected");
+
+    created[0].emit({ type: "close", code: 1006, reason: "" });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(created[1].transport.connect).toHaveBeenCalledWith(
+      expect.objectContaining({ token: secondToken }),
+    );
+  });
+
+  it("keeps reconnecting with its current token when a new one is for another conversation", async () => {
+    const current = validToken("current");
+    const getToken = vi
+      .fn()
+      .mockResolvedValueOnce({ token: current, conversationId: "c1" })
+      .mockResolvedValue({ token: validToken("other"), conversationId: "c2" });
+    const onError = vi.fn();
+    const { created, createTransport } = scriptedTransports([
+      "ok",
+      "fail",
+      "ok",
+    ]);
+    const client = new ConversationClient({
+      getToken,
+      createTransport,
+      callbacks: { onError },
+    });
+    await client.start({ agentId: "agent-1" });
+
+    created[0].emit({ type: "close", code: 1006, reason: "" });
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(getToken).toHaveBeenLastCalledWith({ conversationId: "c1" });
+    expect(onError).not.toHaveBeenCalled();
+    expect(created[2].transport.connect).toHaveBeenCalledWith(
+      expect.objectContaining({ token: current }),
+    );
+    expect(client.getState()).toMatchObject({
+      conversationId: "c1",
+      connectionStatus: "connected",
+    });
+  });
+
+  it("asks the token URL for a token for the same conversation when it renews one", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ token: "t", conversation_id: "c1" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { created, createTransport } = scriptedTransports(["ok", "fail"]);
+    const client = new ConversationClient({
+      tokenUrl: "https://example.com/token?site=1",
+      createTransport,
+    });
+    await client.start({ agentId: "agent-1" });
+
+    created[0].emit({ type: "close", code: 1006, reason: "" });
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://example.com/token?site=1",
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.com/token?site=1&conversation_id=c1",
+    );
+    vi.unstubAllGlobals();
   });
 
   it("disconnects without ending the conversation, and can start again afterwards", async () => {
