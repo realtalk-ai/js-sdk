@@ -14,6 +14,7 @@ import { useConversationExpiry } from "./hooks/useConversationExpiry.js";
 import { useSounds, type WidgetSounds } from "./hooks/useSounds.js";
 import { useUnreadMessages } from "./hooks/useUnreadMessages.js";
 import { deriveWidgetStatus } from "./status.js";
+import { wait } from "./wait.js";
 import { AboutPage } from "./components/AboutPage.js";
 import { Composer } from "./components/Composer.js";
 import { Header } from "./components/Header.js";
@@ -60,10 +61,6 @@ export function EmbedApp({
       />
     </RealTalkProvider>
   );
-}
-
-function wait(delayMs: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
 function Widget({
