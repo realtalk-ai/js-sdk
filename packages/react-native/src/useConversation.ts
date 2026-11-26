@@ -15,7 +15,7 @@ import { WebSocketTransport } from "@realtalk-ai/core";
 import { useRealTalkConfig } from "./provider.js";
 import {
   useConversationClient,
-  useSnapshotField,
+  useStateField,
 } from "./hooks/useConversationClient.js";
 import { SDK_NAME, SDK_VERSION, SDK_CONTEXT } from "./version.js";
 import { useAudioControls } from "./hooks/useAudioControls.js";
@@ -113,13 +113,13 @@ export function useConversation(
     },
   });
 
-  const connectionStatus = useSnapshotField(client, "connectionStatus");
-  const status = useSnapshotField(client, "status");
-  const conversationId = useSnapshotField(client, "conversationId");
-  const error = useSnapshotField(client, "error");
-  const messages = useSnapshotField(client, "messages");
-  const userState = useSnapshotField(client, "userState");
-  const snapshotAgentState = useSnapshotField(client, "agentState");
+  const connectionStatus = useStateField(client, "connectionStatus");
+  const status = useStateField(client, "status");
+  const conversationId = useStateField(client, "conversationId");
+  const error = useStateField(client, "error");
+  const messages = useStateField(client, "messages");
+  const userState = useStateField(client, "userState");
+  const clientAgentState = useStateField(client, "agentState");
 
   const connectionStart = useCallback(
     (sessionOptions: UseConversationSessionOptions) =>
@@ -196,7 +196,7 @@ export function useConversation(
 
   const agentState: AgentState = agentIsSpeaking
     ? "speaking"
-    : snapshotAgentState;
+    : clientAgentState;
 
   return {
     connectionStatus,

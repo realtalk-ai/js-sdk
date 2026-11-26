@@ -76,6 +76,6 @@ export { ConversationClient } from "./conversation-client.js";
 export type {
   ConversationClientCallbacks,
   ConversationClientOptions,
-  ConversationSnapshot,
+  ConversationState,
   StartConversationOptions,
 } from "./conversation-client.js";

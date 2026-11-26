@@ -92,7 +92,7 @@ export interface ConversationClientOptions {
   callbacks?: ConversationClientCallbacks;
 }
 
-export interface ConversationSnapshot {
+export interface ConversationState {
   connectionStatus: ConnectionStatus;
   status: ConversationStatus;
   conversationId: string | null;
@@ -117,7 +117,7 @@ function isSameMode(a: ConversationMode, b: ConversationMode): boolean {
 export class ConversationClient {
   private options: ConversationClientOptions;
   private messageState: MessageState = EMPTY_MESSAGE_STATE;
-  private snapshot: ConversationSnapshot = {
+  private state: ConversationState = {
     connectionStatus: "disconnected",
     status: "not_started",
     conversationId: null,
@@ -154,14 +154,14 @@ export class ConversationClient {
     };
   };
 
-  getSnapshot = (): ConversationSnapshot => this.snapshot;
+  getState = (): ConversationState => this.state;
 
-  getMode = (): ConversationMode => this.snapshot.mode;
+  getMode = (): ConversationMode => this.state.mode;
 
   async start(sessionOptions: StartConversationOptions): Promise<string> {
     this.update({ error: null });
 
-    if (this.snapshot.status === "active") {
+    if (this.state.status === "active") {
       throw new ValidationError("Conversation already active");
     }
     if (!sessionOptions.agentId) {
@@ -201,7 +201,7 @@ export class ConversationClient {
   }
 
   async end(): Promise<void> {
-    const { status, conversationId } = this.snapshot;
+    const { status, conversationId } = this.state;
     const wasRunning = status === "active" || status === "paused";
     const transport = this.transport;
     if (transport) {
@@ -263,12 +263,12 @@ export class ConversationClient {
     return this.options.callbacks ?? {};
   }
 
-  private update(changes: Partial<ConversationSnapshot>): void {
-    const next = { ...this.snapshot, ...changes };
+  private update(changes: Partial<ConversationState>): void {
+    const next = { ...this.state, ...changes };
     const hasThinkingMessage = this.messageState.thinkingMessageId !== null;
     const isThinking = hasThinkingMessage && next.status !== "finished";
     next.agentState = isThinking ? "thinking" : "idle";
-    this.snapshot = next;
+    this.state = next;
     for (const listener of this.listeners) listener();
   }
 
@@ -278,7 +278,7 @@ export class ConversationClient {
       state.annotations !== this.messageState.annotations;
     const timeline = listsChanged
       ? buildTimeline(state.messages, state.annotations)
-      : this.snapshot.timeline;
+      : this.state.timeline;
     this.messageState = state;
     this.update({
       messages: state.messages,
@@ -299,7 +299,7 @@ export class ConversationClient {
   }
 
   private setMode(mode: ConversationMode): void {
-    if (isSameMode(this.snapshot.mode, mode)) return;
+    if (isSameMode(this.state.mode, mode)) return;
     this.update({ mode });
   }
 
@@ -380,7 +380,7 @@ export class ConversationClient {
     this.setMode(confirmedMode);
 
     const wasRefused =
-      requestedMode !== null && !isSameMode(requestedMode, this.snapshot.mode);
+      requestedMode !== null && !isSameMode(requestedMode, this.state.mode);
     if (!wasRefused) return;
 
     this.reportError(
@@ -389,11 +389,11 @@ export class ConversationClient {
       ),
       false,
     );
-    this.callbacks.onModeRefused?.(requestedMode, this.snapshot.mode);
+    this.callbacks.onModeRefused?.(requestedMode, this.state.mode);
   }
 
   private finish(): void {
-    const finishedId = this.snapshot.conversationId;
+    const finishedId = this.state.conversationId;
     this.intentionalDisconnect = true;
     this.cleanup();
     this.setStatus("finished");
@@ -406,7 +406,7 @@ export class ConversationClient {
     if (!isUnexpected) return;
 
     if (PAUSED_CLOSE_CODES.has(code)) {
-      const pausedId = this.snapshot.conversationId;
+      const pausedId = this.state.conversationId;
       this.cleanup();
       this.setStatus("paused");
       this.setConnectionStatus("disconnected");
@@ -437,7 +437,7 @@ export class ConversationClient {
   ): Promise<void> {
     this.setConnectionStatus("connecting");
 
-    const id = this.snapshot.conversationId;
+    const id = this.state.conversationId;
     if (!id) {
       throw new ValidationError("No conversation ID available for connection");
     }
@@ -455,7 +455,7 @@ export class ConversationClient {
       url: `${this.options.baseUrl ?? DEFAULT_WS_URL}/ws/conversations/audio/${id}/`,
       token: this.sessionToken ?? "",
       sdkInfo: this.options.sdkInfo ?? DEFAULT_SDK_INFO,
-      mode: this.snapshot.mode,
+      mode: this.state.mode,
       protocol: 2,
     });
 

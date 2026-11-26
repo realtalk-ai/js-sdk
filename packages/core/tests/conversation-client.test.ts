@@ -69,10 +69,10 @@ describe("ConversationClient", () => {
     vi.useRealTimers();
   });
 
-  it("starts with an empty, disconnected snapshot", () => {
+  it("starts with an empty, disconnected state", () => {
     const { client } = createClient();
 
-    expect(client.getSnapshot()).toMatchObject({
+    expect(client.getState()).toMatchObject({
       status: "not_started",
       connectionStatus: "disconnected",
       conversationId: null,
@@ -100,17 +100,17 @@ describe("ConversationClient", () => {
     );
   });
 
-  it("notifies subscribers with a new snapshot when it connects, until they unsubscribe", async () => {
+  it("notifies subscribers with a new state when it connects, until they unsubscribe", async () => {
     const { client } = createClient();
     const listener = vi.fn();
     const unsubscribe = client.subscribe(listener);
 
-    const before = client.getSnapshot();
+    const before = client.getState();
     await client.start({ agentId: "agent-1" });
 
     expect(listener).toHaveBeenCalled();
-    expect(client.getSnapshot()).not.toBe(before);
-    expect(client.getSnapshot()).toMatchObject({
+    expect(client.getState()).not.toBe(before);
+    expect(client.getState()).toMatchObject({
       status: "active",
       connectionStatus: "connected",
       conversationId: "c1",
@@ -139,11 +139,11 @@ describe("ConversationClient", () => {
 
     await client.start({ agentId: "agent-1" });
 
-    expect(client.getSnapshot().messages).toEqual([]);
-    expect(client.getSnapshot().annotations).toEqual([]);
+    expect(client.getState().messages).toEqual([]);
+    expect(client.getState().annotations).toEqual([]);
   });
 
-  it("keeps messages in the snapshot and reports each new one", async () => {
+  it("keeps messages in the state and reports each new one", async () => {
     const onMessage = vi.fn();
     const { client, transports } = createClient({ callbacks: { onMessage } });
     await client.start({ agentId: "agent-1" });
@@ -156,7 +156,7 @@ describe("ConversationClient", () => {
 
     transports[0].emit({ type: "message_created", data: message });
 
-    expect(client.getSnapshot().messages).toEqual([message]);
+    expect(client.getState().messages).toEqual([message]);
     expect(onMessage).toHaveBeenCalledWith(message);
   });
 
@@ -173,17 +173,17 @@ describe("ConversationClient", () => {
     await client.start({ agentId: "agent-1" });
 
     transports[0].emit({ type: "close", code: 1006, reason: "" });
-    expect(client.getSnapshot().connectionStatus).toBe("reconnecting");
+    expect(client.getState().connectionStatus).toBe("reconnecting");
     await vi.advanceTimersByTimeAsync(100);
     expect(transports).toHaveLength(2);
-    expect(client.getSnapshot().connectionStatus).toBe("connected");
+    expect(client.getState().connectionStatus).toBe("connected");
 
     transports[1].emit({ type: "close", code: 1006, reason: "" });
 
     expect(reconnectPolicy.nextRetryDelayMs).toHaveBeenLastCalledWith(
       expect.objectContaining({ retryCount: 0 }),
     );
-    expect(client.getSnapshot()).toMatchObject({
+    expect(client.getState()).toMatchObject({
       status: "not_started",
       connectionStatus: "disconnected",
     });
@@ -207,6 +207,6 @@ describe("ConversationClient", () => {
 
     await client.start({ agentId: "agent-1" });
     expect(transports).toHaveLength(2);
-    expect(client.getSnapshot().connectionStatus).toBe("connected");
+    expect(client.getState().connectionStatus).toBe("connected");
   });
 });

@@ -79,22 +79,22 @@ function renderClient(opts: ReturnType<typeof defaultOpts>) {
   });
   const view = {
     get connectionStatus() {
-      return client.getSnapshot().connectionStatus;
+      return client.getState().connectionStatus;
     },
     get status() {
-      return client.getSnapshot().status;
+      return client.getState().status;
     },
     get conversationId() {
-      return client.getSnapshot().conversationId;
+      return client.getState().conversationId;
     },
     get error() {
-      return client.getSnapshot().error;
+      return client.getState().error;
     },
     get mode() {
-      return client.getSnapshot().mode;
+      return client.getState().mode;
     },
     get messages() {
-      return client.getSnapshot().messages;
+      return client.getState().messages;
     },
     startConversation: (options: Parameters<ConversationClient["start"]>[0]) =>
       client.start(options),

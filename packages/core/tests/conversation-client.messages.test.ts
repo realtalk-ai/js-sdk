@@ -59,19 +59,19 @@ async function setup(callbacks: MessageCallbacks = {}) {
   });
   const view = {
     get messages() {
-      return client.getSnapshot().messages;
+      return client.getState().messages;
     },
     get annotations() {
-      return client.getSnapshot().annotations;
+      return client.getState().annotations;
     },
     get userState() {
-      return client.getSnapshot().userState;
+      return client.getState().userState;
     },
     get agentState() {
-      return client.getSnapshot().agentState;
+      return client.getState().agentState;
     },
     get timeline() {
-      return client.getSnapshot().timeline;
+      return client.getState().timeline;
     },
     handleMessageEvent: (event: ConversationEvent) => emit(event),
     clearMessages: () => client.clearMessages(),
