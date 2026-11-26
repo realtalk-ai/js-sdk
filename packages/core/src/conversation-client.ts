@@ -93,7 +93,7 @@ export interface ConversationClientOptions {
   sdkInfo?: SdkInfo;
   tokenUrl?: string | null;
   getToken?: GetToken | null;
-  reconnectPolicy?: ReconnectPolicy;
+  reconnectPolicy?: ReconnectPolicy | null;
   createTransport?: () => AudioTransport;
   callbacks?: ConversationClientCallbacks;
 }
@@ -456,7 +456,10 @@ export class ConversationClient {
       return;
     }
 
-    if (RECONNECTABLE_CLOSE_CODES.has(code)) {
+    const reconnects =
+      RECONNECTABLE_CLOSE_CODES.has(code) &&
+      this.options.reconnectPolicy !== null;
+    if (reconnects) {
       const tokenWasRejected = code === INVALID_TOKEN_CLOSE_CODE;
       if (tokenWasRejected) this.sessionToken = null;
       this.setConnectionStatus("reconnecting");

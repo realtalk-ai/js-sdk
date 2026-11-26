@@ -311,6 +311,35 @@ describe("ConversationClient", () => {
     });
   });
 
+  it("ends the conversation instead of reconnecting when reconnectPolicy is null", async () => {
+    const statuses: string[] = [];
+    const onError = vi.fn();
+    const { created, createTransport } = scriptedTransports([]);
+    const client = new ConversationClient({
+      getToken: vi.fn().mockResolvedValue({ token: "t", conversationId: "c1" }),
+      createTransport,
+      reconnectPolicy: null,
+      callbacks: {
+        onError,
+        onConnectionStatusChange: (status) => statuses.push(status),
+      },
+    });
+    await client.start({ agentId: "agent-1" });
+
+    created[0].emit({ type: "close", code: 1006, reason: "" });
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(created).toHaveLength(1);
+    expect(statuses).not.toContain("reconnecting");
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ fatal: true }),
+    );
+    expect(client.getState()).toMatchObject({
+      status: "not_started",
+      connectionStatus: "disconnected",
+    });
+  });
+
   it("keeps reporting reconnecting while its attempts fail", async () => {
     const statuses: string[] = [];
     const { created, createTransport } = scriptedTransports([
