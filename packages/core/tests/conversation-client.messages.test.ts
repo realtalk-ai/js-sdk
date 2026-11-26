@@ -67,8 +67,11 @@ async function setup(callbacks: MessageCallbacks = {}) {
     get userState() {
       return client.getSnapshot().userState;
     },
-    get thinkingMessageId() {
-      return client.getSnapshot().thinkingMessageId;
+    get agentThinking() {
+      return client.getSnapshot().agentThinking;
+    },
+    get timeline() {
+      return client.getSnapshot().timeline;
     },
     handleMessageEvent: (event: ConversationEvent) => emit(event),
     clearMessages: () => client.clearMessages(),
@@ -86,7 +89,8 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
 
     expect(result.current.messages).toEqual([]);
     expect(result.current.userState).toBe("idle");
-    expect(result.current.thinkingMessageId).toBeNull();
+    expect(result.current.agentThinking).toBe(false);
+    expect(result.current.timeline).toEqual([]);
   });
 
   it("existing_messages event sets messages as-is", async () => {
@@ -152,7 +156,7 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
     expect(result.current.messages[0].text).toBe("Hello world");
   });
 
-  it("empty agent message on create sets thinkingMessageId", async () => {
+  it("empty agent message on create sets agentThinking", async () => {
     const { result } = await setup();
 
     act(() =>
@@ -166,11 +170,11 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
       }),
     );
 
-    expect(result.current.thinkingMessageId).toBe("msg-think");
+    expect(result.current.agentThinking).toBe(true);
     expect(result.current.messages).toHaveLength(0);
   });
 
-  it("non-empty update for thinking message clears thinkingMessageId", async () => {
+  it("non-empty update for thinking message clears agentThinking", async () => {
     const { result } = await setup();
 
     act(() =>
@@ -184,7 +188,7 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
       }),
     );
 
-    expect(result.current.thinkingMessageId).toBe("msg-think");
+    expect(result.current.agentThinking).toBe(true);
 
     act(() =>
       result.current.handleMessageEvent({
@@ -197,9 +201,29 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
       }),
     );
 
-    expect(result.current.thinkingMessageId).toBeNull();
+    expect(result.current.agentThinking).toBe(false);
     expect(result.current.messages).toHaveLength(1);
     expect(result.current.messages[0].text).toBe("Thought complete");
+  });
+
+  it("keeps the timeline in step with messages and annotations", async () => {
+    const { result } = await setup();
+    const question = makeMessage({ id: "q", role: "user", text: "Hi" });
+
+    act(() =>
+      result.current.handleMessageEvent({
+        type: "message_created",
+        data: question,
+      }),
+    );
+
+    expect(result.current.timeline).toEqual([
+      { type: "message", message: result.current.messages[0] },
+    ]);
+
+    act(() => result.current.clearMessages());
+
+    expect(result.current.timeline).toEqual([]);
   });
 
   it("vad event with state speech sets userState to speaking", async () => {

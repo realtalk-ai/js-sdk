@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback } from "react";
 import type {
   AgentState,
   AnnotationItem,
@@ -14,7 +14,7 @@ import type {
   TimelineItem,
   UserState,
 } from "@realtalk-ai/core";
-import { buildTimeline, WebSocketTransport } from "@realtalk-ai/core";
+import { WebSocketTransport } from "@realtalk-ai/core";
 import { useRealTalkConfig } from "./provider.js";
 import {
   useConversationClient,
@@ -167,7 +167,7 @@ export function useConversation(
   const messages = useSnapshotField(client, "messages");
   const annotations = useSnapshotField(client, "annotations");
   const userState = useSnapshotField(client, "userState");
-  const thinkingMessageId = useSnapshotField(client, "thinkingMessageId");
+  const agentThinking = useSnapshotField(client, "agentThinking");
 
   const connectionStart = useCallback(
     (sessionOptions: UseConversationSessionOptions) =>
@@ -198,10 +198,7 @@ export function useConversation(
   const getMode = client.getMode;
   const clearMessages = useCallback(() => client.clearMessages(), [client]);
 
-  const timeline = useMemo(
-    () => buildTimeline(messages, annotations),
-    [messages, annotations],
-  );
+  const timeline = useSnapshotField(client, "timeline");
 
   sendEventRef.current = sendEvent;
 
@@ -298,7 +295,7 @@ export function useConversation(
 
   const agentState: AgentState = agentIsSpeaking
     ? "speaking"
-    : thinkingMessageId !== null && status !== "finished"
+    : agentThinking
       ? "thinking"
       : "idle";
 
