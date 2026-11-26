@@ -1,4 +1,5 @@
 import type {
+  AgentState,
   AnnotationItem,
   AudioSource,
   ClientEvent,
@@ -101,7 +102,7 @@ export interface ConversationSnapshot {
   annotations: AnnotationItem[];
   timeline: TimelineItem[];
   userState: UserState;
-  agentThinking: boolean;
+  agentState: AgentState;
 }
 
 interface FetchedToken {
@@ -126,7 +127,7 @@ export class ConversationClient {
     annotations: [],
     timeline: [],
     userState: "idle",
-    agentThinking: false,
+    agentState: "idle",
   };
   private readonly listeners = new Set<() => void>();
   private transport: AudioTransport | null = null;
@@ -265,7 +266,8 @@ export class ConversationClient {
   private update(changes: Partial<ConversationSnapshot>): void {
     const next = { ...this.snapshot, ...changes };
     const hasThinkingMessage = this.messageState.thinkingMessageId !== null;
-    next.agentThinking = hasThinkingMessage && next.status !== "finished";
+    const isThinking = hasThinkingMessage && next.status !== "finished";
+    next.agentState = isThinking ? "thinking" : "idle";
     this.snapshot = next;
     for (const listener of this.listeners) listener();
   }
