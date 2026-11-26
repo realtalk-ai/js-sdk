@@ -183,7 +183,7 @@ export class ConversationClient {
     const id = sessionOptions.conversationId ?? tokenConversationId;
     if (!id) {
       throw new ValidationError(
-        "No conversation ID available. Provide conversationId via startConversation options or use a token endpoint that returns conversation_id.",
+        "No conversation ID available. Pass a conversationId when starting or use a token endpoint that returns conversation_id.",
       );
     }
     this.update({ conversationId: id });
