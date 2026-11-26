@@ -340,6 +340,107 @@ describe("ConversationClient", () => {
     });
   });
 
+  it("reports each status change once and nothing when ending an idle client", async () => {
+    const statuses: string[] = [];
+    const { createTransport } = scriptedTransports([]);
+    const client = new ConversationClient({
+      getToken: vi.fn().mockResolvedValue({ token: "t", conversationId: "c1" }),
+      createTransport,
+      callbacks: {
+        onConnectionStatusChange: (status) => statuses.push(status),
+        onStatusChange: (status) => statuses.push(status),
+      },
+    });
+
+    await client.end();
+    expect(statuses).toEqual([]);
+
+    await client.start({ agentId: "agent-1" });
+    expect(statuses).toEqual(["connecting", "active", "connected"]);
+  });
+
+  it("stops with a fatal error when the server rejects a token it cannot renew", async () => {
+    const onError = vi.fn();
+    const { created, createTransport } = scriptedTransports([]);
+    const client = new ConversationClient({
+      createTransport,
+      callbacks: { onError },
+    });
+    await client.start({
+      agentId: "agent-1",
+      conversationId: "c1",
+      token: "t",
+    });
+
+    created[0].emit({ type: "close", code: 4001, reason: "" });
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(created).toHaveLength(1);
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ fatal: true }),
+    );
+    expect(client.getState().status).toBe("not_started");
+  });
+
+  it("starts a new conversation without the thinking state of the previous one", async () => {
+    const { created, createTransport } = scriptedTransports([]);
+    const client = new ConversationClient({
+      getToken: vi.fn().mockResolvedValue({ token: "t", conversationId: "c1" }),
+      createTransport,
+    });
+    await client.start({ agentId: "agent-1" });
+    created[0].emit({
+      type: "message_created",
+      data: {
+        id: "m1",
+        role: "agent",
+        text: "",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    });
+    expect(client.getState().agentState).toBe("thinking");
+
+    await client.end();
+    await client.start({ agentId: "agent-1" });
+
+    expect(client.getState().agentState).toBe("idle");
+  });
+
+  it("stops thinking when the history after a reconnect has the answer", async () => {
+    const { created, createTransport } = scriptedTransports([]);
+    const client = new ConversationClient({
+      getToken: vi.fn().mockResolvedValue({ token: "t", conversationId: "c1" }),
+      createTransport,
+    });
+    await client.start({ agentId: "agent-1" });
+    created[0].emit({
+      type: "message_created",
+      data: {
+        id: "m1",
+        role: "agent",
+        text: "",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    });
+
+    created[0].emit({ type: "close", code: 1006, reason: "" });
+    await vi.advanceTimersByTimeAsync(10_000);
+    created[1].emit({
+      type: "existing_messages",
+      data: [
+        {
+          id: "m1",
+          role: "agent",
+          text: "Done",
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+      ],
+    });
+
+    expect(client.getState().agentState).toBe("idle");
+    expect(client.getState().messages).toHaveLength(1);
+  });
+
   it("keeps reporting reconnecting while its attempts fail", async () => {
     const statuses: string[] = [];
     const { created, createTransport } = scriptedTransports([

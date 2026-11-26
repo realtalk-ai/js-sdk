@@ -202,7 +202,7 @@ export class ConversationClient {
     this.sessionOptions = resolvedOptions;
     this.requestedMode = null;
     this.setMode(sessionOptions.mode ?? DEFAULT_CONVERSATION_MODE);
-    this.clearMessages();
+    this.setMessageState(EMPTY_MESSAGE_STATE);
 
     const resolved = await this.resolveToken(sessionOptions);
     if (this.wasStoppedOrReplaced(resolvedOptions)) {
@@ -330,11 +330,13 @@ export class ConversationClient {
   }
 
   private setStatus(status: ConversationStatus): void {
+    if (this.state.status === status) return;
     this.update({ status });
     this.callbacks.onStatusChange?.(status);
   }
 
   private setConnectionStatus(connectionStatus: ConnectionStatus): void {
+    if (this.state.connectionStatus === connectionStatus) return;
     this.update({ connectionStatus });
     this.callbacks.onConnectionStatusChange?.(connectionStatus);
   }
@@ -461,6 +463,16 @@ export class ConversationClient {
       this.options.reconnectPolicy !== null;
     if (reconnects) {
       const tokenWasRejected = code === INVALID_TOKEN_CLOSE_CODE;
+      const cannotGetNewToken = tokenWasRejected && !this.hasTokenSource();
+      if (cannotGetNewToken) {
+        this.stopReconnecting(
+          new ConnectionError(
+            "websocket_failed",
+            "The session token was rejected and there is no getToken or tokenUrl to get a new one",
+          ),
+        );
+        return;
+      }
       if (tokenWasRejected) this.sessionToken = null;
       this.setConnectionStatus("reconnecting");
       this.scheduleReconnect();
@@ -516,6 +528,13 @@ export class ConversationClient {
     this.setConnectionStatus("connected");
 
     transport.sendEvent({ type: "start", agent_id: sessionOptions.agentId });
+  }
+
+  private hasTokenSource(): boolean {
+    const sessionGetToken = this.sessionOptions?.getToken;
+    return Boolean(
+      sessionGetToken ?? this.options.getToken ?? this.options.tokenUrl,
+    );
   }
 
   private async fetchToken(

@@ -83,11 +83,12 @@ const Chat = () => {
 </RealTalkProvider>
 ```
 
-| Prop       | Default          | Description                                                            |
-| ---------- | ---------------- | ---------------------------------------------------------------------- |
-| `tokenUrl` | —                | URL to fetch a session token (returns `{ token, conversation_id }`)    |
-| `getToken` | —                | Async function returning a token string or `{ token, conversationId }` |
-| `baseUrl`  | `DEFAULT_WS_URL` | WebSocket server URL                                                   |
+| Prop              | Default                       | Description                                                                             |
+| ----------------- | ----------------------------- | --------------------------------------------------------------------------------------- |
+| `tokenUrl`        | —                             | URL to fetch a session token (returns `{ token, conversation_id }`)                     |
+| `getToken`        | —                             | Async function returning a token string or `{ token, conversationId }`                  |
+| `baseUrl`         | `DEFAULT_WS_URL`              | WebSocket server URL                                                                    |
+| `reconnectPolicy` | `ConversationReconnectPolicy` | When to reconnect after a dropped connection, or `null` to end the conversation instead |
 
 Provide either `tokenUrl` or `getToken` — the hook uses one to obtain session tokens.
 
