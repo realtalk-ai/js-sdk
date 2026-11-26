@@ -67,7 +67,7 @@ export interface UseConversationReturn {
 export function useConversation(
   options: UseConversationOptions = {},
 ): UseConversationReturn {
-  const { baseUrl, tokenUrl, getToken } = useRealTalkConfig();
+  const { baseUrl, tokenUrl, getToken, reconnectPolicy } = useRealTalkConfig();
 
   const optionsRef = useRef(options);
   optionsRef.current = options;
@@ -100,6 +100,7 @@ export function useConversation(
     baseUrl,
     tokenUrl,
     getToken,
+    reconnectPolicy,
     sdkInfo: { name: SDK_NAME, version: SDK_VERSION, context: SDK_CONTEXT },
     createTransport: () => new WebSocketTransport(),
     callbacks: {

@@ -87,6 +87,33 @@ describe("useConversation", () => {
     expect(result.current.volume).toBe(1);
   });
 
+  it("passes the provider's reconnectPolicy to the conversation", async () => {
+    const { WebSocketTransport } = await import("@realtalk-ai/core");
+    const noReconnectWrapper = ({ children }: { children: ReactNode }) => (
+      <RealTalkProvider
+        baseUrl="wss://test.example.com"
+        getToken={async () => ({ token: "t", conversationId: "c1" })}
+        reconnectPolicy={null}
+      >
+        {children}
+      </RealTalkProvider>
+    );
+    const { result } = renderHook(() => useConversation(), {
+      wrapper: noReconnectWrapper,
+    });
+    await act(async () => {
+      await result.current.startConversation({ agentId: "agent-1" });
+    });
+    const emit = mockTransport.onEvent.mock.calls.at(-1)?.[0];
+
+    await act(async () => {
+      emit({ type: "close", code: 1006, reason: "" });
+    });
+
+    expect(result.current.status).toBe("not_started");
+    expect(vi.mocked(WebSocketTransport)).toHaveBeenCalledTimes(1);
+  });
+
   it("throws when used outside RealTalkProvider", () => {
     expect(() => {
       renderHook(() => useConversation());

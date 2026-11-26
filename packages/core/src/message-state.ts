@@ -44,14 +44,21 @@ export function applyMessageEvent(
   event: ConversationEvent,
 ): MessageStateChange {
   switch (event.type) {
-    case EventType.ExistingMessages:
+    case EventType.ExistingMessages: {
+      const thinkingMessage = event.data.find(
+        (message) => message.id === state.thinkingMessageId,
+      );
+      const isStillThinking =
+        thinkingMessage !== undefined && !thinkingMessage.text?.trim();
       return {
         state: {
           ...state,
           messages: event.data,
           annotations: event.annotations ?? [],
+          thinkingMessageId: isStillThinking ? state.thinkingMessageId : null,
         },
       };
+    }
     case EventType.MessageCreated:
     case EventType.MessageUpdated: {
       const message = event.data;
