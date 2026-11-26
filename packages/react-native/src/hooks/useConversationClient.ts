@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   ConversationClient,
   type ConversationClientOptions,
-  type ConversationSnapshot,
+  type ConversationState,
 } from "@realtalk-ai/core";
 
 export function useConversationClient(
@@ -16,10 +16,10 @@ export function useConversationClient(
   return client;
 }
 
-export function useSnapshotField<K extends keyof ConversationSnapshot>(
+export function useStateField<K extends keyof ConversationState>(
   client: ConversationClient,
   field: K,
-): ConversationSnapshot[K] {
-  const read = () => client.getSnapshot()[field];
+): ConversationState[K] {
+  const read = () => client.getState()[field];
   return useSyncExternalStore(client.subscribe, read, read);
 }
