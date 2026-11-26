@@ -119,7 +119,7 @@ export function useConversation(
   const error = useSnapshotField(client, "error");
   const messages = useSnapshotField(client, "messages");
   const userState = useSnapshotField(client, "userState");
-  const agentThinking = useSnapshotField(client, "agentThinking");
+  const snapshotAgentState = useSnapshotField(client, "agentState");
 
   const connectionStart = useCallback(
     (sessionOptions: UseConversationSessionOptions) =>
@@ -196,9 +196,7 @@ export function useConversation(
 
   const agentState: AgentState = agentIsSpeaking
     ? "speaking"
-    : agentThinking
-      ? "thinking"
-      : "idle";
+    : snapshotAgentState;
 
   return {
     connectionStatus,

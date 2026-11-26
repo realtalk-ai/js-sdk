@@ -67,8 +67,8 @@ async function setup(callbacks: MessageCallbacks = {}) {
     get userState() {
       return client.getSnapshot().userState;
     },
-    get agentThinking() {
-      return client.getSnapshot().agentThinking;
+    get agentState() {
+      return client.getSnapshot().agentState;
     },
     get timeline() {
       return client.getSnapshot().timeline;
@@ -89,7 +89,7 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
 
     expect(result.current.messages).toEqual([]);
     expect(result.current.userState).toBe("idle");
-    expect(result.current.agentThinking).toBe(false);
+    expect(result.current.agentState).toBe("idle");
     expect(result.current.timeline).toEqual([]);
   });
 
@@ -156,7 +156,7 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
     expect(result.current.messages[0].text).toBe("Hello world");
   });
 
-  it("empty agent message on create sets agentThinking", async () => {
+  it("empty agent message on create sets agentState to thinking", async () => {
     const { result } = await setup();
 
     act(() =>
@@ -170,11 +170,11 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
       }),
     );
 
-    expect(result.current.agentThinking).toBe(true);
+    expect(result.current.agentState).toBe("thinking");
     expect(result.current.messages).toHaveLength(0);
   });
 
-  it("non-empty update for thinking message clears agentThinking", async () => {
+  it("non-empty update for thinking message sets agentState back to idle", async () => {
     const { result } = await setup();
 
     act(() =>
@@ -188,7 +188,7 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
       }),
     );
 
-    expect(result.current.agentThinking).toBe(true);
+    expect(result.current.agentState).toBe("thinking");
 
     act(() =>
       result.current.handleMessageEvent({
@@ -201,7 +201,7 @@ describe("ConversationClient, with the cases of the former messages hook", () =>
       }),
     );
 
-    expect(result.current.agentThinking).toBe(false);
+    expect(result.current.agentState).toBe("idle");
     expect(result.current.messages).toHaveLength(1);
     expect(result.current.messages[0].text).toBe("Thought complete");
   });
