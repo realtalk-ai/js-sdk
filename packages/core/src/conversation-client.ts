@@ -10,7 +10,9 @@ import type {
   DTMFDigit,
   Message,
   SessionToken,
+  TimelineItem,
   TokenResponse,
+  UserState,
 } from "./types.js";
 import { EventType } from "./types.js";
 import type { AudioTransport, SdkInfo } from "./transport.js";
@@ -28,6 +30,7 @@ import {
 import { DefaultReconnectPolicy, type ReconnectPolicy } from "./reconnect.js";
 import { DEFAULT_WS_URL } from "./constants.js";
 import { SDK_NAME, SDK_VERSION } from "./version.js";
+import { buildTimeline } from "./events.js";
 import {
   applyMessageEvent,
   EMPTY_MESSAGE_STATE,
@@ -88,12 +91,17 @@ export interface ConversationClientOptions {
   callbacks?: ConversationClientCallbacks;
 }
 
-export interface ConversationSnapshot extends MessageState {
+export interface ConversationSnapshot {
   connectionStatus: ConnectionStatus;
   status: ConversationStatus;
   conversationId: string | null;
   error: ConversationError | null;
   mode: ConversationMode;
+  messages: Message[];
+  annotations: AnnotationItem[];
+  timeline: TimelineItem[];
+  userState: UserState;
+  agentThinking: boolean;
 }
 
 interface FetchedToken {
@@ -107,13 +115,18 @@ function isSameMode(a: ConversationMode, b: ConversationMode): boolean {
 
 export class ConversationClient {
   private options: ConversationClientOptions;
+  private messageState: MessageState = EMPTY_MESSAGE_STATE;
   private snapshot: ConversationSnapshot = {
-    ...EMPTY_MESSAGE_STATE,
     connectionStatus: "disconnected",
     status: "not_started",
     conversationId: null,
     error: null,
     mode: DEFAULT_CONVERSATION_MODE,
+    messages: [],
+    annotations: [],
+    timeline: [],
+    userState: "idle",
+    agentThinking: false,
   };
   private readonly listeners = new Set<() => void>();
   private transport: AudioTransport | null = null;
@@ -238,7 +251,11 @@ export class ConversationClient {
   }
 
   clearMessages(): void {
-    this.update({ messages: [], annotations: [] });
+    this.setMessageState({
+      ...this.messageState,
+      messages: [],
+      annotations: [],
+    });
   }
 
   private get callbacks(): ConversationClientCallbacks {
@@ -246,8 +263,27 @@ export class ConversationClient {
   }
 
   private update(changes: Partial<ConversationSnapshot>): void {
-    this.snapshot = { ...this.snapshot, ...changes };
+    const next = { ...this.snapshot, ...changes };
+    const hasThinkingMessage = this.messageState.thinkingMessageId !== null;
+    next.agentThinking = hasThinkingMessage && next.status !== "finished";
+    this.snapshot = next;
     for (const listener of this.listeners) listener();
+  }
+
+  private setMessageState(state: MessageState): void {
+    const listsChanged =
+      state.messages !== this.messageState.messages ||
+      state.annotations !== this.messageState.annotations;
+    const timeline = listsChanged
+      ? buildTimeline(state.messages, state.annotations)
+      : this.snapshot.timeline;
+    this.messageState = state;
+    this.update({
+      messages: state.messages,
+      annotations: state.annotations,
+      userState: state.userState,
+      timeline,
+    });
   }
 
   private setStatus(status: ConversationStatus): void {
@@ -330,8 +366,8 @@ export class ConversationClient {
   }
 
   private handleMessageEvent(event: ConversationEvent): void {
-    const change = applyMessageEvent(this.snapshot, event);
-    this.update(change.state);
+    const change = applyMessageEvent(this.messageState, event);
+    this.setMessageState(change.state);
     if (change.message) this.callbacks.onMessage?.(change.message);
     if (change.annotation) this.callbacks.onAnnotation?.(change.annotation);
   }

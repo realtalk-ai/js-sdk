@@ -91,21 +91,21 @@ When the connection drops, the client fetches a new session token and reconnects
 
 ### Methods
 
-| Method                | Description                                                                                                                                                                              |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `start(options)`      | Start or resume a conversation: `agentId`, and optionally `conversationId`, `token` and `mode`                                                                                           |
-| `end()`               | End the conversation                                                                                                                                                                     |
-| `disconnect()`        | Close the connection without ending the conversation, for example when your UI unmounts. Fires no callbacks                                                                              |
-| `sendMessage(text)`   | Send a text message                                                                                                                                                                      |
-| `sendDTMF(digit)`     | Send a keypad digit                                                                                                                                                                      |
-| `sendEvent(event)`    | Send any client event                                                                                                                                                                    |
-| `sendAudio(pcm)`      | Send 16 kHz PCM audio from the user's microphone                                                                                                                                         |
-| `requestMode(mode)`   | Ask the server to switch between text and audio                                                                                                                                          |
-| `clearMessages()`     | Empty the messages and annotations                                                                                                                                                       |
-| `getSnapshot()`       | The current state: `status`, `connectionStatus`, `conversationId`, `error`, `mode`, `messages`, `annotations`, `userState`, `thinkingMessageId`. A new object whenever something changes |
-| `subscribe(listener)` | Call `listener` on every change. Returns a function that stops it                                                                                                                        |
-| `getMode()`           | The current mode, the same as `getSnapshot().mode`                                                                                                                                       |
-| `configure(options)`  | Change options, for example a new `getToken`, on a running client                                                                                                                        |
+| Method                | Description                                                                                                                                                                                                                               |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `start(options)`      | Start or resume a conversation: `agentId`, and optionally `conversationId`, `token` and `mode`                                                                                                                                            |
+| `end()`               | End the conversation                                                                                                                                                                                                                      |
+| `disconnect()`        | Close the connection without ending the conversation, for example when your UI unmounts. Fires no callbacks                                                                                                                               |
+| `sendMessage(text)`   | Send a text message                                                                                                                                                                                                                       |
+| `sendDTMF(digit)`     | Send a keypad digit                                                                                                                                                                                                                       |
+| `sendEvent(event)`    | Send any client event                                                                                                                                                                                                                     |
+| `sendAudio(pcm)`      | Send 16 kHz PCM audio from the user's microphone                                                                                                                                                                                          |
+| `requestMode(mode)`   | Ask the server to switch between text and audio                                                                                                                                                                                           |
+| `clearMessages()`     | Empty the messages and annotations                                                                                                                                                                                                        |
+| `getSnapshot()`       | The current state: `status`, `connectionStatus`, `conversationId`, `error`, `mode`, `messages`, `annotations`, `timeline` (messages and annotations in time order), `userState`, `agentThinking`. A new object whenever something changes |
+| `subscribe(listener)` | Call `listener` on every change. Returns a function that stops it                                                                                                                                                                         |
+| `getMode()`           | The current mode, the same as `getSnapshot().mode`                                                                                                                                                                                        |
+| `configure(options)`  | Change options, for example a new `getToken`, on a running client                                                                                                                                                                         |
 
 ### Callbacks
 

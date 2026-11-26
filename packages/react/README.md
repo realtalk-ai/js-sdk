@@ -110,6 +110,7 @@ const conversation = useConversation(options);
 | `annotations`      | `AnnotationItem[]`          | Conversation annotations, such as a human agent joining                 |
 | `timeline`         | `TimelineItem[]`            | Messages and annotations in one list, in time order                     |
 | `error`            | `ConversationError \| null` | Current error                                                           |
+| `mode`             | `ConversationMode`          | Current mode: whether the user and the agent use audio                  |
 | `agentState`       | `AgentState`                | `"idle"` \| `"thinking"` \| `"speaking"`                                |
 | `userState`        | `UserState`                 | `"idle"` \| `"speaking"`                                                |
 | `volume`           | `number`                    | Audio playback volume (0–1)                                             |
