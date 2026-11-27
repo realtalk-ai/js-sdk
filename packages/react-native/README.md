@@ -119,7 +119,7 @@ Wrap your app with `RealTalkProvider` and pass your token endpoint:
 </RealTalkProvider>
 ```
 
-You can also pass a `getToken` callback or a custom `baseUrl` — see the [provider source](src/provider.tsx) for all options.
+You can also pass a `getToken` callback, a custom `baseUrl`, or a `reconnectPolicy` (`null` turns reconnecting off) — see the [provider source](src/provider.tsx) for all options.
 
 ## useConversation
 
@@ -179,7 +179,7 @@ startConversation({
 });
 ```
 
-The SDK stops reconnecting and reports a fatal error when the token request is refused, or when the current token has expired and the new one is for another conversation.
+The SDK stops reconnecting and reports a fatal error when the token request is refused, when the server rejects the token and there is no `getToken` or `tokenUrl` to get a new one, or when the current token has expired and the new one is for another conversation. Pass `reconnectPolicy={null}` to `RealTalkProvider` to end the conversation instead of reconnecting when the connection drops.
 
 ### Callbacks
 

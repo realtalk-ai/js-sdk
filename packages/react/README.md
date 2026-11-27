@@ -194,7 +194,7 @@ startConversation({
 });
 ```
 
-The SDK stops reconnecting and reports a fatal error when the token request is refused, or when the current token has expired and the new one is for another conversation.
+The SDK stops reconnecting and reports a fatal error when the token request is refused, when the server rejects the token and there is no `getToken` or `tokenUrl` to get a new one, or when the current token has expired and the new one is for another conversation. Pass `reconnectPolicy={null}` to `RealTalkProvider` to end the conversation instead of reconnecting when the connection drops.
 
 ### Timeline
 
